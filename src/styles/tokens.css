@@ -1,0 +1,48 @@
+/* ============================================================
+   FichaSS — design tokens (frozen in Phase 00, D-14).
+   Source of truth: docs/design/tokens.md. Any change to these
+   values requires a user-approved amendment (constitution I6).
+   Variable names in English (UI text stays Spanish).
+   ============================================================ */
+
+:root {
+  /* Color */
+  --canvas: #0b0d12;               /* app background */
+  --surface: #12151c;              /* cards */
+  --surface-raised: #171b24;       /* drawer, bottom sheet, raised elements */
+  --hairline: rgba(168, 178, 203, .14); /* 1px borders */
+  --text: #e8ebf2;
+  --text-dim: #9aa3b2;
+  --accent: #8fb3e8;               /* silver-blue focus / active / accents */
+  --accent-soft: rgba(143, 179, 232, .12);
+  --ok: #7fc7a3;
+  --danger: #e08a8a;
+  --warning: #dfc07a;
+  --overlay: rgba(5, 7, 10, .58);  /* drawer/sheet backdrop (small-caps scale) */
+
+  /* Shape & elevation */
+  --radius-lg: 20px;               /* cards */
+  --radius-md: 12px;               /* chips / inner elements */
+  --shadow: 0 8px 30px rgba(0, 0, 0, .25); /* soft floating */
+
+  /* Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Layout */
+  --pad-card: 20px;
+  --drawer-width: min(270px, 82vw);
+
+  /* Typography */
+  --font: Inter, "Segoe UI", system-ui, ui-sans-serif, sans-serif;
+  --text-display: 30px; /* big numbers; weight 300 */
+  --text-title: 15px;   /* card title; weight 600 */
+  --text-body: 14px;
+  --text-dense: 12px;
+  --text-label: 11px;   /* secondary labels; small caps, tracked */
+  --tracking-label: .08em;
+}

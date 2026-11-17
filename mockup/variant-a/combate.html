@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FichaSS Mockup · Combate — Variante A</title>
+  <link rel="stylesheet" href="../shared.css">
+</head>
+<body class="m-combate">
+
+  <header class="appbar">
+    <a class="appbar-home" href="../index.html">FichaSS · mockup</a>
+    <nav class="mode-tabs" aria-label="Modos de vista (demo)">
+      <span class="chip active">Combate</span>
+      <span class="chip">Aventura</span>
+      <span class="chip">Descanso</span>
+      <span class="chip">Mesa</span>
+    </nav>
+  </header>
+
+  <main class="sheet-grid">
+
+    <!-- Compact identity on top -->
+    <section class="card b-identity is-compact" data-modes="combate">
+      <div class="identity">
+        <div class="portrait" aria-hidden="true">SA</div>
+        <div class="identity-lines">
+          <p class="display" style="font-size:22px">Seren Aldaard · Nv 5</p>
+          <p class="dim dense">Clériga · Vía de la Vida · CA: semiplaca + escudo · Prof +3</p>
+        </div>
+      </div>
+      <p class="dense dim" style="margin-top:8px">Recompuesta para combate — el resto de bloques queda oculto (mockup).</p>
+    </section>
+
+    <!-- Combat (most critical, includes inspiration counter) -->
+    <section class="card b-combat" data-modes="combate aventura">
+      <header class="blockhead"><h2>Combate</h2><span class="chip">combate</span></header>
+      <div class="stat-grid">
+        <div class="stat"><span class="num">18</span><span class="lbl">CA</span></div>
+        <div class="stat"><span class="num">38<span class="den">/38</span></span><span class="lbl">PG</span></div>
+        <div class="stat"><span class="num">0</span><span class="lbl">Temp.</span></div>
+        <div class="stat"><span class="num">30</span><span class="lbl">Pies</span></div>
+        <div class="stat"><span class="num">+1</span><span class="lbl">Iniciativa</span></div>
+      </div>
+      <div class="flag-row">
+        <span class="k">Inspiración</span>
+        <input class="flag-input" type="checkbox" aria-label="Inspiración" checked>
+      </div>
+    </section>
+
+    <!-- Attacks -->
+    <section class="card b-attacks" data-modes="combate aventura">
+      <header class="blockhead"><h2>Ataques</h2><span class="chip">combate</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Maza +1</span><span class="v">+5 · 1d6+2 contundente</span></li>
+        <li class="row"><span class="k">Llama sagrada</span><span class="v">CD 14 DES · 2d8 radiante</span></li>
+        <li class="row"><span class="k">Ataque de conjuro</span><span class="v">+6</span></li>
+        <li class="row"><span class="k">CD de conjuro</span><span class="v">14</span></li>
+      </ul>
+    </section>
+
+    <!-- Combat spells -->
+    <section class="card b-spells" data-modes="combate aventura descanso">
+      <header class="blockhead"><h2>Conjuros</h2><span class="chip">combate</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Preparados</span><span class="v">9 (+6 de dominio)</span></li>
+        <li class="row"><span class="k">CD de conjuro</span><span class="v">14</span></li>
+      </ul>
+      <div class="spell-level">
+        <p class="lvl-head"><span>Trucos</span><span class="count">4</span></p>
+        <ul class="spells">
+          <li>Llama sagrada</li>
+          <li>Guía</li>
+          <li>Taumaturgia</li>
+          <li>Resistencia</li>
+        </ul>
+      </div>
+      <div class="spell-group">
+        <div class="group-head">
+          <span class="chip">Dominio · siempre preparados</span>
+          <span class="dense dim">no cuentan</span>
+        </div>
+        <p class="lvl-head"><span>Nivel 1</span></p>
+        <ul class="spells">
+          <li>Bendición</li>
+          <li>Curar heridas</li>
+          <li>Palabra de curación masiva</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 2</span></p>
+        <ul class="spells">
+          <li>Ayuda</li>
+          <li>Restauración menor (acción adicional)</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 3</span></p>
+        <ul class="spells">
+          <li>Revivir</li>
+        </ul>
+      </div>
+      <div class="spell-group">
+        <div class="group-head">
+          <span class="chip">Preparados · elección libre</span>
+          <span class="dense dim">9</span>
+        </div>
+        <p class="lvl-head"><span>Nivel 1</span></p>
+        <ul class="spells">
+          <li>Palabra de curación</li>
+          <li>Rayo guía</li>
+          <li>Comando</li>
+          <li>Escudo de la fe</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 2</span></p>
+        <ul class="spells">
+          <li>Oración de curación</li>
+          <li>Arma espiritual</li>
+          <li>Potenciar habilidad</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 3</span></p>
+        <ul class="spells">
+          <li>Espíritu guardián</li>
+          <li>Protección contra energía</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Saves -->
+    <section class="card b-saves" data-modes="combate aventura">
+      <header class="blockhead"><h2>Salvaciones</h2><span class="chip">combate</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">FUE</span><span class="v">+0</span></li>
+        <li class="row"><span class="k">DES</span><span class="v">+1</span></li>
+        <li class="row"><span class="k">CON</span><span class="v">+2</span></li>
+        <li class="row"><span class="k">INT</span><span class="v">+1</span></li>
+        <li class="row"><span class="k">SAB</span><span class="v">+6</span></li>
+        <li class="row"><span class="k">CAR</span><span class="v">+3</span></li>
+      </ul>
+    </section>
+
+    <!-- Death saves -->
+    <section class="card b-death" data-modes="combate aventura">
+      <header class="blockhead"><h2>Salv. de muerte</h2><span class="chip">combate</span></header>
+      <div class="dot-row">
+        <span class="k">Éxitos</span>
+        <span class="dots" aria-label="Éxitos: 0 de 3 (demo)">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </div>
+      <div class="dot-row">
+        <span class="k">Fallos</span>
+        <span class="dots" aria-label="Fallos: 0 de 3 (demo)">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </div>
+    </section>
+
+    <p class="mockup-note">Mockup estático de la Fase 00 — los números son valores de demostración, no el contrato de datos.</p>
+  </main>
+
+</body>
+</html>

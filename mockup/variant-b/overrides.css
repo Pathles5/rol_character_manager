@@ -1,0 +1,57 @@
+/* ============================================================
+   FichaSS — Phase 00 mockup · Skin B "Ink & Steel"
+   Overrides ONLY: redefines variables + a few minimal class rules.
+   Loaded after ../shared.css. Same content, different skin.
+   ============================================================ */
+
+:root {
+  /* Color: darker, flatter, sharper accent */
+  --canvas: #0a0c10;
+  --surface: #181c25;          /* solid card, no visible borders */
+  --surface-raised: #1d2230;
+  --hairline: rgba(255, 255, 255, 0); /* borders invisible: surfaces separate by value */
+  --text: #eef1f7;
+  --text-dim: #8d99ad;
+  --accent: #6f9fe8;
+  --accent-soft: rgba(111, 159, 232, .14);
+
+  /* Shape: tighter */
+  --r-lg: 10px;
+  --r-md: 8px;
+
+  /* Elevation: darker shadow */
+  --shadow: 0 6px 22px rgba(0, 0, 0, .45);
+
+  /* Layout: compact cards */
+  --pad-card: 13px;
+}
+
+/* --- Minimal class overrides required by the tightened skin --- */
+
+/* Cards no longer carry a visible border; shadow keeps separation soft */
+.card { border: 0; }
+
+/* Dense rows: stronger small-caps labels, tighter padding */
+.row { padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.row .k { color: #aeb9d0; }
+
+/* Stats and mini-cards: keep a hair-thin inner edge instead of borders */
+.stat,
+.attr,
+.portrait,
+.spells li,
+.dot { border-color: rgba(255, 255, 255, .05); box-shadow: none; }
+
+/* Stronger hierarchy by color/weight, not by rules */
+.blockhead h2 { font-weight: 700; }
+.chip { color: #b6c2da; border-color: rgba(255, 255, 255, .08); }
+.chip.active { background: var(--accent-soft); }
+.skill-list .v { color: #7d889c; }
+.skill.prof .v { color: var(--text); }
+
+/* Appbar: flatter, slightly more opaque */
+.appbar { background: rgba(10, 12, 16, .92); }
+
+/* Drawer / sheet chrome for the flat skin */
+.drawer { border-right-color: rgba(255, 255, 255, .05); }
+.handle { background: rgba(255, 255, 255, .18); }

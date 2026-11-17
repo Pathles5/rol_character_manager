@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FichaSS Mockup · Bottom sheet de conjuros — Variante B</title>
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="overrides.css">
+</head>
+<body class="m-aventura is-sheet-open">
+
+  <header class="appbar">
+    <a class="appbar-home" href="../index.html">FichaSS · mockup</a>
+    <nav class="mode-tabs" aria-label="Modos de vista (demo)">
+      <span class="chip">Combate</span>
+      <span class="chip active">Aventura</span>
+      <span class="chip">Descanso</span>
+      <span class="chip">Mesa</span>
+    </nav>
+  </header>
+
+  <main class="sheet-grid">
+
+    <!-- Identity -->
+    <section class="card b-identity" data-modes="combate aventura descanso mesa">
+      <header class="blockhead"><h2>Identidad</h2><span class="chip">siempre</span></header>
+      <div class="identity">
+        <div class="portrait" aria-hidden="true">SA</div>
+        <div class="identity-lines">
+          <p class="display">Seren Aldaard</p>
+          <p class="dim">Clériga · Nivel 5 · Vía de la Vida</p>
+          <p class="dim extra">Humana · Mediana · Neutral Buena</p>
+          <p class="dim dense extra">Trasfondo: Erudito · Proficiencia +3</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attributes -->
+    <section class="card b-attributes" data-modes="aventura">
+      <header class="blockhead"><h2>Atributos</h2><span class="chip">aventura</span></header>
+      <div class="attr-grid">
+        <div class="attr"><span class="lbl">FUE</span><span class="num">10</span><span class="mod">+0</span></div>
+        <div class="attr"><span class="lbl">DES</span><span class="num">12</span><span class="mod">+1</span></div>
+        <div class="attr"><span class="lbl">CON</span><span class="num">14</span><span class="mod">+2</span></div>
+        <div class="attr"><span class="lbl">INT</span><span class="num">8</span><span class="mod">&minus;1</span></div>
+        <div class="attr"><span class="lbl">SAB</span><span class="num">16</span><span class="mod">+3</span></div>
+        <div class="attr"><span class="lbl">CAR</span><span class="num">10</span><span class="mod">+0</span></div>
+      </div>
+    </section>
+
+    <!-- Combat -->
+    <section class="card b-combat" data-modes="combate aventura">
+      <header class="blockhead"><h2>Combate</h2><span class="chip">combate</span></header>
+      <div class="stat-grid">
+        <div class="stat"><span class="num">18</span><span class="lbl">CA</span></div>
+        <div class="stat"><span class="num">38<span class="den">/38</span></span><span class="lbl">PG</span></div>
+        <div class="stat"><span class="num">0</span><span class="lbl">Temp.</span></div>
+        <div class="stat"><span class="num">30</span><span class="lbl">Pies</span></div>
+        <div class="stat"><span class="num">+1</span><span class="lbl">Iniciativa</span></div>
+      </div>
+      <div class="counter-row">
+        <span class="k">Inspiración</span>
+        <div class="counter" data-counter>
+          <button type="button" data-counter-step="-" aria-label="Restar inspiración">−</button>
+          <span class="val" data-counter-value>1</span>
+          <button type="button" data-counter-step="+" aria-label="Sumar inspiración">+</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Saves -->
+    <section class="card b-saves" data-modes="combate aventura">
+      <header class="blockhead"><h2>Salvaciones</h2><span class="chip">combate</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Fuerza</span><span class="v">+0</span></li>
+        <li class="row"><span class="k">Destreza</span><span class="v">+1</span></li>
+        <li class="row"><span class="k">Constitución</span><span class="v">+2</span></li>
+        <li class="row"><span class="k">Inteligencia</span><span class="v">&#8722;1</span></li>
+        <li class="row"><span class="k">Sabiduría</span><span class="v">+6</span></li>
+        <li class="row"><span class="k">Carisma</span><span class="v">+3</span></li>
+      </ul>
+      <p class="dense dim" style="margin-top:8px">Competentes: Sabiduría · Carisma</p>
+    </section>
+
+    <!-- Skills -->
+    <section class="card b-skills" data-modes="aventura mesa">
+      <header class="blockhead"><h2>Habilidades</h2><span class="chip">aventura</span></header>
+      <p class="legend">— sin competencia · ✓ competencia · ✓✓ pericia (×2 al bonus)</p>
+      <ul class="skill-list">
+        <li class="row skill"><span class="k">Acrobacia (DES)</span><span class="v">+1</span></li>
+        <li class="row skill"><span class="k">Atletismo (FUE)</span><span class="v">+0</span></li>
+        <li class="row skill prof"><span class="k">Arcanos (INT)</span><span class="v">+2</span></li>
+        <li class="row skill"><span class="k">Engaño (CAR)</span><span class="v">+0</span></li>
+        <li class="row skill prof"><span class="k">Historia (INT)</span><span class="v">+2</span></li>
+        <li class="row skill"><span class="k">Interpretación (CAR)</span><span class="v">+0</span></li>
+        <li class="row skill"><span class="k">Intimidación (CAR)</span><span class="v">+0</span></li>
+        <li class="row skill"><span class="k">Investigación (INT)</span><span class="v">&#8722;1</span></li>
+        <li class="row skill"><span class="k">Juego de manos (DES)</span><span class="v">+1</span></li>
+        <li class="row skill prof"><span class="k">Medicina (SAB)</span><span class="v">+6</span></li>
+        <li class="row skill"><span class="k">Naturaleza (INT)</span><span class="v">&#8722;1</span></li>
+        <li class="row skill"><span class="k">Percepción (SAB)</span><span class="v">+3</span></li>
+        <li class="row skill prof"><span class="k">Perspicacia (SAB)</span><span class="v">+6</span></li>
+        <li class="row skill prof"><span class="k">Persuasión (CAR)</span><span class="v">+3</span></li>
+        <li class="row skill prof"><span class="k">Religión (INT)</span><span class="v">+2</span></li>
+        <li class="row skill"><span class="k">Supervivencia (SAB)</span><span class="v">+3</span></li>
+        <li class="row skill"><span class="k">Trato con animales (SAB)</span><span class="v">+3</span></li>
+      </ul>
+    </section>
+
+    <!-- Attacks -->
+    <section class="card b-attacks" data-modes="combate aventura">
+      <header class="blockhead"><h2>Ataques</h2><span class="chip">combate</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Maza +1</span><span class="v">+5 · 1d6+2 contundente</span></li>
+        <li class="row"><span class="k">Llama sagrada</span><span class="v">CD 14 DES · 2d8 radiante</span></li>
+        <li class="row"><span class="k">Ataque de conjuro</span><span class="v">+6</span></li>
+        <li class="row"><span class="k">CD de conjuro</span><span class="v">14</span></li>
+      </ul>
+    </section>
+
+    <!-- Traits -->
+    <section class="card b-traits" data-modes="aventura mesa">
+      <header class="blockhead"><h2>Rasgos y capacidades</h2><span class="chip">aventura</span></header>
+      <ul class="traits">
+        <li>
+          <span class="tname">Discípulo de la Vida</span>
+          <span class="tdesc">Los hechizos de curación del dominio restauran 1 PG adicional por nivel del hechizo.</span>
+        </li>
+        <li>
+          <span class="tname">Canalizar Divinidad: Preservar la Vida</span>
+          <span class="tdesc">Restaura hasta 25 PV (5 × nivel) repartidos entre criaturas reducidas a la mitad de sus PG (bloodied) a 30 pies; sin superar la mitad de sus PG máximos.</span>
+        </li>
+        <li>
+          <span class="tname">Fortuna del Erudito (trasfondo)</span>
+          <span class="tdesc">1 × día, repite una tirada fallida de Historia o Religión con SAB (demo).</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Spells -->
+    <section class="card b-spells" data-modes="combate aventura descanso">
+      <header class="blockhead"><h2>Conjuros</h2><span class="chip">aventura</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Preparados</span><span class="v">9 (+6 de dominio)</span></li>
+        <li class="row"><span class="k">CD de conjuro</span><span class="v">14</span></li>
+        <li class="row"><span class="k">Ataque de conjuro</span><span class="v">+6</span></li>
+      </ul>
+      <div class="spell-level">
+        <p class="lvl-head"><span>Trucos</span><span class="count">4</span></p>
+        <ul class="spells">
+          <li>Llama sagrada</li>
+          <li>Guía</li>
+          <li>Taumaturgia</li>
+          <li>Resistencia</li>
+        </ul>
+      </div>
+      <div class="spell-group">
+        <div class="group-head">
+          <span class="chip">Dominio · siempre preparados</span>
+          <span class="dense dim">no cuentan</span>
+        </div>
+        <p class="lvl-head"><span>Nivel 1</span></p>
+        <ul class="spells">
+          <li>Bendición</li>
+          <li>Curar heridas</li>
+          <li>Palabra de curación masiva</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 2</span></p>
+        <ul class="spells">
+          <li>Ayuda</li>
+          <li>Restauración menor (acción adicional)</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 3</span></p>
+        <ul class="spells">
+          <li>Revivir</li>
+        </ul>
+      </div>
+      <div class="spell-group">
+        <div class="group-head">
+          <span class="chip">Preparados · elección libre</span>
+          <span class="dense dim">9</span>
+        </div>
+        <p class="lvl-head"><span>Nivel 1</span></p>
+        <ul class="spells">
+          <li>Palabra de curación</li>
+          <li>Rayo guía</li>
+          <li>Comando</li>
+          <li>Escudo de la fe</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 2</span></p>
+        <ul class="spells">
+          <li>Oración de curación</li>
+          <li>Arma espiritual</li>
+          <li>Potenciar habilidad</li>
+        </ul>
+        <p class="lvl-head"><span>Nivel 3</span></p>
+        <ul class="spells">
+          <li>Espíritu guardián</li>
+          <li>Protección contra energía</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Equipment -->
+    <section class="card b-equipment" data-modes="aventura descanso mesa">
+      <header class="blockhead"><h2>Equipo e inventario</h2><span class="chip">aventura</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Arma</span><span class="v">Maza +1</span></li>
+        <li class="row"><span class="k">Armadura</span><span class="v">Semiplaca + escudo</span></li>
+        <li class="row"><span class="k">Inventario</span><span class="v">Símbolo sagrado · Kit de curador · Raciones (5) · Cuerda · Volumen sagrado</span></li>
+        <li class="row"><span class="k">Monedas</span><span class="v">34 po · 12 pp</span></li>
+      </ul>
+    </section>
+
+    <!-- Proficiencies -->
+    <section class="card b-proficiencies" data-modes="aventura mesa">
+      <header class="blockhead"><h2>Competencias</h2><span class="chip">aventura</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Armaduras</span><span class="v">Ligeras, medias y escudos</span></li>
+        <li class="row"><span class="k">Armas</span><span class="v">Simples</span></li>
+        <li class="row"><span class="k">Instrumentos</span><span class="v">Laúd · Tambor</span></li>
+        <li class="row"><span class="k">Idiomas</span><span class="v">Común · Élfico · Enano</span></li>
+      </ul>
+    </section>
+
+    <!-- Death saves -->
+    <section class="card b-death" data-modes="combate aventura">
+      <header class="blockhead"><h2>Salvaciones de muerte</h2><span class="chip">combate</span></header>
+      <div class="dot-row">
+        <span class="k">Éxitos</span>
+        <span class="dots" aria-label="Éxitos: 0 de 3 (demo)">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </div>
+      <div class="dot-row">
+        <span class="k">Fallos</span>
+        <span class="dots" aria-label="Fallos: 0 de 3 (demo)">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </div>
+    </section>
+
+    <!-- Role & notes (mesa only) -->
+    <section class="card b-role" data-modes="mesa">
+      <header class="blockhead"><h2>Rol y notas</h2><span class="chip">mesa</span></header>
+      <p>Clériga del gran santuario de Alavant. Tono serio, humor seco; anota todo lo que falla para no repetirlo.</p>
+      <ul class="rows" style="margin-top:10px">
+        <li class="row"><span class="k">Nota 1</span><span class="v">Pedir tinta de erudito en cada ciudad</span></li>
+        <li class="row"><span class="k">Nota 2</span><span class="v">Identificar primero, comprar después</span></li>
+        <li class="row"><span class="k">Nota 3</span><span class="v">Deuda de 8 po con Marta la tabernera</span></li>
+      </ul>
+    </section>
+
+    <!-- Allies (mesa only) -->
+    <section class="card b-allys" data-modes="mesa">
+      <header class="blockhead"><h2>Aliados</h2><span class="chip">mesa</span></header>
+      <ul class="rows">
+        <li class="row"><span class="k">Marta</span><span class="v">Tabernera · confidente</span></li>
+        <li class="row"><span class="k">Ilbarion</span><span class="v">Maestro de estudios · mentor</span></li>
+      </ul>
+    </section>
+
+    <p class="mockup-note">Mockup estático de la Fase 00 — los números son valores de demostración, no el contrato de datos.</p>
+  </main>
+
+  <!-- Bottom sheet overlay: spell detail (demo) -->
+  <div class="backdrop" aria-hidden="true"></div>
+  <section class="sheet" aria-label="Detalle de conjuros (demo)">
+    <div class="handle" aria-hidden="true"></div>
+    <header class="blockhead"><h2>Conjuros · detalle</h2><span class="chip">bottom sheet</span></header>
+    <ul class="spell-details">
+      <li>
+        <span class="lvl">Nivel 1 · Acción</span>
+        <span class="tname">Curar heridas</span>
+        <p>Restaura 2d8 + 3 PG a una criatura que toques. +2d8 por cada nivel de espacio superior.</p>
+      </li>
+      <li>
+        <span class="lvl">Nivel 1 · Acción · Concentración</span>
+        <span class="tname">Bendición</span>
+        <p>Hasta 3 criaturas. Los afectados suman 1d4 a sus tiradas de ataque y de salvación durante 1 minuto.</p>
+      </li>
+      <li>
+        <span class="lvl">Nivel 1 · Acción adicional</span>
+        <span class="tname">Palabra de curación</span>
+        <p>Cura 2d4 + 3 PG a una criatura que veas a 5 pies. Se lanza como acción adicional.</p>
+      </li>
+    </ul>
+    <p class="drawer-note">Demo: la ficha completa continúa por detrás, recortada bajo esta hoja.</p>
+  </section>
+
+  <script>
+    // Demo-only counter (inspiration): local +/-, no persistence by design.
+    document.querySelectorAll("[data-counter]").forEach(function (group) {
+      var out = group.querySelector("[data-counter-value]");
+      if (!out) return;
+      group.querySelectorAll("button[data-counter-step]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var next = parseInt(out.textContent, 10) + (btn.dataset.counterStep === "+" ? 1 : -1);
+          out.textContent = Math.max(0, next);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

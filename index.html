@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FichaSS — ficha de D&D 5e (2024), solo lectura.">
+  <title>FichaSS</title>
+</head>
+<body class="m-aventura">
+
+  <header class="appbar">
+    <div class="appbar-home">
+      <strong>FichaSS</strong> · Seren Aldaard · clériga 5
+    </div>
+    <nav class="mode-tabs" aria-label="Modos de vista (demo)">
+      <span class="chip">Combate</span>
+      <span class="chip active">Aventura</span>
+      <span class="chip">Descanso</span>
+      <span class="chip">Mesa</span>
+    </nav>
+  </header>
+
+  <main class="sheet-grid">
+
+    <!-- Attributes: values rendered at runtime from demoCharacter +
+         computeDerived (Phase 03 data-in-code smoke test) -->
+    <section class="card" data-block="attributes" data-modes="aventura mesa">
+      <header class="blockhead"><h2>Atributos</h2><span class="chip">siempre</span></header>
+      <div class="stat-grid"></div>
+    </section>
+
+    <!-- Chips: filter metadata demo (one active state) -->
+    <section class="card" data-modes="combate aventura descanso mesa">
+      <header class="blockhead"><h2>Filtros de bloque</h2><span class="chip">aventura</span></header>
+      <div class="mode-tabs" aria-label="Filtros de bloque (demo)">
+        <span class="chip">Combate</span>
+        <span class="chip active">Aventura</span>
+        <span class="chip">Descanso</span>
+        <span class="chip">Mesa</span>
+        <span class="chip active">Siempre</span>
+      </div>
+    </section>
+
+    <!-- Skills: the three states (none / prof ✓ / expert ✓✓). The ✓✓ row is
+         a smoke-test example only — the demo character has no expertise.
+         Totals are rendered at runtime from computeDerived (Section 3 §3). -->
+    <section class="card" data-block="skills" data-modes="aventura mesa">
+      <header class="blockhead"><h2>Habilidades</h2><span class="chip">aventura</span></header>
+      <ul class="skill-list"></ul>
+      <p class="legend">— sin competencia · ✓ competencia · ✓✓ pericia (×2 al bonus)</p>
+    </section>
+
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
