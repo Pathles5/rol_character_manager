@@ -2,8 +2,9 @@
    FichaSS — base design system, ported from mockup/shared.css
    (variant A "Porcelana oscura", approved Phase 00 · D-13/D-20).
    Frozen values now come from tokens.css. No visual changes on
-   the port: only token substitution. Drawer/bottom-sheet rules
-   are kept for Phase 06, even if unused yet.
+   the port: only token substitution. The bottom sheet ships for
+   the Phase 06 spell detail; the mockup-era drawer was removed
+   in Phase 08 (D-31: dead CSS).
    Contract: no overflow relies on hardcoded clipping — grid
    children carry min-width: 0 (.sheet-grid > *) so the grid
    shrinks safely at 390px (C4).
@@ -47,7 +48,7 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .chip, .btn, .mode-item, .hub-list a { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .chip, .btn { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
 }
 
 /* --- Top bar --- */
@@ -421,23 +422,6 @@ a { color: var(--accent); text-decoration: none; }
 
 .btn:hover { color: var(--text); border-color: var(--accent); }
 
-/* --- Inspiration: a boolean flag, not a counter --- */
-.flag-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.flag-input {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
 /* --- Death saves (static dots) --- */
 .dot-row {
   display: flex;
@@ -478,132 +462,21 @@ main {
 
 .sheet-grid > .card { grid-column: span 6; }
 
-/* --- Desktop recomposition: aventura layout (8 columns) --- */
+/* --- Desktop recomposition (834px/1200px): the sheet-grid reflows
+   purely via DOM order (filters.ts, Phase 05); the mockup-era
+   body.m-<modo> spans were removed in Phase 08 (D-31) as dead CSS. */
 @media (min-width: 834px) {
   main { padding: var(--space-4) var(--space-4) var(--space-6); }
   .sheet-grid { gap: var(--space-4); }
-
-  .m-aventura .b-identity   { grid-column: span 4; }
-  .m-aventura .b-attributes { grid-column: span 4; }
-  .m-aventura .b-combat     { grid-column: span 4; }
-  .m-aventura .b-saves      { grid-column: span 4; }
-  .m-aventura .b-skills     { grid-column: span 4; }
-  .m-aventura .b-attacks    { grid-column: span 4; }
-  .m-aventura .b-spells     { grid-column: span 4; }
-  .m-aventura .b-traits     { grid-column: span 4; }
-  .m-aventura .b-equipment  { grid-column: span 3; }
-  .m-aventura .b-proficiencies { grid-column: span 3; }
-  .m-aventura .b-death      { grid-column: span 2; }
-  .m-aventura .b-role       { grid-column: span 4; }
-  .m-aventura .b-allys      { grid-column: span 4; }
 }
 
-/* --- Wide: aventura layout (12 columns) --- */
-@media (min-width: 1200px) {
-  .m-aventura .b-identity   { grid-column: span 4; }
-  .m-aventura .b-attributes { grid-column: span 4; }
-  .m-aventura .b-combat     { grid-column: span 4; }
-  .m-aventura .b-saves      { grid-column: span 3; }
-  .m-aventura .b-skills     { grid-column: span 5; }
-  .m-aventura .b-attacks    { grid-column: span 4; }
-  .m-aventura .b-spells     { grid-column: span 6; }
-  .m-aventura .b-traits     { grid-column: span 6; }
-  .m-aventura .b-equipment  { grid-column: span 4; }
-  .m-aventura .b-proficiencies { grid-column: span 4; }
-  .m-aventura .b-death      { grid-column: span 4; }
-  .m-aventura .b-role       { grid-column: span 6; }
-  .m-aventura .b-allys      { grid-column: span 6; }
-}
-
-/* --- Combate page: critical blocks first, wider spans --- */
-@media (min-width: 834px) {
-  .m-combate .b-identity { grid-column: span 8; }
-  .m-combate .b-combat   { grid-column: span 4; }
-  .m-combate .b-attacks  { grid-column: span 4; }
-  .m-combate .b-spells   { grid-column: span 4; }
-  .m-combate .b-saves    { grid-column: span 2; }
-  .m-combate .b-death    { grid-column: span 2; }
-}
-
-@media (min-width: 1200px) {
-  .m-combate .b-identity { grid-column: span 12; }
-  .m-combate .b-combat   { grid-column: span 6; }
-  .m-combate .b-attacks  { grid-column: span 6; }
-  .m-combate .b-spells   { grid-column: span 8; }
-  .m-combate .b-saves    { grid-column: span 2; }
-  .m-combate .b-death    { grid-column: span 2; }
-  .m-combate .stat-grid  { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-}
-
-/* --- Descanso page: relaxed, short --- */
-@media (min-width: 834px) {
-  .m-descanso .b-identity { grid-column: span 8; }
-  .m-descanso .b-recovery { grid-column: span 8; }
-}
-
-@media (min-width: 1200px) {
-  .m-descanso .b-identity { grid-column: span 4; }
-  .m-descanso .b-recovery { grid-column: span 8; }
-}
-
-/* --- Drawer (side panel over darkened backdrop) --- */
+/* --- Drawer (side panel) removed in Phase 08 (D-31): the app never
+   shipped it; only the bottom sheet (below) is used. --- */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: 40;
   background: var(--overlay);
-}
-
-.drawer {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 50;
-  width: var(--drawer-width);
-  overflow: auto;
-  padding: var(--space-5) var(--space-4);
-  background: var(--surface-raised);
-  border-right: 1px solid var(--hairline);
-  box-shadow: var(--shadow);
-}
-
-.drawer-title {
-  font-size: var(--text-title);
-  font-weight: 600;
-  margin-bottom: var(--space-3);
-}
-
-.mode-list { display: flex; flex-direction: column; gap: 6px; }
-
-.mode-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 10px;
-  border-radius: var(--radius-md);
-  color: var(--text-dim);
-  font-size: var(--text-body);
-}
-
-.mode-item.active {
-  color: var(--text);
-  background: var(--accent-soft);
-}
-
-.mode-item .glyph { color: var(--accent); width: 1.4em; text-align: center; }
-
-.mode-item .tag {
-  margin-left: auto;
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-}
-
-.drawer-note {
-  margin-top: var(--space-4);
-  font-size: var(--text-dense);
-  color: var(--text-dim);
 }
 
 /* --- Bottom sheet --- */
@@ -629,4 +502,219 @@ main {
   margin: 0 auto var(--space-3);
   border-radius: 999px;
   background: var(--hairline);
+}
+
+/* ============================================================
+   Phase 04 additions — minimal, tokens only (no redesign).
+   ============================================================ */
+
+/* Sub-section heading inside a card (death saves, mesa lists). */
+.subhead {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Inline marks inside spell chips: domain origin + concentration. */
+.spells .mark {
+  margin-left: 5px;
+  font-size: var(--text-dense);
+  color: var(--accent);
+}
+
+.spells .mark.dim { color: var(--text-dim); }
+
+/* Cast time inside a spell chip. */
+.spells .cast {
+  margin-left: 5px;
+  font-size: var(--text-dense);
+  color: var(--text-dim);
+}
+
+/* Plain note lists (role block: table notes / open questions). */
+.note-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--text-body);
+}
+
+.note-list li:last-child { border-bottom: 0; }
+
+/* "Lista destacada": open questions stand out in accent. */
+.note-list.questions li { color: var(--accent); }
+
+/* ============================================================
+   Phase 05 additions — mode filters & FLIP reflow (D-25/D-26).
+   Tokens only; no redesign.
+   ============================================================ */
+
+/* Hidden block end-state: fades out / scales down while the
+   FLIP move plays; JS switches it to display:none right after
+   the fade (~220ms), so it leaves the accessibility tree (I5). */
+.is-hidden {
+  opacity: 0;
+  transform: scale(.98);
+  pointer-events: none;
+}
+
+/* FLIP reflow: position travels via transform, visibility via
+   opacity. Under prefers-reduced-motion this block never
+   activates and the JS applies the state with no animation. */
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-grid > .card {
+    transition: transform 250ms ease, opacity 200ms ease;
+  }
+}
+
+/* Compact identity (combate / descanso): tighter padding and a
+   smaller portrait; the existing .is-compact rule above keeps
+   the subclass line visible and hides background/alignment. */
+.b-identity.is-compact { padding: var(--space-4); }
+
+.is-compact .portrait {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+/* Highlighted role block (mesa): accent hairline + soft inner
+   ring + accent title (spec C4). */
+.b-role.is-highlight {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-soft), var(--shadow);
+}
+
+.b-role.is-highlight .blockhead h2 { color: var(--accent); }
+
+/* ============================================================
+   Phase 06 additions — editable counters & spell detail sheet
+   (D-27/D-28). Tokens only; no redesign.
+   ============================================================ */
+
+/* Stepper buttons (+/−) next to editable counters: native
+   buttons, so keyboard focus and activation come for free. */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.step {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.step:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* Steppers inside a stat cell sit centered under the number. */
+.stat .stepper {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+/* Slot counters row in the spells card header (D-27). */
+.slot-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.slot-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Slot value (outside a .counter wrapper, so it needs its own rule). */
+.slot-counter .val {
+  min-width: 3ch;
+  text-align: center;
+  font-size: var(--text-title);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Clickable death-save dots are native buttons (button reset
+   already removes borders/padding; .dot paints the shape). */
+.dots .dot { cursor: pointer; }
+
+/* Condition chips reuse .chip; pressed state = .chip.active. */
+.chip-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+/* Spell detail bottom sheet: open/hidden states and content. */
+.spell-sheet[hidden],
+.backdrop[hidden] { display: none; }
+
+/* Lock the page behind the open dialog (I5). */
+body.sheet-open { overflow: hidden; }
+
+.spell-sheet .sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.spell-sheet .sheet-close:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.spell-sheet .sheet-title {
+  margin-top: var(--space-2);
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: 1.25;
+  padding-right: 36px; /* clear of the close button */
+}
+
+/* Full description (readable body text, not the dim dense of
+   the generic .spell-details p rule above). */
+.spell-sheet .desc {
+  margin-top: var(--space-2);
+  color: var(--text);
+  font-size: var(--text-body);
+}
+
+/* Phase 07 amendment (user request 2026-11-19): inspiration as a dot
+   inside the identity card, under the class line, in every mode. */
+.identity-inspiration {
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.identity-inspiration .dense {
+  letter-spacing: var(--tracking-label, .08em);
 }

@@ -37,3 +37,4 @@ Renderizar la ficha completa del personaje en una sola página, alimentada 100% 
 ## Riesgos / deviations
 
 - (abierta; aquí se registran bloqueos y desviaciones aceptadas)
+- Enmienda (2026-11-17, tras entrar en implement): el alcance decía "los 13 bloques visibles en modo aventura", en contradicción con la matriz §6 del modelo congelado (D-16), que excluye `rest` de aventura (solo descanso). **Manda D-16**: aventura renderiza los 12 bloques de la matriz; `renderRest` se construye y queda listo para el modo descanso (Fase 05). C1 se lee con esta corrección. Efecto colateral: **C4 queda recortado en la página de aventura** — canal 0/2, inspiración y condiciones solo se ven en el bloque `rest` (modo descanso, Fase 05); en aventura quedan visibles 38/38 PG, 0 temp, 0 dados usados, slots 0 usados y salvaciones de muerte 0/3 (bloque defense), verificados por el revisor.

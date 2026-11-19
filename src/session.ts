@@ -1,0 +1,436 @@
+/* ============================================================
+   FichaSS — session state (Phase 06, model §4 / D-16 §4, D-27).
+   Owns the mutable session counters: in-memory state + partial
+   re-render + localStorage persistence. The `character` document
+   NEVER changes during a session (D-17): every editable value
+   lives only in `sessionState`.
+
+   Rendering contract (spec C3): update() re-renders ONLY the
+   inner content of the cards whose data changed (header kept),
+   never the whole #sheet — the active mode, the DOM order and
+   the FLIP state owned by filters.ts must survive untouched.
+
+   Persistence: key `fichass-session-v1`, schemaVersion 1;
+   load at startup (parse failure or version ≠ 1 → defaults);
+   forward-only migration, unknown fields ignored (D-16 §4).
+   Rule limits (HP, hit dice, slots, channel, death saves) are
+   clamped here so NO caller can push a counter out of range
+   (spec C5).
+   ============================================================ */
+
+import type { Character, SessionState, SpellLevel } from './types';
+import type { DerivedStats } from './derived';
+import type { BlockId } from './data/blockConfig';
+import {
+  renderCombat,
+  renderDefense,
+  renderIdentity,
+  renderRest,
+  renderSpells,
+  renderTraits,
+} from './render/blocks';
+
+/** Versioned localStorage key (spec C2). */
+export const SESSION_STORAGE_KEY = 'fichass-session-v1';
+
+const SESSION_SCHEMA_VERSION = 1;
+
+/** Generic 5e rule constants (not character data). Kept here as
+    the single source; blocks.ts imports them for display. */
+/** Reasonable cap for temporary hit points (no strict rule cap). */
+export const TEMP_HP_MAX = 20;
+/** Death saves: 3 successes or 3 failures end the sequence (2024). */
+export const DEATH_SAVE_MAX = 3;
+/** 2024 cleric: Channel Divinity tops at 2 uses (level 5). */
+export const CHANNEL_DIVINITY_MAX = 2;
+
+/** Scholar background feature: 1 use per day (model §4 resourcesUsed,
+    keyed by the trait id of the fixture character). */
+export const FORTUNA_USES_MAX = 1;
+export const RESOURCE_FORTUNA = 'fortuna-del-erudito';
+
+/** Default session state (model §4): derived from the character,
+    everything unused. Owned here since Phase 06 (T-01); blocks.ts
+    re-exports it so Phase 04 imports keep working. */
+export function defaultSessionState(character: Character): SessionState {
+  return {
+    schemaVersion: 1,
+    // TODO: replace with a stable id once the character has one (D-16); the fixture is a single-character demo.
+    characterId: character.identity.name.toLowerCase().replace(/\s+/g, '-'),
+    hp: { current: character.combat.maxHitPoints, temp: 0 },
+    hitDice: { used: 0 },
+    spellSlotsUsed: { 1: 0, 2: 0, 3: 0 },
+    channelDivinity: { used: 0 },
+    inspiration: false,
+    deathSaves: { successes: 0, failures: 0 },
+    conditions: [],
+    resourcesUsed: {},
+  };
+}
+
+// --- Live context -----------------------------------------------------
+
+interface SessionContext {
+  character: Character;
+  derived: DerivedStats;
+  state: SessionState;
+}
+
+let context: SessionContext | null = null;
+
+function requireContext(): SessionContext {
+  if (!context) {
+    throw new Error('FichaSS session: call initSession() before touching session state.');
+  }
+  return context;
+}
+
+// --- Loading / sanitizing (forward-only, D-16 §4) ---------------------
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/** Finite number or fallback (unknown/invalid fields ignored). */
+function numberOr(value: unknown, fallback: number): number {
+  return finiteNumber(value) ?? fallback;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/** Rebuilds a valid SessionState from persisted JSON: only known
+    fields are read (unknown ones ignored), invalid values fall
+    back to defaults and everything is clamped to the rule limits. */
+function sanitizeLoaded(raw: unknown, character: Character): SessionState {
+  const defaults = defaultSessionState(character);
+  if (typeof raw !== 'object' || raw === null) return defaults;
+  const data = raw as Record<string, unknown>;
+  // Parse failure is caught by the caller; version ≠ 1 → defaults.
+  if (data.schemaVersion !== SESSION_SCHEMA_VERSION) return defaults;
+  // A session belongs to one character: mismatch → fresh defaults.
+  if (data.characterId !== defaults.characterId) return defaults;
+
+  const hp = (typeof data.hp === 'object' && data.hp !== null ? data.hp : {}) as Record<string, unknown>;
+  const hitDice = (typeof data.hitDice === 'object' && data.hitDice !== null ? data.hitDice : {}) as Record<string, unknown>;
+  const slots = (typeof data.spellSlotsUsed === 'object' && data.spellSlotsUsed !== null ? data.spellSlotsUsed : {}) as Record<string, unknown>;
+  const channel = (typeof data.channelDivinity === 'object' && data.channelDivinity !== null ? data.channelDivinity : {}) as Record<string, unknown>;
+  const deathSaves = (typeof data.deathSaves === 'object' && data.deathSaves !== null ? data.deathSaves : {}) as Record<string, unknown>;
+
+  const resourcesUsed: Record<string, number> = {};
+  if (typeof data.resourcesUsed === 'object' && data.resourcesUsed !== null) {
+    for (const [traitId, used] of Object.entries(data.resourcesUsed as Record<string, unknown>)) {
+      const value = finiteNumber(used);
+      if (value !== null) resourcesUsed[traitId] = value;
+    }
+  }
+
+  return {
+    schemaVersion: 1,
+    characterId: defaults.characterId,
+    hp: {
+      current: clamp(numberOr(hp.current, defaults.hp.current), 0, character.combat.maxHitPoints),
+      temp: clamp(numberOr(hp.temp, defaults.hp.temp), 0, TEMP_HP_MAX),
+    },
+    hitDice: { used: clamp(numberOr(hitDice.used, 0), 0, character.combat.hitDice.total) },
+    spellSlotsUsed: {
+      1: clamp(numberOr(slots['1'], 0), 0, character.spells.slotsMax[1]),
+      2: clamp(numberOr(slots['2'], 0), 0, character.spells.slotsMax[2]),
+      3: clamp(numberOr(slots['3'], 0), 0, character.spells.slotsMax[3]),
+    },
+    channelDivinity: { used: clamp(numberOr(channel.used, 0), 0, CHANNEL_DIVINITY_MAX) },
+    inspiration: data.inspiration === true,
+    deathSaves: {
+      successes: clamp(numberOr(deathSaves.successes, 0), 0, DEATH_SAVE_MAX),
+      failures: clamp(numberOr(deathSaves.failures, 0), 0, DEATH_SAVE_MAX),
+    },
+    conditions: Array.isArray(data.conditions)
+      ? data.conditions.filter((condition): condition is string => typeof condition === 'string')
+      : [],
+    resourcesUsed,
+  };
+}
+
+function loadSession(character: Character): SessionState {
+  try {
+    const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!stored) return defaultSessionState(character);
+    return sanitizeLoaded(JSON.parse(stored), character);
+  } catch {
+    // Missing storage, quota error or broken JSON → defaults (spec C2).
+    return defaultSessionState(character);
+  }
+}
+
+function writeSession(): void {
+  const { state } = requireContext();
+  try {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage unavailable (private mode / quota): the session stays in memory.
+  }
+}
+
+/** Clamps every rule-bounded counter of the state in place (C5):
+    HP 0..maxHP, temp HP 0..TEMP_HP_MAX, dice 0..total, slots 0..max,
+    channel 0..2, death saves 0..3. */
+function clampToRules(state: SessionState, character: Character): void {
+  const combat = character.combat;
+  state.hp.current = clamp(state.hp.current, 0, combat.maxHitPoints);
+  state.hp.temp = clamp(state.hp.temp, 0, TEMP_HP_MAX);
+  state.hitDice.used = clamp(state.hitDice.used, 0, combat.hitDice.total);
+  for (const level of [1, 2, 3] as const satisfies readonly SpellLevel[]) {
+    state.spellSlotsUsed[level] = clamp(state.spellSlotsUsed[level], 0, character.spells.slotsMax[level]);
+  }
+  state.channelDivinity.used = clamp(state.channelDivinity.used, 0, CHANNEL_DIVINITY_MAX);
+  state.deathSaves.successes = clamp(state.deathSaves.successes, 0, DEATH_SAVE_MAX);
+  state.deathSaves.failures = clamp(state.deathSaves.failures, 0, DEATH_SAVE_MAX);
+  state.resourcesUsed[RESOURCE_FORTUNA] = clamp(
+    state.resourcesUsed[RESOURCE_FORTUNA] ?? 0,
+    0,
+    FORTUNA_USES_MAX,
+  );
+}
+
+// --- Partial re-render (C3: never the whole #sheet) -------------------
+
+/** Which cards consume which session fields: only these get their
+    inner content re-rendered after a patch. */
+const PATCH_BLOCKS: { [K in keyof SessionPatch]: readonly BlockId[] } = {
+  hp: ['combat', 'rest'],
+  hitDice: ['combat', 'rest'],
+  spellSlotsUsed: ['spells', 'rest'],
+  channelDivinity: ['rest'],
+  inspiration: ['identity'],
+  deathSaves: ['defense'],
+  conditions: ['combat', 'rest'],
+  resourcesUsed: ['traits'],
+};
+
+const ALL_SESSION_BLOCKS: readonly BlockId[] = ['identity', 'combat', 'defense', 'spells', 'rest', 'traits'];
+
+/** Render registry for the session-consuming blocks (renderers of
+    blocks.ts; identity/attributes/... don't depend on the session). */
+/** Render registry for the session-consuming blocks (renderers of
+    blocks.ts; identity consumes the session since the inspiration
+    dot moved there — user request 2026-11-19). */
+const SESSION_RENDERERS: Partial<Record<BlockId, (character: Character, derived: DerivedStats, session: SessionState) => string>> = {
+  identity: renderIdentity,
+  combat: renderCombat,
+  defense: renderDefense,
+  spells: renderSpells,
+  rest: renderRest,
+  traits: renderTraits,
+};
+
+function affectedBlockIds(patch: SessionPatch): BlockId[] {
+  const ids = new Set<BlockId>();
+  for (const key of Object.keys(patch) as (keyof SessionPatch)[]) {
+    if (patch[key] === undefined) continue;
+    const blocks = PATCH_BLOCKS[key];
+    if (!blocks) continue;
+    for (const id of blocks) ids.add(id);
+  }
+  return [...ids];
+}
+
+/** Stable selector for restoring keyboard focus after a partial
+    re-render: id-based controls use it; data-carrying controls
+    (steppers/dots/condition chips) are matched by their data
+    attributes. Returns null when the element has no stable
+    identity. */
+function focusKey(element: Element): string | null {
+  if (element.id) return `#${CSS.escape(element.id)}`;
+  const d = (element as HTMLElement).dataset;
+  if (d.action && d.target) {
+    const value = d.value !== undefined ? `[data-value="${d.value}"]` : '';
+    return `${element.tagName.toLowerCase()}[data-action="${d.action}"][data-target="${d.target}"]${value}`;
+  }
+  if (d.action && d.value !== undefined) {
+    return `${element.tagName.toLowerCase()}[data-action="${d.action}"][data-value="${d.value}"]`;
+  }
+  return null;
+}
+
+/** Re-renders the inner content of one card, keeping its header
+    (mode chip included): the section element itself is reused, so
+    DOM order, visibility and FLIP state are never disturbed.
+    Keyboard focus (I5) is restored to the homologous control
+    after the swap, so counting with +/- keeps working (review
+    major 2026-11-19). */
+function refreshBlock(id: BlockId): void {
+  const render = SESSION_RENDERERS[id];
+  if (!render) return;
+  const section = document.querySelector<HTMLElement>(`#sheet section[data-block="${id}"]`);
+  if (!section) return;
+  const { character, derived, state } = requireContext();
+  const header = section.querySelector('header.blockhead');
+  const headerHtml = header ? header.outerHTML : '';
+  const focused = document.activeElement;
+  const key = focused instanceof HTMLElement && section.contains(focused) ? focusKey(focused) : null;
+  section.innerHTML = `${headerHtml}\n  ${render(character, derived, state)}`;
+  if (key) {
+    const again = section.querySelector<HTMLElement>(key);
+    again?.focus();
+  }
+}
+
+/** Public: re-render the inner content of the affected cards (all
+    session cards when called without a patch, e.g. after loading
+    or resetting). Cheap: four small innerHTML swaps at most. */
+export function update(patch?: SessionPatch): void {
+  if (!context) return;
+  const ids = patch ? affectedBlockIds(patch) : ALL_SESSION_BLOCKS;
+  for (const id of ids) refreshBlock(id);
+}
+
+// --- Public API -------------------------------------------------------
+
+/** Bootstraps the session: loads persisted counters and syncs them
+    into the freshly rendered sheet (renderSheet still shows the
+    defaults, Phase 04 signature kept intact). */
+export function initSession(character: Character, derived: DerivedStats): SessionState {
+  context = { character, derived, state: loadSession(character) };
+  update();
+  return context.state;
+}
+
+export function getSession(): SessionState {
+  return requireContext().state;
+}
+
+/** Deep-partial patch of the session counters (spec C3): merges,
+    clamps to the rule limits, persists and re-renders only the
+    affected cards. */
+export function patchSession(patch: SessionPatch): SessionState {
+  const { character, state } = requireContext();
+  if (patch.hp) state.hp = { ...state.hp, ...patch.hp };
+  if (patch.hitDice) state.hitDice = { ...state.hitDice, ...patch.hitDice };
+  if (patch.spellSlotsUsed) state.spellSlotsUsed = { ...state.spellSlotsUsed, ...patch.spellSlotsUsed };
+  if (patch.channelDivinity) state.channelDivinity = { ...state.channelDivinity, ...patch.channelDivinity };
+  if (patch.deathSaves) state.deathSaves = { ...state.deathSaves, ...patch.deathSaves };
+  if (patch.inspiration !== undefined) state.inspiration = patch.inspiration;
+  if (patch.conditions) state.conditions = [...patch.conditions];
+  if (patch.resourcesUsed) state.resourcesUsed = { ...state.resourcesUsed, ...patch.resourcesUsed };
+  clampToRules(state, character);
+  writeSession();
+  update(patch);
+  return state;
+}
+
+/** Reset (spec C2): restores the defaults derived from the
+    character and deletes the persisted key. */
+export function resetSession(): SessionState {
+  const { character } = requireContext();
+  try {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // Storage unavailable: nothing to remove.
+  }
+  if (context) context.state = defaultSessionState(character);
+  update();
+  return requireContext().state;
+}
+
+/** Toggles one condition label (chips in the rest card). */
+export function toggleCondition(condition: string): SessionState {
+  const { state } = requireContext();
+  const conditions = state.conditions.includes(condition)
+    ? state.conditions.filter(active => active !== condition)
+    : [...state.conditions, condition];
+  return patchSession({ conditions });
+}
+
+// --- Steppers (T-02): the only state mutations the UI triggers -------
+
+export type StepperAction = 'inc' | 'dec' | 'set';
+
+export type StepperTarget =
+  | 'hp-current'
+  | 'hp-temp'
+  | 'hit-dice'
+  | 'slot-1'
+  | 'slot-2'
+  | 'slot-3'
+  | 'channel-divinity'
+  | 'death-successes'
+  | 'death-failures'
+  | 'resource-fortuna'
+  | 'inspiration';
+
+const STEPPER_TARGETS: readonly StepperTarget[] = [
+  'hp-current',
+  'hp-temp',
+  'hit-dice',
+  'slot-1',
+  'slot-2',
+  'slot-3',
+  'channel-divinity',
+  'death-successes',
+  'death-failures',
+  'resource-fortuna',
+  'inspiration',
+];
+
+export function isStepperAction(value: string): value is StepperAction {
+  return value === 'inc' || value === 'dec' || value === 'set';
+}
+
+export function isStepperTarget(value: string): value is StepperTarget {
+  return (STEPPER_TARGETS as readonly string[]).includes(value);
+}
+
+function readCounter(state: SessionState, target: StepperTarget): number {
+  switch (target) {
+    case 'hp-current': return state.hp.current;
+    case 'hp-temp': return state.hp.temp;
+    case 'hit-dice': return state.hitDice.used;
+    case 'slot-1': return state.spellSlotsUsed[1];
+    case 'slot-2': return state.spellSlotsUsed[2];
+    case 'slot-3': return state.spellSlotsUsed[3];
+    case 'channel-divinity': return state.channelDivinity.used;
+    case 'death-successes': return state.deathSaves.successes;
+    case 'death-failures': return state.deathSaves.failures;
+    case 'resource-fortuna': return state.resourcesUsed[RESOURCE_FORTUNA] ?? 0;
+    case 'inspiration': return state.inspiration ? 1 : 0;
+  }
+}
+
+function writeCounter(target: StepperTarget, value: number): SessionPatch {
+  switch (target) {
+    case 'hp-current': return { hp: { current: value } };
+    case 'hp-temp': return { hp: { temp: value } };
+    case 'hit-dice': return { hitDice: { used: value } };
+    case 'slot-1': return { spellSlotsUsed: { 1: value } };
+    case 'slot-2': return { spellSlotsUsed: { 2: value } };
+    case 'slot-3': return { spellSlotsUsed: { 3: value } };
+    case 'channel-divinity': return { channelDivinity: { used: value } };
+    case 'death-successes': return { deathSaves: { successes: value } };
+    case 'death-failures': return { deathSaves: { failures: value } };
+    case 'resource-fortuna': return { resourcesUsed: { [RESOURCE_FORTUNA]: value } };
+    case 'inspiration': return { inspiration: value >= 1 };
+  }
+}
+
+/** Applies one stepper interaction (+1 / −1, or an absolute value
+    for the death-save dots). Limits are enforced by patchSession. */
+export function applyStepper(action: StepperAction, target: StepperTarget, value?: number): SessionState {
+  const { state } = requireContext();
+  const current = readCounter(state, target);
+  const next = action === 'set' ? numberOr(value, current) : current + (action === 'inc' ? 1 : -1);
+  return patchSession(writeCounter(target, next));
+}
+
+/** Shape of a partial session update (deep-partial SessionState,
+    minus the schema/characterId bookkeeping fields). */
+export interface SessionPatch {
+  hp?: { current?: number; temp?: number };
+  hitDice?: { used?: number };
+  spellSlotsUsed?: Partial<Record<SpellLevel, number>>;
+  channelDivinity?: { used?: number };
+  inspiration?: boolean;
+  deathSaves?: { successes?: number; failures?: number };
+  conditions?: string[];
+  resourcesUsed?: Record<string, number>;
+}

@@ -1,4 +1,4 @@
-# DECISIONS — FichaSS
+﻿# DECISIONS — FichaSS
 
 Registro append-only. Una decisión desfasada no se edita ni se borra: la nueva añade `supersedes: D-xx`.
 Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
@@ -177,3 +177,73 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Elección:** `src/validate.ts` con guards manuales incrementales (sin dependencias: zod y similares quedan fuera). Acepta `x_demoNotes` en fixtures y rechaza derivados (`spellDC` etc.), `sessionState`, metadatos UI y cualquier `x-*` desconocido, devolviendo `fields: { ruta → mensaje }` en inglés. Decisiones menores anotadas en el informe del implementador: arrays legitimamente vacíos (p. ej. `skillExpertise: []`) pasan (la exigencia de no-vacío aplica a textos requeridos); `layout: "full" | "compact"` es un valor único por fila y la compacidad de `identity` en combate/descanso es un detalle de render (anotado en el comentario de `blockConfig.ts`, CSS ya existente).
 - **Motivo:** misma frontera y mensajes que el futuro servidor = menos sorpresas al conectarlo; sirve también de prueba para tests de Fase 07.
 - **Riesgo:** el validador manual no es un schema formal; si el contrato crece, valoraré conmputo un generador de tipos/schemas en una enmienda (nunca lib externa de runtime).
+
+## D-23 · 2026-11-17 · Catálogo de skills en `src/data/skills.ts`
+
+- **Contexto:** Fase 04; `derived.ts` llevaba un mapa local parcial (6 skills) que debía extenderse a 18.
+- **Elección:** catálogo único con `{ id, label, ability }` (labels en español, ids en inglés kebab-case, las 6 del fixture con sus ids exactos) + record derivado `SKILL_ABILITY`; `derived.ts` lo consume y ya no tiene mapa propio. Orden de render de skills: alfabético por label (decisión reportada por el implementador y validada por el revisor).
+- **Motivo:** una sola fuente para derived y render (I4); los labels del mockup no se duplican en el código.
+- **Riesgo:** un id del fixture fuera del catálogo degrada a mod crudo en silencio (fallback `?? mod`); test de coherencia fixture↔catálogo anotado para Fase 07.
+
+## D-24 · 2026-11-17 · Render por bloques orquestado por `BLOCK_CONFIG` (weight)
+
+- **Contexto:** Fase 04; cómo se monta la ficha.
+- **Elección:** `src/render/sheet.ts` ordena por `weight` ascendente, filtra por el modo (aventura por defecto) y genera cada `<section class="card b-<id>" data-block data-modes>`; una función de render por bloque en `src/render/blocks.ts` (13 funciones; `rest` construido y listo para modo descanso). Renderers con firma `(character, derived, session)` y `defaultSessionState(character)` para los contadores render-only (migrará a módulo de sesión en Fase 06). `characterId` derivado del nombre (antes literal 'demo'). Añadidos mínimos a `base.css` con tokens existentes (`.subhead`, `.spells .mark`, `.note-list`).
+- **Motivo:** la matriz §6 congelada (D-16) es el único sitio que decide qué se ve en cada modo (I4); los `data-modes` sembrados permiten que Fase 05 filtre sin re-render total.
+- **Riesgo:** en aventura se ven 12 bloques (`rest` excluido por D-16): C4 de esta spec queda recortado hasta el modo descanso de Fase 05 — enmienda documentada en la spec. CSS muerto del mockup (`.b-death`) se limpia en Fase 05.
+
+## D-25 · 2026-11-17 · Animación del reflujo: FLIP mover+desvanecer
+
+- **Contexto:** Fase 05; elección de técnica de animación presentada al usuario (FLIP / cross-fade puro / FLIP+stagger).
+- **Elección:** FLIP completo (FIRST→LAST→INVERT→PLAY): las tarjetas se deslizan a su nueva posición y las salientes se desvanecen (~250 ms transform / 200 ms opacity). Con `prefers-reduced-motion: reduce` el estado se aplica directo (doble guardia: JS `matchMedia` + media query CSS en la transición).
+- **Motivo:** elección directa del usuario (D-07); muestra el reorden completo, estilo "Apple" del brief.
+- **Riesgo:** clicks rápidos durante la transición (resuelto con cancelación de timers y limpieza de transforms inline); los salientes se deslizan hacia el final del sheet mientras se funden — efecto validado visualmente por el orquestador.
+
+## D-26 · 2026-11-17 · Mecanismo de modos único dirigido por `BLOCK_CONFIG`
+
+- **Contexto:** Fase 05; cómo se aplican los filtros.
+- **Elección:** un solo mecanismo para los 4 modos: `targetOrder(mode)` lee `BLOCK_CONFIG` (peso ascendente, booleanos de visibilidad) y lo aplica sobre el DOM existente (reorden con `appendChild`, ocultar/mostrar con clases); cero lógica de contenido por modo. Variante necesaria: `renderSheet` renderiza los 13 bloques con los no visibles en aventura pre-ocultos (enmienda operativa documentada en la spec de Fase 05/esta). Los chips son `<button>` con `aria-pressed` y el estado activo vive en `filters.ts`.
+- **Motivo:** la matriz congelada (D-16) manda sin excepciones (I4); añadir un modo futuro = una fila en la config.
+- **Riesgo:** los `data-modes` sembrados en secciones quedan como metadato no consumido (decidir en Fase 07: fixture de tests o retirar); `body.m-<modo>` de la era mockup queda muerto para desktop (Fase 08).
+
+## D-27 · 2026-11-18 · Edición de contadores "donde se muestran" con estado único
+
+- **Contexto:** Fase 06; decisión de usuario (propose·validate): dónde se editan los contadores del sessionState.
+- **Elección:** cada contador se edita en TODOS los sitios donde aparece (HP/temporales en Combate, slots en la cabecera de Conjuros, salvaciones de muerte en dots de Salvaciones, dados/canal/inspiración/condiciones en Descanso, Fortuna del Erudito en Rasgos — enmienda validada por el usuario para cerrar C1). Estado único en `session.ts`: `patchSession` re-renderiza solo el contenido interno de las tarjetas afectadas (nunca `#sheet`), así el modo activo y el orden FLIP de Fase 05 sobreviven. Persistencia `fichass-session-v1` + Reset (restaura defaults y borra la clave).
+- **Motivo:** usabilidad en partida (gastar un slot en combate sin cambiar de modo); un solo estado = sin divergencias entre instancias.
+- **Riesgo:** los steppers viven en tarjetas ocultas según el modo (p. ej. rest en combate): no son problema (display:none); el bug detectado en verificación (dots de muerte no capturados por el handler) se corrigió ampliando el selector a `.dot[data-action][data-target]`.
+
+## D-28 · 2026-11-18 · Hoja de detalle de conjuros: bottom sheet accesible
+
+- **Contexto:** Fase 06; decisión de usuario (propose·validate).
+- **Elección:** pulsar un chip de conjuro abre el bottom sheet ya portado en base.css, con nombre/nivel/origen/castTime/concentración y descripción completa desde el dato (sin hardcode). `role="dialog"` + `aria-modal` + foco atrapado + cierre por ✕/overlay/Esc, devolviendo el foco al chip originador; scroll de fondo bloqueado.
+- **Motivo:** el mockup aprobado ya definía la interacción; I5 exige el patrón de accesibilidad completo.
+- **Riesgo:** solo conjuros tienen hoja de detalle (rasgos/ataques quedan inline); si se pide más tarde, el patrón es reutilizable.
+
+## D-29 · 2026-11-19 · Red de tests: Vitest dev-only (node + jsdom por fichero)
+
+- **Contexto:** Fase 07; solución aprobada por el usuario ("continua" 2026-11-18).
+- **Elección:** Vitest ^3.2.4 + jsdom ^26.1.0 (solo devDependencies, I2: no van al bundle); script `npm run test`; entorno `node` global con jsdom per-file en `src/session.test.ts` (única pieza que toca document/localStorage). Suites: derivados (16), validador (13), matriz §6 como tabla de control (7), coherencia JSON↔TS leyendo el fixture en runtime (15), sesión/migración/clamps/foco (21) — 72 tests, 5 ficheros, junto al código testado.
+- **Motivo:** congelar con tests la lógica de reglas (D-16/D-21) y los bugs ya encontrados (foco tras re-render del major de Fase 06 es ahora test real, no solo QA manual).
+- **Riesgo:** `character.test.ts` usa node:fs con especificador no-literal por falta de @types/node (comentado en el fichero); el test de foco depende de jsdom (si una subida lo vuelve inestable, la spec prevé degradarlo a QA manual); npm audit avisa de transitivas de dev (sin runtime afectado).
+
+## D-30 · 2026-11-19 · Inspiración como dot en la tarjeta Identidad (visible en las 4 vistas)
+
+- **Contexto:** petición directa del usuario durante el QA manual de Fase 07: "el checkbox de inspiración que sea igual que el de las salvaciones de muerte" y que se muestre en todas las vistas.
+- **Elección:** un dot único (mismo patrón de interacción que los de salvaciones de muerte: click marca, click desmarca, `aria-pressed`, `data-action="set" data-target="inspiration"`) renderizado en la tarjeta Identidad (bloque "siempre", visible en los 4 modos). El checkbox `flag-input` desaparece del bloque Descanso; `PATCH_BLOCKS.inspiration` pasa a `['identity']` y `identity` entra en el registry de re-render parcial.
+- **Motivo:** indicación explícita del usuario; coherente con el lenguaje visual de dots ya aprobado.
+- **Riesgo:** la identidad es la única tarjeta que ahora consume sesión fuera de los contadores clásicos — el test de foco y los de clamps siguen en verde (72/72); el dot hereda el fix de restauración de foco de Fase 06. Colocación final (misma fecha, feedback visual del usuario): dentro de `identity-lines`, como última línea bajo "humana · clériga 5…", alineada con flex (`align-items: center`), para no romper el eje del retrato.
+
+## D-31 · 2026-11-19 · Pulido de cierre: CSS muerto retirado, `data-modes` se mantiene
+
+- **Contexto:** Fase 08; deudas de las fases 05–07 (elección validada con el usuario: retirar CSS muerto, mantener `data-modes`).
+- **Elección:** retiradas las reglas `body.m-<modo>` de la era mockup (desktop: la recomposición real funciona por reorden DOM de Fase 05; el CSS nunca se activaba). `data-modes` se mantiene como metadato de sección (barato, útil para inspección/extensión; hoy no lo consume `filters.ts`). `@types/node` añadido a devDependencies y `character.test.ts` usa import estático de `node:fs` (cierra la peculiaridad anotada en D-29).
+- **Motivo:** entregable limpio sin código muerto ni riesgos visuales no verificables (no había sesión de navegador para validar la activación del CSS).
+- **Riesgo:** si en el futuro se quiere composición desktop por modo, habrá que recrear ese CSS con verificación visual (anotado en ENTREGA.md).
+
+## D-32 · 2026-11-19 · Informe final de entrega en `docs/ENTREGA.md`
+
+- **Contexto:** compuerta de Fase 08; cierre de la v1.
+- **Elección:** `docs/ENTREGA.md` como informe final: qué es, entregables por fase, límites conocidos de la v1, deudas abiertas referenciadas (IDs de decisión) y despliegue (puntero al README). `README.md` (creado el 2026-11-18 por petición del usuario) queda como guía de levantamiento y su existencia registrada en las convenciones de `INDEX.md`.
+- **Motivo:** separar el "cómo se usa" (README) del "qué quedó y qué falta" (ENTREGA), ambos discoverables desde la raíz.
+- **Riesgo:** la sincronización README/ENTREGA es manual; mantener ambos al actualizar scripts (convención ya anotada en INDEX).
