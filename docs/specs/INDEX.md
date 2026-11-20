@@ -23,8 +23,6 @@ Convenciones:
 - **`README.md` en la raíz**: guía para levantar la app (requisitos, comandos, despliegue, estructura y punteros a la documentación). Referenciado desde aquí y desde las specs de entrega (Fase 08); mantenerlo al día con los scripts del `package.json`.
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
-Fases futuras (fuera de la v1 del brief, para memoria):
+Fases futuras (fuera de la v1 del brief, para memoria — sin filas de tabla para que la compuerta no las trate como activas):
 
-| Fase | Título | Estado | Pendientes |
-|---|---|---|---|
-| 11 | Tiradas rápidas con animación de dados (diferido por el usuario tras la Fase 09) | waiting | Propuesta: click en daño/ataque → modal con dado animado y resultado |
+- **Fase futura (diferida por el usuario tras la Fase 09): tiradas rápidas con animación de dados** — click en daño/ataque → modal con dado animado y resultado. Pendiente de spec cuando el usuario la active.
