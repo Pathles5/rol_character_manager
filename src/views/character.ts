@@ -166,7 +166,13 @@ function handleDetailKeydown(event: KeyboardEvent): void {
     return;
   }
   if (event.key !== 'Tab') return;
-  const focusable = detailSheet.querySelectorAll<HTMLElement>(
+  trapTab(event, detailSheet);
+}
+
+/** Generic Tab-cycle trap for a dialog (I5): used by the spell detail
+    sheet, the reset confirmation and the roll dialog. */
+function trapTab(event: KeyboardEvent, container: HTMLElement): void {
+  const focusable = container.querySelectorAll<HTMLElement>(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
   );
   if (focusable.length === 0) {
@@ -176,7 +182,7 @@ function handleDetailKeydown(event: KeyboardEvent): void {
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
   const active = document.activeElement;
-  if (event.shiftKey && (active === first || active === detailSheet)) {
+  if (event.shiftKey && (active === first || active === container)) {
     event.preventDefault();
     last.focus();
   } else if (!event.shiftKey && active === last) {
@@ -296,7 +302,7 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   </section>
   <!-- Phase 11 (D-44): dice roll dialog. Content mounted per roll. -->
   <div class="backdrop" id="roll-backdrop" hidden></div>
-  <section class="card roll-dialog" id="roll-dialog" role="dialog" aria-modal="true" hidden>
+  <section class="card roll-dialog" id="roll-dialog" role="dialog" aria-modal="true" aria-labelledby="roll-title" hidden>
     <h2 class="confirm-title" id="roll-title">Tirada</h2>
     <div class="dice-row" id="roll-dice"></div>
     <p class="roll-total" id="roll-total"></p>
@@ -350,11 +356,21 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   const closeReset = (): void => {
     if (resetDialog) resetDialog.hidden = true;
     if (resetBackdrop) resetBackdrop.hidden = true;
+    document.removeEventListener('keydown', onResetKey);
     resetButton?.focus();
+  };
+  const onResetKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      closeReset();
+      return;
+    }
+    if (event.key !== 'Tab' || !resetDialog) return;
+    trapTab(event, resetDialog);
   };
   resetButton?.addEventListener('click', () => {
     if (resetDialog) resetDialog.hidden = false;
     if (resetBackdrop) resetBackdrop.hidden = false;
+    document.addEventListener('keydown', onResetKey);
     root.querySelector<HTMLButtonElement>('#reset-cancel')?.focus();
   });
   root.querySelector<HTMLButtonElement>('#reset-cancel')?.addEventListener('click', closeReset);
@@ -379,7 +395,12 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     rollOpener = null;
   };
   const onRollKey = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') closeRoll();
+    if (event.key === 'Escape') {
+      closeRoll();
+      return;
+    }
+    if (event.key !== 'Tab' || !rollDialog) return;
+    trapTab(event, rollDialog);
   };
   let rollOpener: HTMLButtonElement | null = null;
   const renderRoll = (notation: string): void => {
@@ -395,6 +416,9 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}${crit}`;
   };
   const openRoll = (notation: string, opener: HTMLButtonElement): void => {
+    // Guard (review minor, Phase 11): never open the dialog for a
+    // notation that doesn't parse (would show stale/empty content).
+    if (!parseDamage(notation)) return;
     rollOpener = opener;
     if (rollDialog) rollDialog.dataset.notation = notation;
     renderRoll(notation);

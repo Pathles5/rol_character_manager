@@ -4,8 +4,9 @@ Inmutables del proyecto. Ninguna spec ni implementación puede contradecir esto.
 Si hay conflicto entre una spec y la constitución, gana la constitución y la spec se reescribe.
 
 ## I1. Alcance
-- Solo D&D 5e (2024). Un jugador, un personaje, una pantalla.
-- No hay: selector de personajes, edición completa de ficha, PDF, tirada de dados, PWA, i18n, tema claro, backend en v1.
+- Solo D&D 5e (2024). Un jugador, sus personajes (múltiples, vía JSON autoriado), navegación entre vista de personajes y vista de ficha.
+- Sí hay (desde la Fase 10/11, petición expresa del usuario): selector de personajes y tirada de dados.
+- Sigue sin haber: edición completa de ficha, PDF, PWA, i18n, tema claro, backend en v1.
 
 ## I2. Build y despliegue
 - Build 100 % estático, subible a S3 sin servidor.

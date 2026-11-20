@@ -31,18 +31,28 @@ En `--guided` responde:
 
 | Pregunta | Respuesta |
 |---|---|
-| Stack Name | `fichass` |
-| AWS Region | tu región (p. ej. `eu-south-2` / `eu-west-1`) |
-| Parameter BucketName | nombre único global (p. ej. `fichass-site-<tu-usuario>`) |
+| Stack Name | `fichass-infra` (el stack real de este repo; el template también funciona con cualquier nombre) |
+| AWS Region | tu región (p. ej. `eu-west-1`) |
+| Parameter BucketName | nombre único global (p. ej. `fichass-site`) |
 | Parameter GitHubOrg / GitHubRepo | tu org/usuario y repo de GitHub |
 | Parameter GitHubBranch | `master` |
-| Parameter UseExistingOidcProvider | `false` (o `true` si ya tienes el provider, ver troubleshooting) |
+| Parameter ExistingOidcProviderArn | ARN del provider de GitHub **ya existente en tu cuenta** (obligatorio: `arn:aws:iam::<cuenta>:oidc-provider/token.actions.githubusercontent.com`; si tu cuenta no lo tiene, créalo primero — ver abajo) |
 | Confirm changes before deploy | `Y` |
 | Allow SAM CLI to create IAM roles | `Y` |
 | Save arguments to samconfig.toml | `Y` |
 
-> ⚠️ Si el OIDC provider de GitHub ya existe en tu cuenta (por otro proyecto),
-> el deploy fallará con `EntityAlreadyExists` → ver troubleshooting.
+> ⚠️ El template **requiere** que el OIDC provider de GitHub exista en la cuenta
+> (no lo crea). Si no lo tienes:
+> ```powershell
+> aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com --client-id-list sts.amazonaws.com --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+> ```
+> (AWS valida GitHub por su librería de CAs de confianza; el thumbprint histórico vale.)
+
+> ⚠️ El stack **NO se crea vía changeset** (los changesets CREATE están rotos en
+> esta cuenta — documentado en la spec 09): usa `sam deploy` solo para
+> ACTUALIZAR un stack ya existente; para la primera creación usa
+> `aws cloudformation create-stack` con el template subido a S3, como hizo la
+> orquestadora (ver spec 09, deviations).
 
 **Anota los Outputs del stack:**
 - `WebsiteURL` → la URL pública de la app.
@@ -91,15 +101,3 @@ el workflow usa `aws-actions/configure-aws-credentials@v4` con `role-to-assume`.
 
 | Problema | Solución |
 |---|---|
-| Deploy falla con `EntityAlreadyExists` / `AlreadyExists` (OIDC provider ya existe en la cuenta) | Re-desplegar con el provider existente: `sam deploy --guided` y responder `UseExistingOidcProvider=true` + `ExistingOidcProviderArn=arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com` (mismo `samconfig.toml` guardará los valores). El stack NO intenta crearlo y reutiliza el tuyo. |
-| `sam validate --lint` marca `E3006: AWS::IAM::OpenIdConnectProvider does not exist in <región>` | Falso positivo de cfn-lint (su base de especificaciones no incluye ese tipo; IAM es global y el tipo es válido — `sam validate` básico pasa). Puedes ignorarlo. |
-| Workflow falla en `Configure AWS credentials` con *Not authorized* | Revisa que `AWS_OIDC_ROLE_ARN` sea el `OidcRoleArn` output exacto y que el push sea a la rama parametrizada (`master`). El trust del rol solo acepta `repo:<org>/<repo>:ref:refs/heads/master` — un PR o cualquier otra rama queda denegado (por diseño). |
-| Workflow falla en `Read deployment settings from SSM` con `ParameterNotFound` | El stack no publicó `/fichass/bucket-name`: re-despliega el stack (paso 1) con esta versión del template. |
-| Página sirve contenido antiguo tras un deploy | No debería: `index.html` y los JSON van con `must-revalidate`. Comprueba en DevTools → Network → respuesta de `index.html` la cabecera `Cache-Control: max-age=0, must-revalidate`. Si falta, un sync anterior pudo subir sin cabeceras: fuerza re-subida borrando… no, NO borres el bucket; re-lanza el workflow (los sync no re-suben ficheros idénticos, así que si una cabecera quedó mal, contacta al orquestador para una corrección puntual). |
-| 403 al abrir `WebsiteURL` | Comprueba que `SiteBucketPolicy` existe en el stack (permite `s3:GetObject` público) y que el bucket tiene la *Public access block* con `BlockPublicPolicy=false`/`RestrictPublicBuckets=false` (lo fija el template). Si el bucket fue creado antes por otro camino, revisa su configuración contra `infra/template.yaml`. |
-| Fallo `BucketName` al crear el bucket | El nombre es único global: elige otro distinto (p. ej. añade tu usuario) y re-despliega. |
-
----
-
-Archivos: `infra/template.yaml` (IaC SAM), `.github/workflows/deploy.yml`
-(CI/CD). Estados y criterios de la fase: `docs/specs/09-infra-sam/spec.md`.

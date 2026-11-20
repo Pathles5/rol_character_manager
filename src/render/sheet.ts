@@ -5,8 +5,9 @@
    weight order — the frozen matrix (D-16) makes 12 visible in
    adventure; blocks not visible there come pre-marked hidden
    so the Phase 05 filters can reveal them without re-render.
-   Each section carries its mode booleans in `data-modes`
-   (model §6).
+   Each section carries `data-block` (the `data-modes` metadata
+   was retired in Phase 11.5, D-47: filters read BLOCK_CONFIG
+   directly and nothing consumed it).
 
    The `x_demoNotes` fixture field is never part of any block.
    ============================================================ */
@@ -78,10 +79,9 @@ export function renderSheet(
     .sort((a, b) => a.weight - b.weight)
     .filter(entry => !hidden.has(entry.id))
     .map(entry => {
-      const modes = MODE_KEYS.filter(mode => entry[mode]).join(' ');
       const hidden = entry.aventura ? '' : ' is-hidden';
       const display = entry.aventura ? '' : ' style="display: none;"';
-      return `<section class="card ${BLOCK_CSS_CLASS[entry.id]}${hidden}" data-block="${entry.id}" data-modes="${modes}"${display}>
+      return `<section class="card ${BLOCK_CSS_CLASS[entry.id]}${hidden}" data-block="${entry.id}"${display}>
   <header class="blockhead"><h2>${BLOCK_TITLES[entry.id]}</h2><span class="chip">${modeChipLabel(entry)}</span></header>
   ${RENDERERS[entry.id](character, derived, session)}
 </section>`;

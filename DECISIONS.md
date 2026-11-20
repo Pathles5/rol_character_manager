@@ -241,12 +241,33 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** en combate mover 10 PG de golpe era diez pulsaciones; ahora es una.
 - **Riesgo:** un toque accidental — mitigado por la reversibilidad (+ al lado). Los PG temporales mantienen ±1 (fuera de la petición). Evolución visual por feedback del usuario (misma fecha): 1) ±10/±5/±1 en tira → 2) guiones en pares → 3) solo `- +` + ❤ → **4) final: tres filas alineadas bajo el ±1 — fila 1 = `- +` (±1), fila 2 = `-- ++` (±10), fila 3 = ❤ rellenar** (el ±5 se retira por decisión del usuario). `applyStepper` usa el valor como paso.
 
+## D-48 · 2026-11-20 · Enmienda de la constitución I1 (alcance) `supersedes` I1 original
+
+- **Contexto:** el revisor fresh-eyes de las fases 09/10/11 marcó **major procesal**: las Fases 10 (selector de personajes) y 11 (tirada de dados) implementan exactamente lo que la constitución I1 excluía por escrito ("No hay: selector de personajes… tirada de dados"), sin enmienda formal registrada — y la constitución gana a todo (jerarquía D-05/I6). El OK del usuario existía en la práctica (D-33/D-45) pero faltaba la enmienda formal del texto.
+- **Elección:** **I1 enmendada** con el OK explícito del usuario de hoy: "un jugador, sus personajes (múltiples, vía JSON autoriado), navegación entre vista de personajes y vista de ficha; SÍ hay selector de personajes y tirada de dados (petición expresa del usuario); sigue sin haber edición completa de ficha, PDF, PWA, i18n, tema claro, backend en v1". El resto de la constitución (I2 coste €0, I3 contrato, I4 config única, I5 accesibilidad, I6 change control, I7 calidad) no cambia.
+- **Motivo:** la constitución debe reflejar el alcance real acordado; dejarla desfasada convertía cualquier revisión futura en un falso FAIL constitucional.
+- **Riesgo:** ninguno operativo — el texto ahora coincide con el producto desplegado.
+
+## D-47 · 2026-11-20 · Cierre de deudas menores (pre-iniciativa)
+
+- **Contexto:** pendientes documentados en las fases 05–10 antes de la siguiente fase (iniciativa/salvaciones).
+- **Elección:** (1) **Esc cierra el popup del Reset** (igual que el diálogo de dados). (2) **escapeHtml en todos los textos del personaje renderizados** en blocks.ts (12 interpolaciones: identity, attacks, spells, equipment, traits, role, allies — el JSON del personaje ya no se asume de confianza implícita). (3) **`data-modes` retirado** de las secciones: nada lo consumía (los filtros leen BLOCK_CONFIG directamente, I4) — decisión "retirar" en vez de "mantener como fixture".
+- **Motivo:** limpiar antes de la siguiente fase para no arrastrar ruido.
+- **Riesgo:** si en el futuro se quiere inspección de modos vía DOM, habría que readucirlo; los tests de matriz usan BLOCK_CONFIG (no afectados).
+
 ## D-43 · 2026-11-20 · Reset con popup de confirmación
 
 - **Contexto:** petición del usuario durante el QA: el Reset borraba la sesión sin confirmación — riesgo de borrado accidental en partida.
 - **Elección:** diálogo de confirmación centrado con la misma estética (tokens del sistema, backdrop compartido): "¿Restablecer contadores?" + texto con el nombre del personaje + botones **Cancelar** / **Restablecer** (en `--danger`). El botón Reset abre el diálogo; Cancelar/backdrop cierran; aceptar ejecuta `resetSession()` y cierra. Foco: al abrir va a Cancelar; al cerrar vuelve al botón Reset.
 - **Motivo:** evita borrados accidentales sin romper la estética (mismo lenguaje visual que la hoja de detalle de conjuros).
 - **Riesgo:** sin cierre por Esc en v0.1.x (botones y backdrop cubren el caso); añadir Esc si se pide.
+
+## D-49 · 2026-11-20 · Cierre de hallazgos del revisor fresh-eyes (fases 09/10/11)
+
+- **Contexto:** veredicto **PASS with remarks** del cierre fresh-eyes de las tres fases; 1 major procesal (resuelto con la enmienda I1, D-48) y minors aplicados.
+- **Elección y fixes aplicados:** (1) infra/README sincronizado con el template real (fuera el parámetro fantasma `UseExistingOidcProvider`; guía de creación del provider si falta; stack name `fichass-infra`; nota del changeset-CREATE roto). (2) Spec 09 precisa la forma real del trust (`infra/trust.json`, una statement StringLike de 4 subs; el template declara dos statements equivalentes). (3) d20 con bonus negativo: notación con signo ASCII + guard que no abre el diálogo si el parse falla (bug latente). (4) **Focus trap** genérico (`trapTab`) aplicado a Reset y diálogo de tirada + `aria-labelledby` en el roll dialog (I5 literal). (5) escapeHtml completado (castTime, proficiencies, spell.name/id). Pendiente de verificación del usuario en dev.
+- **Motivo:** cerrar el veredicto con los minors aplicados antes de la siguiente fase.
+- **Riesgo:** el focus trap reutiliza el patrón de la hoja de conjuros (probado); el d20 negativo no es ejercitable en los 4 personajes actuales (sin bonus negativos).
 
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 

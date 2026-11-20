@@ -168,9 +168,9 @@ export function renderIdentity(
     <div class="identity">
       <div class="portrait">${derived.initials}</div>
       <div class="identity-lines">
-        <span class="display">${identity.name}</span>
-        <p class="dim">${identity.race} · ${identity.class} ${identity.level} · ${identity.subclass}</p>
-        <p class="dim dense extra">${identity.background} · ${identity.alignment}</p>
+        <span class="display">${escapeHtml(identity.name)}</span>
+        <p class="dim">${escapeHtml(identity.race)} · ${escapeHtml(identity.class)} ${identity.level} · ${escapeHtml(identity.subclass)}</p>
+        <p class="dim dense extra">${escapeHtml(identity.background)} · ${escapeHtml(identity.alignment)}</p>
         <div class="identity-inspiration"><span class="dense dim">Inspiración</span><span class="dots">${dot}</span></div>
       </div>
     </div>`;
@@ -266,7 +266,7 @@ export function renderSkills(
       // Fallback = raw modifier if the fixture carries an id outside
       // the catalog (derived skips unknown ids by design).
       const total = derived.skillTotals[skill.id] ?? derived.mods[skill.ability];
-      return `<div class="row skill${cls}"><span class="k">${skill.label} (${ABILITY_LABELS[skill.ability]})</span><span class="v">${formatModifier(total)}</span></div>`;
+      return `<div class="row skill${cls}"><span class="k">${escapeHtml(skill.label)} (${ABILITY_LABELS[skill.ability]})</span><span class="v">${formatModifier(total)}</span></div>`;
     })
     .join('');
   return `
@@ -281,13 +281,18 @@ export function renderAttacks(
   const rows = character.attacks.map(attack => {
     const bonus = attack.bonus !== undefined ? `${formatModifier(attack.bonus)} · ` : '';
     const damage = attack.damage
-      ? `${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ''}`
+      ? `${escapeHtml(attack.damage)}${attack.damageType ? ` ${escapeHtml(attack.damageType)}` : ''}`
       : '';
-    const note = attack.note ? `<li class="dense dim">${attack.note}</li>` : '';
+    const note = attack.note ? `<li class="dense dim">${escapeHtml(attack.note)}</li>` : '';
     // Dice buttons (Phase 11, D-45/D-46): an attack-roll d20 (only when
     // the attack has a bonus) plus the damage roll when parseable.
-    const attackRoll = attack.bonus !== undefined
-      ? `<button type="button" class="dice-btn" data-notation="1d20${formatModifier(attack.bonus)}" aria-label="Tirar para acertar con ${escapeHtml(attack.name)}: 1d20${formatModifier(attack.bonus)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg></button>`
+    // Notation uses an ASCII sign (formatModifier renders U+2212 for
+    // negatives, which parseDamage rejects).
+    const attackNotation = attack.bonus !== undefined
+      ? `1d20${attack.bonus < 0 ? `-${Math.abs(attack.bonus)}` : `+${attack.bonus}`}`
+      : null;
+    const attackRoll = attackNotation
+      ? `<button type="button" class="dice-btn" data-notation="${attackNotation}" aria-label="Tirar para acertar con ${escapeHtml(attack.name)}: ${attackNotation}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg></button>`
       : '';
     const dice = attack.damage && parseDamage(attack.damage)
       ? `<button type="button" class="dice-btn" data-notation="${escapeHtml(attack.damage)}" aria-label="Tirar ${escapeHtml(attack.damage)} de ${escapeHtml(attack.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
@@ -313,7 +318,7 @@ interface SpellChipData {
     in views/character.ts opens the detail bottom sheet with the spell's own
     data (name/level/origin/castTime/description). */
 function spellChip(spell: SpellChipData): string {
-  const castTime = spell.castTime ? `<span class="cast">${spell.castTime}</span>` : '';
+  const castTime = spell.castTime ? `<span class="cast">${escapeHtml(spell.castTime)}</span>` : '';
   const domain = spell.source === 'domain' ? '<span class="mark">dominio</span>' : '';
   const concentration = spell.concentration ? '<span class="mark dim">⛓</span>' : '';
   // Dice button (Phase 11 amendment, D-46): sibling of the chip button
@@ -322,7 +327,7 @@ function spellChip(spell: SpellChipData): string {
   const dice = spell.damage && parseDamage(spell.damage)
     ? `<button type="button" class="spell-dice dice-btn" data-notation="${escapeHtml(spell.damage)}" aria-label="Tirar ${escapeHtml(spell.damage)} de ${escapeHtml(spell.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
     : '';
-  return `<li><button type="button" class="spell-chip" data-spell-id="${spell.id}">${spell.name}${castTime}${domain}${concentration}</button>${dice}</li>`;
+  return `<li><button type="button" class="spell-chip" data-spell-id="${escapeHtml(spell.id)}">${escapeHtml(spell.name)}${castTime}${domain}${concentration}</button>${dice}</li>`;
 }
 
 export function renderSpells(
@@ -386,7 +391,7 @@ export function renderRest(
       <li class="row"><span class="k">Dados golpe</span><span class="counter"><span class="val">${session.hitDice.used} / ${combat.hitDice.total} ${combat.hitDice.die}</span>${stepper('hit-dice', 'Gastar 1 dado de golpe', 'Recuperar 1 dado de golpe')}</span></li>
       ${slotRows}
       <li class="row"><span class="k">Canalizar divinidad</span><span class="counter"><span class="val">${session.channelDivinity.used} / ${CHANNEL_DIVINITY_MAX}</span>${stepper('channel-divinity', 'Gastar 1 uso de Canalizar Divinidad', 'Recuperar 1 uso de Canalizar Divinidad')}</span></li>
-      <li class="row"><span class="k">Condiciones</span><span class="v">${conditions}</span></li>
+      <li class="row"><span class="k">Condiciones</span><span class="v">${escapeHtml(conditions)}</span></li>
     </ul>
     <div class="subhead">Condiciones</div>
     <div class="chip-set" role="group" aria-label="Condiciones (pulsa para activar o desactivar)">${conditionChips}</div>`;
@@ -399,7 +404,7 @@ function itemWeight(item: Item): string {
 
 function itemRow(item: Item): string {
   const qty = item.qty ?? 1;
-  const label = qty > 1 ? `${item.name} ×${qty}` : item.name;
+  const label = qty > 1 ? `${escapeHtml(item.name)} ×${qty}` : escapeHtml(item.name);
   return `<li class="row"><span class="k">${label}</span><span class="v">${itemWeight(item)}</span></li>`;
 }
 
@@ -428,14 +433,14 @@ export function renderTraits(
     const counter = trait.uses !== undefined
       ? `<span class="counter"><span class="val">${session.resourcesUsed[trait.id] ?? 0} / ${trait.uses}</span>${stepper(
           `resource-${trait.id}`,
-          `Gastar 1 uso de ${trait.name}`,
-          `Recuperar 1 uso de ${trait.name}`,
+          `Gastar 1 uso de ${escapeHtml(trait.name)}`,
+          `Recuperar 1 uso de ${escapeHtml(trait.name)}`,
         )}</span>`
       : '';
     return `
       <li>
-        <span class="tname">${trait.name} <span class="dim dense">· ${trait.source}</span>${counter}</span>
-        <span class="tdesc">${trait.description}</span>
+        <span class="tname">${escapeHtml(trait.name)} <span class="dim dense">· ${escapeHtml(trait.source)}</span>${counter}</span>
+        <span class="tdesc">${escapeHtml(trait.description)}</span>
       </li>`;
   }).join('')}
   </ul>`;
@@ -450,13 +455,13 @@ export function renderProficiencies(character: Character): string {
     ['Idiomas', proficiencies.languages],
   ];
   return `<ul class="rows">${groups.map(([label, entries]) =>
-    `<li class="row"><span class="k">${label}</span><span class="v">${entries.join(', ')}</span></li>`).join('')}</ul>`;
+    `<li class="row"><span class="k">${label}</span><span class="v">${entries.map(entry => escapeHtml(entry)).join(', ')}</span></li>`).join('')}</ul>`;
 }
 
 export function renderRole(character: Character): string {
   const role = character.role;
   return `
-    <p>${role.summary}</p>
+    <p>${escapeHtml(role.summary)}</p>
     <div class="subhead">Notas de mesa</div>
     <ul class="note-list">${role.tableNotes.map(note => `<li>${note}</li>`).join('')}</ul>
     <div class="subhead">Puntos pendientes</div>
@@ -465,5 +470,5 @@ export function renderRole(character: Character): string {
 
 export function renderAllies(character: Character): string {
   return `<ul class="rows">${character.allies.map(ally =>
-    `<li class="row"><span class="k">${ally.name}</span><span class="v">${ally.relationship}</span></li>`).join('')}</ul>`;
+    `<li class="row"><span class="k">${escapeHtml(ally.name)}</span><span class="v">${escapeHtml(ally.relationship)}</span></li>`).join('')}</ul>`;
 }
