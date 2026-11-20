@@ -28,6 +28,10 @@ describe('parseDamage — fixture notations (Phase 11, C1)', () => {
     expect(parseDamage('1d6')).toEqual({ count: 1, faces: 6, mod: 0 });
   });
 
+  it('parses "1d20+7" (attack roll with bonus, Phase 11)', () => {
+    expect(parseDamage('1d20+7')).toEqual({ count: 1, faces: 20, mod: 7 });
+  });
+
   it('rejects free text and malformed notation', () => {
     expect(parseDamage('arma mágica')).toBeNull();
     expect(parseDamage('2d')).toBeNull();

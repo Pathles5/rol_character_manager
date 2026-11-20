@@ -14,6 +14,7 @@
 
 import type { AttackKind, BlockId, LiteralAbility, PreparedSource } from './types';
 import { BLOCK_CONFIG } from './data/blockConfig';
+import { parseDamage } from './dice';
 
 /** Block ids from the frozen matrix (model §6, single source I4). */
 const BLOCK_IDS: readonly string[] = BLOCK_CONFIG.map(entry => entry.id);
@@ -303,6 +304,15 @@ export function validateCharacter(value: unknown): ValidationResult {
       if (!isNonEmptyString(ref.name)) fail(`${path}.name`, 'required non-empty string');
       if (ref.description !== undefined && !isNonEmptyString(ref.description)) {
         fail(`${path}.description`, 'optional non-empty string');
+      }
+      // Rollable dice notation (amendment D-46 of D-16): optional, must
+      // parse as clean dice notation when present.
+      if (ref.damage !== undefined) {
+        if (!isNonEmptyString(ref.damage)) {
+          fail(`${path}.damage`, 'optional non-empty string (dice notation, e.g. "2d8+3")');
+        } else if (!parseDamage(ref.damage)) {
+          fail(`${path}.damage`, 'must be valid dice notation (e.g. "2d8+3")');
+        }
       }
       if (allowPreparedFields) {
         if (ref.level !== 1 && ref.level !== 2 && ref.level !== 3) {

@@ -390,7 +390,9 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     rollDiceRow.innerHTML = result.rolls
       .map((value, index) => `<span class="die" style="animation-delay: ${index * 80}ms">${value}</span>`)
       .join('');
-    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}`;
+    // Natural 20 on an attack roll (d20) gets the crit call-out.
+    const crit = parsed.faces === 20 && result.rolls.some(r => r === 20) ? ' · ¡CRÍTICO!' : '';
+    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}${crit}`;
   };
   const openRoll = (notation: string, opener: HTMLButtonElement): void => {
     rollOpener = opener;

@@ -157,6 +157,10 @@ La matriz §6 sigue siendo el **default** para todos los personajes. Enmienda (c
 
 `identity`→identity · `combat`→combat · `attributes`→abilities · `defense`→defense+sessionState.deathSaves · `skills`→skillProficiencies/skillExpertise+catálogo · `attacks`→attacks (+DC/ataque de conjuro derivados) · `spells`→spells · `rest`→combat.hitDice+spells.slotsMax+traits(recursos)+sessionState · `traits`→traits (+sessionState.resourcesUsed para sus contadores) · `equipment`→equipment · `proficiencies`→proficiencies · `role`→role · `allies`→allies.
 
+## Amendment 3 · 2026-11-20 · `damage` en conjuros y tirada de acertar (D-46)
+
+Tercera enmienda (propuesta del usuario tras estrenar los dados): **`SpellRef`/`PreparedSpell` aceptan `damage?: string`** — la notación de la tirada principal del conjuro (daño o curación, p. ej. "2d8+3"), validada contra el parser de Fase 11. Los chips de conjuro con `damage` muestran su botón de dado (7 conjuros de Seren). Los ataques ganan además el **botón [d20] de acertar** con la notación `1d20+bonus` del ataque (el natural 20 muestra "¡CRÍTICO!" en el diálogo). La curación usa el mismo diálogo (el jugador sabe si el resultado suma o resta PG).
+
 ## Amendment 2 · 2026-11-19 · `trait.uses`: rasgos activables (D-38)
 
 Segunda enmienda (con OK del usuario, propose·validate): `Trait` acepta **`uses?: number`** (usos por descanso, dato autoriado). Un rasgo con `uses` es **activable**: la ficha pinta un contador `0/uses` en la propia línea del rasgo, conectado a `sessionState.resourcesUsed[<trait id>]` (el mecanismo §4 existente — la excepción especial de Fortuna del Erudito se generaliza). El clamp de sesión respeta el `uses` del rasgo mientras el personaje lo conserve. Ejemplos: Furia `uses: 2`, Segundo aliento `uses: 1`, Fortuna `uses: 1`, Afortunado `uses: 2`, Aguante implacable `uses: 1`.

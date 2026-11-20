@@ -284,15 +284,19 @@ export function renderAttacks(
       ? `${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ''}`
       : '';
     const note = attack.note ? `<li class="dense dim">${attack.note}</li>` : '';
-    // Dice button (Phase 11): only when the damage is clean dice notation.
+    // Dice buttons (Phase 11, D-45/D-46): an attack-roll d20 (only when
+    // the attack has a bonus) plus the damage roll when parseable.
+    const attackRoll = attack.bonus !== undefined
+      ? `<button type="button" class="dice-btn" data-notation="1d20${formatModifier(attack.bonus)}" aria-label="Tirar para acertar con ${escapeHtml(attack.name)}: 1d20${formatModifier(attack.bonus)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg></button>`
+      : '';
     const dice = attack.damage && parseDamage(attack.damage)
       ? `<button type="button" class="dice-btn" data-notation="${escapeHtml(attack.damage)}" aria-label="Tirar ${escapeHtml(attack.damage)} de ${escapeHtml(attack.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
       : '';
-    return `<li class="row"><span class="k">${escapeHtml(attack.name)}</span><span class="v">${bonus}${damage}${dice}</span></li>${note}`;
+    return `<li class="row"><span class="k">${escapeHtml(attack.name)}</span><span class="v">${attackRoll}${bonus}${damage}${dice}</span></li>${note}`;
   }).join('');
   return `
     <ul class="rows">${rows}</ul>
-    <p class="legend">Ataque de conjuro ${formatModifier(derived.spellAttack)} · CD de conjuro ${derived.spellDC}</p>`;
+    <p class="legend">Ataque de conjuro ${formatModifier(derived.spellAttack)} · CD de conjuro ${derived.spellDC} · [d20] acertar · [⬚] daño</p>`;
 }
 
 interface SpellChipData {
@@ -301,6 +305,8 @@ interface SpellChipData {
   castTime?: string;
   source?: PreparedSource;
   concentration?: boolean;
+  /** Rollable notation (D-46) — enables the chip's dice button. */
+  damage?: string;
 }
 
 /** Spell chip as a button (Phase 06, T-03): the delegated handler
@@ -310,7 +316,13 @@ function spellChip(spell: SpellChipData): string {
   const castTime = spell.castTime ? `<span class="cast">${spell.castTime}</span>` : '';
   const domain = spell.source === 'domain' ? '<span class="mark">dominio</span>' : '';
   const concentration = spell.concentration ? '<span class="mark dim">⛓</span>' : '';
-  return `<li><button type="button" class="spell-chip" data-spell-id="${spell.id}">${spell.name}${castTime}${domain}${concentration}</button></li>`;
+  // Dice button (Phase 11 amendment, D-46): sibling of the chip button
+  // (a <button> cannot be nested inside another button) — shown only
+  // when the spell carries parseable rollable notation.
+  const dice = spell.damage && parseDamage(spell.damage)
+    ? `<button type="button" class="spell-dice dice-btn" data-notation="${escapeHtml(spell.damage)}" aria-label="Tirar ${escapeHtml(spell.damage)} de ${escapeHtml(spell.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
+    : '';
+  return `<li><button type="button" class="spell-chip" data-spell-id="${spell.id}">${spell.name}${castTime}${domain}${concentration}</button>${dice}</li>`;
 }
 
 export function renderSpells(

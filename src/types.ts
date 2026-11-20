@@ -102,6 +102,10 @@ export interface SpellRef {
   id: string;
   name: string;
   description?: string;
+  /** Rollable dice notation of the spell's main damage/healing
+      (amendment D-46 of D-16), e.g. "2d8+3" — enables the dice
+      button on the spell chip when present. */
+  damage?: string;
 }
 
 /** Prepared spell = SpellRef plus level and origin metadata. */

@@ -248,12 +248,19 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** evita borrados accidentales sin romper la estética (mismo lenguaje visual que la hoja de detalle de conjuros).
 - **Riesgo:** sin cierre por Esc en v0.1.x (botones y backdrop cubren el caso); añadir Esc si se pide.
 
+## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
+
+- **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.
+- **Elección:** (1) los ataques ganan un botón **[d20] de acertar** con la notación `1d20+bonus` del ataque (el natural 20 muestra "¡CRÍTICO!" en el diálogo). (2) **Enmienda del modelo**: `SpellRef`/`PreparedSpell` aceptan `damage?: string` (notación validada con el parser) — los chips con `damage` muestran su dado dentro del pill (7 conjuros de Seren; la curación usa el mismo diálogo). Detalles: el dado de conjuro es **hermano** del chip (un `<button>` no puede anidarse en otro) con separador hairline; el conjuro sin `damage` no muestra dado.
+- **Motivo:** modelo estructurado en vez de parsear descripciones en texto libre; el validador garantiza que la notación es correcta.
+- **Riesgo:** la curación se muestra igual que el daño (el jugador sabe si suma o resta); `damage` solo cubre la tirada principal del conjuro (escalados por nivel quedan en la descripción).
+
 ## D-45 · 2026-11-20 · Tiradas con dados animados (Fase 11)
 
 - **Contexto:** fase diferida activada por el usuario ("sigamos"). Solución validada: botón de dado junto al daño + diálogo centrado + tumbling CSS.
 - **Elección:** `src/dice.ts` (parser `parseDamage("XdY±Z")` + `rollDice` con `Math.random` inyectable — funciones puras, 9 tests); botón de dado SVG junto al daño de cada ataque **solo cuando la notación es parseable**; diálogo centrado con dados animados (CSS keyframes `dice-tumble`, ~600ms, escalonados 80ms por dado), total grande (`1d8+4 → 5 + 4 = 9`), **Tirar de nuevo** / **Cerrar**, cierre por Esc/backdrop, foco devuelto al botón de dado. Bajo `prefers-reduced-motion` los dados aparecen estáticos. El sessionState no se toca (azar de mesa puro).
 - **Motivo:** el daño de los ataques es notación limpia; los conjuros (texto libre) quedan como extensión futura.
-- **Riesgo:** solo notación `XdY±Z` simple (sin dados múltiples por segmentos tipo "1d8+1d6"); el botón de dado se oculta si el daño no parsea (degradación elegante).
+- **Riesgo:** solo notación `XdY±Z` simple (sin dados múltiples por segmentos tipo "1d8+1d6"); el botón de dado se oculta si el daño no parsea (degradación elegante). Extensión D-46: los conjuros ganan `damage?: string` opcional (validado contra el parser) con botón de dado en el chip (7 conjuros de Seren); el d20 de acertar usa `1d20+bonus` y el natural 20 muestra "¡CRÍTICO!".
 
 ## D-31 · 2026-11-19 · Pulido de cierre: CSS muerto retirado, `data-modes` se mantiene
 
