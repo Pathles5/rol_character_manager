@@ -295,6 +295,13 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Evidencia (dry-run punta a punta):** hoja markdown sintética (`docs/ingest/examples/demo-sheet.md`) generada desde el personaje demo → ingesta siguiendo el prompt → diff semántico contra el original = **solo `x_demoNotes`** (campo de fixture que el prompt excluye correctamente); build + 108/108 tests con el JSON ingestado en el manifest.
 - **Riesgo:** el OCR de fotos/PDF puede fallar en dígitos — mitigado por el checklist del prompt y la revisión obligatoria del usuario; el proceso depende de que el prompt se mantenga actualizado si el contrato evoluciona (referencias vivas, no copias).
 
+## D-53 · 2026-11-20 · Skill `ingesta-fichass` (wrapper de ejecución del prompt de ingesta)
+
+- **Contexto:** tras la primera ingesta real (Patx Vane), el usuario preguntó cómo optimizar el proceso; propuesta: skill de OpenCode.
+- **Elección:** `.opencode/skills/ingesta-fichass/SKILL.md` — skill de proyecto que se auto-carga cuando el usuario pide una ingesta ("ingesta"/"ingest", entrega de ficha, personaje nuevo). Es un **wrapper de ejecución**: condensa el flujo (referencias vivas → dudosos → JSON → compuertas → cotejo → push con OK) y apunta a `docs/ingest/PROMPT.md` como fuente única (I4, sin duplicar el contrato).
+- **Descartado:** subagente-ingester — la ingesta exige interacción con el usuario (dudosos y cotejo), que un subagente en segundo plano no puede hacer; el ejecutor sigue siendo el orquestador.
+- **Riesgo:** bajo — un fichero de markdown versionado; si el prompt maestro cambia, la skill no necesita edición (referencia viva). La skill queda en el repo y viaja con él (cualquier agente en este repo la descubre).
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.
