@@ -48,3 +48,21 @@ describe('renderSheet — hiddenBlocks (amendment D-37 of D-16)', () => {
     expect(blockIdsOf(renderSheet(casterless, demoDerived))).toEqual(expected);
   });
 });
+
+describe('renderSheet — initiative roll + temp strip (Phase 12, D-50)', () => {
+  const html = renderSheet(demoCharacter, demoDerived);
+
+  it('the initiative stat carries a d20 button with ASCII notation', () => {
+    const mod = demoDerived.initiative;
+    const notation = `1d20${mod < 0 ? `-${Math.abs(mod)}` : `+${mod}`}`;
+    expect(html).toContain(`aria-label="Tirar iniciativa: ${notation}"`);
+    expect(html).toContain(`data-notation="${notation}"`);
+  });
+
+  it('temp HP shows the three-row strip with a clear button in both cards', () => {
+    // 5 buttons per strip (±1, ±10, clear) × 2 strips (combat stat-grid + rest card)
+    expect(html.match(/data-target="hp-temp"/g)?.length).toBe(10);
+    expect(html.match(/step-clear/g)?.length).toBe(2);
+    expect(html).toContain('aria-label="Vaciar los PG temporales"');
+  });
+});

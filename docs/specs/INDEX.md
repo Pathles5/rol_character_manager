@@ -18,6 +18,7 @@ Estados: `spec` → `implement` → `verified` (+ `approved` si requiere visto d
 | 09 | Infra AWS SAM + CI/CD | approved | Infra desplegada y verificada: stack fichass-infra (S3+OIDC+SSM, D-34/D-39/D-40), workflow success (gates + sync), URL pública HTTP 200; alerta de facturación 3€/10€ (variante aceptada del usuario); cadenas de fallo documentadas (spec deviations) |
 | 10.1 | Pulido de usabilidad v0.1.1 (D-41/D-42/D-43) | approved | Appbar con iconos de modo, tira de PG en 3 filas, Reset con confirmación, fixes de overflow; desplegado en producción y verificado (CSS con .mode-btn/.confirm-dialog en la URL pública) |
 | 11 | Tiradas con dados animados | approved | Implementado (D-45/D-46): `src/dice.ts` (parser+roller), dados de daño en ataques y conjuros, **[d20] de acertar con crítico natural**; 96/96 tests; pushes v0.1.2/v0.1.3 |
+| 12 | Tirada de iniciativa + PG temp con tira rÃ¡pida | verified | D-50: dado d20 en el stat Iniciativa (notaciÃ³n ASCII, helper compartido `diceNotation`) y tira rÃ¡pida de 3 filas en PG temp en sus dos ubicaciones (Â±1, Â±10, vaciar con icono refresh â€” decisiÃ³n del usuario); 101/101 tests; QA visual del usuario pendiente |
 Convenciones:
 - Cada fase vive en `docs/specs/NN-<nombre>/` con `spec.md` y `tasks.md`.
 - Al terminar una fase: actualizar esta tabla y registrar decisiones en `DECISIONS.md`.

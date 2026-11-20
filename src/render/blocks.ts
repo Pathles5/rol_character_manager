@@ -64,6 +64,18 @@ function formatModifier(mod: number): string {
   return `${mod < 0 ? '\u2212' : '+'}${Math.abs(mod)}`;
 }
 
+/** d20 roll notation with an ASCII sign (formatModifier renders
+    U+2212 for negatives, which parseDamage rejects — D-49).
+    Shared by attack rolls and the initiative roll (Phase 12). */
+function diceNotation(bonus: number): string {
+  return `1d20${bonus < 0 ? `-${Math.abs(bonus)}` : `+${bonus}`}`;
+}
+
+/** d20 roll button markup (same icon as the attack-roll dice). */
+function d20Button(notation: string, label: string): string {
+  return `<button type="button" class="dice-btn" data-notation="${notation}" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg></button>`;
+}
+
 /** Stepper buttons for one editable counter (T-02): native
     buttons, so keyboard focus/activation comes for free; the
     delegated handler in views/character.ts routes them to session.ts. */
@@ -93,6 +105,30 @@ function hpStrip(maxHitPoints: number): string {
         </span>
         <span class="step-row">
           ${button('set', maxHitPoints, 'Rellenar los PG al máximo', '\u2764')}
+        </span>
+      </span>`;
+}
+
+/** Quick-change strip for temporary hit points (user request
+    2026-11-20): SAME three-row layout as hpStrip (±1, ±10) but the
+    third button EMPTIES to 0 — user decision: refresh icon instead
+    of a heart, because temp HP has no authored max (the session
+    clamp 0..TEMP_HP_MAX stays unchanged; Reset also leaves temp
+    at 0, so both paths agree). */
+function hpTempStrip(): string {
+  const button = (action: 'dec' | 'inc' | 'set', step: number, label: string, text: string): string =>
+    `<button type="button" class="step ${action === 'set' ? 'step-clear' : ''}" data-action="${action}" data-target="hp-temp" data-value="${step}" aria-label="${label}">${text}</button>`;
+  return `<span class="step-wrap">
+        <span class="step-row">
+          ${button('dec', 1, 'Restar 1 punto de golpe temporal', '-')}
+          ${button('inc', 1, 'Sumar 1 punto de golpe temporal', '+')}
+        </span>
+        <span class="step-row">
+          ${button('dec', 10, 'Restar 10 puntos de golpe temporales', '--')}
+          ${button('inc', 10, 'Sumar 10 puntos de golpe temporales', '++')}
+        </span>
+        <span class="step-row">
+          ${button('set', 0, 'Vaciar los PG temporales', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>')}
         </span>
       </span>`;
 }
@@ -204,9 +240,13 @@ export function renderCombat(
     </div>
     <div class="stat">
       <span class="num">${session.hp.temp}</span><span class="lbl">PG temp</span>
-      ${stepper('hp-temp', 'Sumar 1 punto de golpe temporal', 'Restar 1 punto de golpe temporal')}
+      ${hpTempStrip()}
     </div>
-    <div class="stat"><span class="num">${formatModifier(derived.initiative)}</span><span class="lbl">Iniciativa</span></div>
+    <div class="stat">
+      <span class="num">${formatModifier(derived.initiative)}</span>
+      ${d20Button(diceNotation(derived.initiative), `Tirar iniciativa: ${diceNotation(derived.initiative)}`)}
+      <span class="lbl">Iniciativa</span>
+    </div>
     <div class="stat"><span class="num">${combat.speed}</span><span class="lbl">Velocidad · ft</span></div>
     <div class="stat"><span class="num">${combat.hitDice.total}</span><span class="lbl">Dados ${combat.hitDice.die} · ${session.hitDice.used} usados</span></div>
     <div class="stat"><span class="num">${session.conditions.length}</span><span class="lbl">Condiciones</span></div>
@@ -288,11 +328,9 @@ export function renderAttacks(
     // the attack has a bonus) plus the damage roll when parseable.
     // Notation uses an ASCII sign (formatModifier renders U+2212 for
     // negatives, which parseDamage rejects).
-    const attackNotation = attack.bonus !== undefined
-      ? `1d20${attack.bonus < 0 ? `-${Math.abs(attack.bonus)}` : `+${attack.bonus}`}`
-      : null;
+    const attackNotation = attack.bonus !== undefined ? diceNotation(attack.bonus) : null;
     const attackRoll = attackNotation
-      ? `<button type="button" class="dice-btn" data-notation="${attackNotation}" aria-label="Tirar para acertar con ${escapeHtml(attack.name)}: ${attackNotation}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7v10M7 12h10"/></svg></button>`
+      ? d20Button(attackNotation, `Tirar para acertar con ${escapeHtml(attack.name)}: ${attackNotation}`)
       : '';
     const dice = attack.damage && parseDamage(attack.damage)
       ? `<button type="button" class="dice-btn" data-notation="${escapeHtml(attack.damage)}" aria-label="Tirar ${escapeHtml(attack.damage)} de ${escapeHtml(attack.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
@@ -387,7 +425,7 @@ export function renderRest(
   return `
     <ul class="rows">
       <li class="row"><span class="k">PG</span><span class="counter"><span class="val">${session.hp.current} / ${combat.maxHitPoints}</span>${hpStrip(combat.maxHitPoints)}</span></li>
-      <li class="row"><span class="k">PG temporales</span><span class="counter"><span class="val">${session.hp.temp}</span>${stepper('hp-temp', 'Sumar 1 punto de golpe temporal', 'Restar 1 punto de golpe temporal')}</span></li>
+      <li class="row"><span class="k">PG temporales</span><span class="counter"><span class="val">${session.hp.temp}</span>${hpTempStrip()}</span></li>
       <li class="row"><span class="k">Dados golpe</span><span class="counter"><span class="val">${session.hitDice.used} / ${combat.hitDice.total} ${combat.hitDice.die}</span>${stepper('hit-dice', 'Gastar 1 dado de golpe', 'Recuperar 1 dado de golpe')}</span></li>
       ${slotRows}
       <li class="row"><span class="k">Canalizar divinidad</span><span class="counter"><span class="val">${session.channelDivinity.used} / ${CHANNEL_DIVINITY_MAX}</span>${stepper('channel-divinity', 'Gastar 1 uso de Canalizar Divinidad', 'Recuperar 1 uso de Canalizar Divinidad')}</span></li>

@@ -346,3 +346,26 @@ describe('focus restoration after a partial re-render (Phase 06 major)', () => {
     expect(document.activeElement).toBe(after); // focus moved to the new control
   });
 });
+
+describe('temp HP quick strip — Phase 12 (D-50)', () => {
+  beforeEach(() => {
+    initSession(demoCharacter, derived);
+  });
+
+  it('the clear button empties temp HP to 0 via the absolute set action', () => {
+    patchSession({ hp: { temp: 7 } });
+    expect(applyStepper('set', 'hp-temp', 0).hp.temp).toBe(0);
+  });
+
+  it('the ±10 steps keep the 0..TEMP_HP_MAX clamp', () => {
+    patchSession({ hp: { temp: 12 } });
+    expect(applyStepper('inc', 'hp-temp', 10).hp.temp).toBe(TEMP_HP_MAX); // 22 → clamped to 20
+    expect(applyStepper('dec', 'hp-temp', 10).hp.temp).toBe(10);
+    expect(applyStepper('dec', 'hp-temp', 10).hp.temp).toBe(0); // −12 would go negative: clamped
+  });
+
+  it('Reset leaves temp HP at 0, same as the clear button (C3)', () => {
+    patchSession({ hp: { temp: 9 } });
+    expect(resetSession().hp.temp).toBe(0);
+  });
+});

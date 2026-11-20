@@ -830,6 +830,27 @@ main {
   border-color: var(--accent);
 }
 
+/* Temp-HP clear button (Phase 12, D-50): refresh glyph sized to the
+   dense text of the other steps; danger tint signals "empties". */
+.step-clear svg {
+  width: 11px;
+  height: 11px;
+  vertical-align: -1px;
+}
+
+.step-clear:hover,
+.step-clear:focus-visible {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* The initiative roll button sits inside its stat cell (Phase 12):
+   centered like the fill row, small gap under the modifier. */
+.stat .dice-btn {
+  display: flex;
+  margin: 4px auto 0;
+}
+
 /* Reset confirmation dialog (user request 2026-11-20): centered card
    over the shared backdrop — same tokens as the spell detail sheet. */
 .confirm-dialog {

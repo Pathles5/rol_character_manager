@@ -269,6 +269,16 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** cerrar el veredicto con los minors aplicados antes de la siguiente fase.
 - **Riesgo:** el focus trap reutiliza el patrón de la hoja de conjuros (probado); el d20 negativo no es ejercitable en los 4 personajes actuales (sin bonus negativos).
 
+## D-50 · 2026-11-20 · Fase 12: iniciativa + tira rápida de PG temp
+
+- **Contexto:** petición del usuario en la misma tanda ("vamos con la tirada de iniciativa" + "PG Temp con los mismos botones que PG").
+- **Elección (validada por el usuario hoy):**
+  1. **Tirada de iniciativa:** botón d20 dentro del stat `Iniciativa` de la stat-grid de combate (decisión: ahí, no en defense), notación ASCII `1d20+mod` vía helper compartido `diceNotation` (refactor del d20 de ataques), mismo diálogo de dados de la Fase 11 con crítico natural.
+  2. **PG temporales:** tira rápida de 3 filas como PG (±1, ±10) en sus dos ubicaciones (stat-grid y tarjeta Rest); la fila 3 NO es el ❤ de PG sino un **icono refresh que VACÍA a 0** (`set` 0) — decisión del usuario: "en vez de un corazón, un círculo con flecha como de actualizar y lo que hace es vaciar los PG temp".
+- **Motivo:** temp no tiene máximo del personaje (tope de sesión TEMP_HP_MAX=20), así que la semántica de "rellenar" no aplica; vaciar cubre el caso de uso real (golpe consumió los temp) y es coherente con el Reset, que ya los deja a 0.
+- **Sin cambios en session.ts:** la acción `set` con `data-value` ya estaba soportada; clamp 0..20 intacto.
+- **Riesgo:** ninguno operativo — 101/101 tests (5 nuevos), QA visual del usuario pendiente sobre producción.
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.
