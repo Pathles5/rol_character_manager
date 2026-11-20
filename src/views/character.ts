@@ -16,6 +16,7 @@
    ============================================================ */
 
 import { BLOCK_CONFIG } from '../data/blockConfig';
+import { parseDamage, rollDice } from '../dice';
 import { computeDerived } from '../derived';
 import { isModeId, setMode } from '../filters';
 import { escapeHtml } from '../lib/manifest';
@@ -293,6 +294,17 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <button type="button" class="chip confirm-danger" id="reset-accept">Restablecer</button>
     </div>
   </section>
+  <!-- Phase 11 (D-44): dice roll dialog. Content mounted per roll. -->
+  <div class="backdrop" id="roll-backdrop" hidden></div>
+  <section class="card roll-dialog" id="roll-dialog" role="dialog" aria-modal="true" hidden>
+    <h2 class="confirm-title" id="roll-title">Tirada</h2>
+    <div class="dice-row" id="roll-dice"></div>
+    <p class="roll-total" id="roll-total"></p>
+    <div class="confirm-actions">
+      <button type="button" class="chip" id="roll-close">Cerrar</button>
+      <button type="button" class="chip confirm-primary" id="roll-reroll">Tirar de nuevo</button>
+    </div>
+  </section>
   <section class="sheet spell-sheet" id="detail-sheet" role="dialog" aria-modal="true" aria-label="Detalle de conjuro" hidden>
     <div class="handle" aria-hidden="true"></div>
     <button type="button" class="sheet-close" aria-label="Cerrar el detalle del conjuro">✕</button>
@@ -350,6 +362,53 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   root.querySelector<HTMLButtonElement>('#reset-accept')?.addEventListener('click', () => {
     resetSession();
     closeReset();
+  });
+
+  // Dice rolls (Phase 11, D-44): the dice button of each attack opens
+  // the roll dialog; content mounts per roll — the session is untouched.
+  const rollDialog = root.querySelector<HTMLElement>('#roll-dialog');
+  const rollBackdrop = root.querySelector<HTMLElement>('#roll-backdrop');
+  const rollTitle = root.querySelector<HTMLElement>('#roll-title');
+  const rollDiceRow = root.querySelector<HTMLElement>('#roll-dice');
+  const rollTotal = root.querySelector<HTMLElement>('#roll-total');
+  const closeRoll = (): void => {
+    if (rollDialog) rollDialog.hidden = true;
+    if (rollBackdrop) rollBackdrop.hidden = true;
+    document.removeEventListener('keydown', onRollKey);
+    rollOpener?.focus();
+    rollOpener = null;
+  };
+  const onRollKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') closeRoll();
+  };
+  let rollOpener: HTMLButtonElement | null = null;
+  const renderRoll = (notation: string): void => {
+    const parsed = parseDamage(notation);
+    if (!parsed || !rollTitle || !rollDiceRow || !rollTotal) return;
+    const result = rollDice(parsed);
+    rollTitle.textContent = `Tirada · ${notation}`;
+    rollDiceRow.innerHTML = result.rolls
+      .map((value, index) => `<span class="die" style="animation-delay: ${index * 80}ms">${value}</span>`)
+      .join('');
+    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}`;
+  };
+  const openRoll = (notation: string, opener: HTMLButtonElement): void => {
+    rollOpener = opener;
+    if (rollDialog) rollDialog.dataset.notation = notation;
+    renderRoll(notation);
+    if (rollDialog) rollDialog.hidden = false;
+    if (rollBackdrop) rollBackdrop.hidden = false;
+    document.addEventListener('keydown', onRollKey);
+    root.querySelector<HTMLButtonElement>('#roll-close')?.focus();
+  };
+  root.querySelector<HTMLElement>('#sheet')?.addEventListener('click', event => {
+    const btn = (event.target as Element | null)?.closest('.dice-btn');
+    if (btn instanceof HTMLButtonElement && btn.dataset.notation) openRoll(btn.dataset.notation, btn);
+  });
+  rollBackdrop?.addEventListener('click', closeRoll);
+  root.querySelector<HTMLButtonElement>('#roll-close')?.addEventListener('click', closeRoll);
+  root.querySelector<HTMLButtonElement>('#roll-reroll')?.addEventListener('click', () => {
+    if (rollDialog?.dataset.notation) renderRoll(rollDialog.dataset.notation);
   });
 
   sheet?.addEventListener('click', event => {

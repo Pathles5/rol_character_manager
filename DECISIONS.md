@@ -248,6 +248,13 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** evita borrados accidentales sin romper la estética (mismo lenguaje visual que la hoja de detalle de conjuros).
 - **Riesgo:** sin cierre por Esc en v0.1.x (botones y backdrop cubren el caso); añadir Esc si se pide.
 
+## D-45 · 2026-11-20 · Tiradas con dados animados (Fase 11)
+
+- **Contexto:** fase diferida activada por el usuario ("sigamos"). Solución validada: botón de dado junto al daño + diálogo centrado + tumbling CSS.
+- **Elección:** `src/dice.ts` (parser `parseDamage("XdY±Z")` + `rollDice` con `Math.random` inyectable — funciones puras, 9 tests); botón de dado SVG junto al daño de cada ataque **solo cuando la notación es parseable**; diálogo centrado con dados animados (CSS keyframes `dice-tumble`, ~600ms, escalonados 80ms por dado), total grande (`1d8+4 → 5 + 4 = 9`), **Tirar de nuevo** / **Cerrar**, cierre por Esc/backdrop, foco devuelto al botón de dado. Bajo `prefers-reduced-motion` los dados aparecen estáticos. El sessionState no se toca (azar de mesa puro).
+- **Motivo:** el daño de los ataques es notación limpia; los conjuros (texto libre) quedan como extensión futura.
+- **Riesgo:** solo notación `XdY±Z` simple (sin dados múltiples por segmentos tipo "1d8+1d6"); el botón de dado se oculta si el daño no parsea (degradación elegante).
+
 ## D-31 · 2026-11-19 · Pulido de cierre: CSS muerto retirado, `data-modes` se mantiene
 
 - **Contexto:** Fase 08; deudas de las fases 05–07 (elección validada con el usuario: retirar CSS muerto, mantener `data-modes`).

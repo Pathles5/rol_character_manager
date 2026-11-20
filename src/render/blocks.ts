@@ -32,6 +32,8 @@ import type {
 import type { DerivedStats } from '../derived';
 import { SKILL_CATALOG } from '../data/skills';
 import type { BlockId } from '../data/blockConfig';
+import { escapeHtml } from '../lib/manifest';
+import { parseDamage } from '../dice';
 import { CHANNEL_DIVINITY_MAX, DEATH_SAVE_MAX, type StepperTarget } from '../session';
 
 // --- Shared display helpers -----------------------------------------
@@ -282,7 +284,11 @@ export function renderAttacks(
       ? `${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ''}`
       : '';
     const note = attack.note ? `<li class="dense dim">${attack.note}</li>` : '';
-    return `<li class="row"><span class="k">${attack.name}</span><span class="v">${bonus}${damage}</span></li>${note}`;
+    // Dice button (Phase 11): only when the damage is clean dice notation.
+    const dice = attack.damage && parseDamage(attack.damage)
+      ? `<button type="button" class="dice-btn" data-notation="${escapeHtml(attack.damage)}" aria-label="Tirar ${escapeHtml(attack.damage)} de ${escapeHtml(attack.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg></button>`
+      : '';
+    return `<li class="row"><span class="k">${escapeHtml(attack.name)}</span><span class="v">${bonus}${damage}${dice}</span></li>${note}`;
   }).join('');
   return `
     <ul class="rows">${rows}</ul>

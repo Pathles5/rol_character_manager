@@ -840,6 +840,91 @@ main {
   color: var(--canvas);
 }
 
+/* --- Dice rolls (Phase 11, D-44) --- */
+.dice-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-left: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.dice-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.dice-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.roll-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  max-width: 340px;
+  width: calc(100% - var(--space-6) * 2);
+}
+
+.dice-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.die {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-title);
+  animation: dice-tumble 600ms ease-out both;
+}
+
+@keyframes dice-tumble {
+  0% { transform: rotate(300deg) scale(.4); opacity: 0; }
+  60% { transform: rotate(-15deg) scale(1.1); opacity: 1; }
+  100% { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .die { animation: none; }
+}
+
+.roll-total {
+  text-align: center;
+  font-size: var(--text-title);
+  color: var(--text);
+  margin: 0 0 var(--space-3);
+}
+
+.confirm-primary {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.confirm-primary:hover,
+.confirm-primary:focus-visible {
+  background: var(--accent);
+  color: var(--canvas);
+}
+
 /* Condition chips reuse .chip; pressed state = .chip.active. */
 .chip-set {
   display: flex;
