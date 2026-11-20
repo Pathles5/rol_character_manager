@@ -17,8 +17,7 @@ Estados: `spec` → `implement` → `verified` (+ `approved` si requiere visto d
 | 10 | Multi-personaje (JSON + vista raíz + routing) | verified | Multi-personaje completo (D-33/D-35/D-36/D-37/D-38): router hash, overview, manifest validado en build, sesión por id, 4 personajes publicados, rasgos activables; revisor PASS (tras 1 corrección); QA usuario "todo ok"; 86/86 tests |
 | 09 | Infra AWS SAM + CI/CD | approved | Infra desplegada y verificada: stack fichass-infra (S3+OIDC+SSM, D-34/D-39/D-40), workflow success (gates + sync), URL pública HTTP 200; alerta de facturación 3€/10€ (variante aceptada del usuario); cadenas de fallo documentadas (spec deviations) |
 | 10.1 | Pulido de usabilidad v0.1.1 (D-41/D-42/D-43) | approved | Appbar con iconos de modo, tira de PG en 3 filas, Reset con confirmación, fixes de overflow; desplegado en producción y verificado (CSS con .mode-btn/.confirm-dialog en la URL pública) |
-| 11 | Tiradas con dados animados | spec | Spec escrita; pendiente propose·validate — gatillo = botón de dado junto al daño, diálogo centrado (D-44 prevista) |
-
+| 11 | Tiradas con dados animados | approved | Implementado (D-45): `src/dice.ts` (parser+roller, 9 tests), botón de dado en ataques, diálogo con tumbling CSS + reroll/Esc/backdrop; 95/95 tests; push v0.1.2 |
 Convenciones:
 - Cada fase vive en `docs/specs/NN-<nombre>/` con `spec.md` y `tasks.md`.
 - Al terminar una fase: actualizar esta tabla y registrar decisiones en `DECISIONS.md`.
