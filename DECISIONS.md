@@ -247,3 +247,61 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Elección:** `docs/ENTREGA.md` como informe final: qué es, entregables por fase, límites conocidos de la v1, deudas abiertas referenciadas (IDs de decisión) y despliegue (puntero al README). `README.md` (creado el 2026-11-18 por petición del usuario) queda como guía de levantamiento y su existencia registrada en las convenciones de `INDEX.md`.
 - **Motivo:** separar el "cómo se usa" (README) del "qué quedó y qué falta" (ENTREGA), ambos discoverables desde la raíz.
 - **Riesgo:** la sincronización README/ENTREGA es manual; mantener ambos al actualizar scripts (convención ya anotada en INDEX).
+
+## D-40 · 2026-11-19 · Config de despliegue por IaC (SSM): `AWS_S3_BUCKET` deja de ser secret
+
+- **Contexto:** el usuario pregunta por qué `AWS_S3_BUCKET` era un secret si la IaC ya conoce el bucket.
+- **Elección:** el stack SAM publica `/fichass/bucket-name` en **SSM Parameter Store** y el workflow lo lee tras autenticarse (`ssm:GetParameter` es el único permiso SSM del rol, limitado a `parameter/fichass/*`). Secrets finales: **solo 2** — `AWS_OIDC_ROLE_ARN` y `AWS_REGION` (esta última necesaria ANTES de autenticarse, por eso no puede venir de SSM). Registro en `infra/README.md`.
+- **Motivo:** fuente única de verdad (la IaC); cambiar de bucket = re-desplegar el stack, sin tocar secrets de GitHub.
+- **Riesgo:** si el stack no se re-despliega tras cambiar el template, el workflow falla con `ParameterNotFound` (troubleshooting actualizado). Nota: `sam validate --lint` marca un falso positivo E3006 sobre `AWS::IAM::OpenIdConnectProvider` (global y válido); documentado.
+
+## D-33 · 2026-11-19 · Multi-personaje: arquitectura "React-shaped" en vanilla, hash routing y manifest validado en build
+
+- **Contexto:** v2 del producto (tras el cierre de la v1); el usuario quiere N personajes servidos como JSON con vista raíz → detalle. Evaluación conjunta del enfoque React y su traducción.
+- **Elección:** sin framework nuevo (D-18 congelado): `router.ts` de hash (`#/`, `#/c/<id>`) + `views/{overview,character}.ts` montadas en un `#app` raíz (cada vista con su appbar); personajes en `public/characters/*.json` con **nombre de archivo = id**; manifest enriquecido `{id,name,class,level,initials}` **generado en build y validado con `validateCharacter`** (JSON inválido = build rojo). Vista detalle = el flujo actual de `main.ts` encapsulado; sesión por personaje (`fichass-session-v1:<id>`).
+- **Motivo:** misma forma que React (router/vistas/estados loading-error-success) sin peso ni reescritura; el JSON en runtime permite editar personajes subiéndolos al bucket sin recompilar.
+- **Riesgo:** resumen de la raíz desactualizado si se edita el JSON directo en el bucket (se refresca con push — aceptado); hash routing no guarda la ruta en el server log (irrelevante en v1).
+
+## D-34 · 2026-11-19 · IaC de Fase 09 en formato AWS SAM
+
+- **Contexto:** el usuario activa la capa DevOps y pide SAM explícitamente porque es el formato que ya maneja en otro proyecto.
+- **Elección:** `template.yaml` (SAM) para bucket S3 + rol OIDC de GitHub Actions (sin claves longevas) + guard de coste; workflow de Actions con quality gate → deploy. La spec de Fase 09 queda escrita en `docs/specs/09-infra-sam/` con estado `waiting` hasta cerrar la Fase 10.
+- **Motivo:** petición explícita del usuario; reutiliza su familiaridad y tooling.
+- **Riesgo:** SAM añade transform al stack (sin coste); los permisos del subagente devops se revisan como primera tarea de la fase (D-12, pendiente).
+
+## D-38 · 2026-11-19 · Rasgos activables: `trait.uses` (segunda enmienda de D-16)
+
+- **Contexto:** QA multi-personaje del usuario: la Furia del bárbaro (2 usos/descanso) es activable y no tenía contador; el mecanismo existía (Fortuna era un caso especial hardcodeado).
+- **Elección:** `Trait` gana **`uses?: number`** (dato autoriado del JSON). Cualquier rasgo con `uses` pinta un contador `0/uses` en su línea, conectado a `sessionState.resourcesUsed[<trait id>]` vía targets `resource-<traitId>` generalizados (la excepción de Fortuna desaparece). El clamp de sesión respeta el `uses` del rasgo. Rasgos de raza añadidos a las 4 fichas (Humana: Adaptable + Afortunado uses 2; Medio-orco: Visión en la oscuridad, Aguante implacable uses 1, Impulso de adrenalina uses 2) — petición del usuario.
+- **Motivo:** regla general en vez de casos especiales; el editor del JSON decide qué rasgos son activables sin tocar código.
+- **Riesgo:** un `uses` faltante desactiva el contador silenciosamente (decisión de diseño: sin `uses` = rasgo pasivo); si el JSON cambia el id de un rasgo, la sesión previa queda huérfana (D-36 la ignora).
+
+## D-39 · 2026-11-19 · Workflow sync-only: el despliegue del stack es one-time manual
+
+- **Contexto:** Fase 09; la spec original decía `sam build + sam deploy` en el workflow. El devops lo re-evaluó y el orquestador aprueba la enmienda.
+- **Elección:** el workflow de GitHub Actions NO despliega stacks — hace quality gate (lint/test/build) y `aws s3 sync dist/` con OIDC. El **stack** (bucket + OIDC + rol) lo despliega el USUARIO una vez, localmente, con `sam deploy --guided` (sus credenciales; ver `infra/README.md`). El rol OIDC tiene **mínimo privilegio S3** (sin cloudformation/sam/IAM:PassRole): el CI no puede crear ni destruir infraestructura jamás.
+- **Motivo:** seguridad (el CI con IAM:PassRole/cloudformation es un vector clásico de escalada), y el stack cambia una vez al año — automatizarlo sobra. El despliegue de **contenido** (push) sí es automático.
+- **Riesgo:** cambiar de rama principal o de repo exige update del stack (parámetros GitHubBranch/GitHubOrg/GitHubRepo); documentado. Nota: el devops lo numeró "D-37" por error — ese ID ya existía; queda registrado como **D-39**.
+
+## D-37 · 2026-11-19 · Visibilidad de bloques por personaje: `hiddenBlocks` (enmienda de D-16)
+
+- **Contexto:** QA multi-personaje del usuario: Dahna Voreio (guerrera sin conjuros) mostraba el bloque Conjuros con CD decorativa y slots 0/0 — sin sentido para un no-caster. Petición: visibilidad personalizable por personaje ("show/enable" por categoría).
+- **Opciones evaluadas:** (a) lista por personaje; (b) flag `show` dentro de cada sección; (c) deducción automática por sección vacía. Elección: **(a)** con OK del usuario (propose·validate).
+- **Elección:** campo opcional **`hiddenBlocks?: BlockId[]`** de primer nivel en el `character` (dato autoriado, viaja en el contrato D-17): ids de bloques que NO se renderizan para ese personaje en ningún modo (default `[]`). `BlockId` vive ahora en `types.ts` (re-exportado por `blockConfig.ts`); el validador acepta solo ids conocidos, sin duplicados; `renderSheet` filtra los ocultos manteniendo el orden de la matriz; el bloque Descanso oculta las filas de slots con máximo 0.
+- **Motivo:** un único sitio decide; generaliza a cualquier ficha parcial (sin aliados, sin rol…) sin tocar la matriz congelada §6, que sigue siendo el default.
+- **Riesgo:** la sección `spells` sigue requerida en el JSON (estructura), aunque el bloque se oculte — coherente con D-16 (la ficha declara sus datos; la vista decide qué mostrar). Si en el futuro se quiere visibilidad por MODO por personaje, sería otra enmienda.
+- **Enmienda documentada en model.md** (D-16 congelado) y en la spec de Fase 10; `dahna-voreio.json` lleva `"hiddenBlocks": ["spells"]`. Tests: 83/83 (4 nuevos del validador + 3 de renderSheet).
+
+## D-35 · 2026-11-19 · Validación estricta en runtime y en build (dos niveles)
+
+- **Contexto:** Fase 10; qué pasa con un JSON de personaje inválido.
+- **Elección:** en **build**, validación estructural de cada `public/characters/*.json` (parse + identity + id con regex; mensaje claro con fichero y motivo; exit 1 — `scripts/generate-manifest.mjs`). En **runtime**, validación completa con `validateCharacter`: un JSON inválido muestra pantalla de error con el mapa campo→mensaje y NO renderiza ficha parcial (D-17). En **tests**, el contrato completo de cada personaje publicado se aplica en el gate (`validate.test.ts` lee el manifest y valida cada fichero).
+- **Motivo:** fallo temprano en CI sin tooling extra en el `.mjs`; el jugador nunca ve una ficha a medias.
+- **Riesgo:** dos fuentes de verdad de validación (build estructural + tests contractuales); documentado en la spec y en ENTREGA al desplegar.
+
+## D-36 · 2026-11-19 · Sesiones de personajes eliminados: ignoradas, sin limpieza activa
+
+- **Contexto:** Fase 10; qué pasa con `fichass-session-v1:<id>` de un personaje cuyo JSON ya no existe.
+- **Elección:** la clave queda huérfana en localStorage (inofensiva: nadie la lee); no se barre activamente. El guard D-16 §4 (characterId vs id de URL, ahora comparado en `sanitizeLoaded`) impide que una sesión de otro personaje contamine la nueva.
+- **Motivo:** simplicidad; el storage de un navegador es del jugador.
+- **Riesgo:** acumulación trivial de claves si se rota mucho el elenco (KB por personaje); una limpieza en Reset global podría añadirse en el futuro si se pide.

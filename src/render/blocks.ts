@@ -15,7 +15,7 @@
 
    Editable counters (Phase 06, T-02) render as steppers:
    <button class="step" data-action data-target aria-label>,
-   consumed by the delegated handlers in main.ts → session.ts.
+   consumed by the delegated handlers in views/character.ts → session.ts.
    Rule limits are enforced in session.ts (spec C5).
 
    The `x_demoNotes` fixture field is NEVER rendered.
@@ -32,7 +32,7 @@ import type {
 import type { DerivedStats } from '../derived';
 import { SKILL_CATALOG } from '../data/skills';
 import type { BlockId } from '../data/blockConfig';
-import { CHANNEL_DIVINITY_MAX, DEATH_SAVE_MAX, FORTUNA_USES_MAX, RESOURCE_FORTUNA, type StepperTarget } from '../session';
+import { CHANNEL_DIVINITY_MAX, DEATH_SAVE_MAX, type StepperTarget } from '../session';
 
 // --- Shared display helpers -----------------------------------------
 
@@ -64,7 +64,7 @@ function formatModifier(mod: number): string {
 
 /** Stepper buttons for one editable counter (T-02): native
     buttons, so keyboard focus/activation comes for free; the
-    delegated handler in main.ts routes them to session.ts. */
+    delegated handler in views/character.ts routes them to session.ts. */
 function stepper(target: StepperTarget, incLabel: string, decLabel: string): string {
   return `<span class="stepper">
         <button type="button" class="step" data-action="dec" data-target="${target}" aria-label="${decLabel}">\u2212</button>
@@ -275,7 +275,7 @@ interface SpellChipData {
 }
 
 /** Spell chip as a button (Phase 06, T-03): the delegated handler
-    in main.ts opens the detail bottom sheet with the spell's own
+    in views/character.ts opens the detail bottom sheet with the spell's own
     data (name/level/origin/castTime/description). */
 function spellChip(spell: SpellChipData): string {
   const castTime = spell.castTime ? `<span class="cast">${spell.castTime}</span>` : '';
@@ -328,7 +328,11 @@ export function renderRest(
   session: SessionState,
 ): string {
   const combat = character.combat;
-  const slotRows = SPELL_LEVELS.map(level => `<li class="row"><span class="k">Espacios nivel ${level}</span><span class="counter"><span class="val">${session.spellSlotsUsed[level]} / ${character.spells.slotsMax[level]}</span>${stepper(`slot-${level}`, `Gastar un espacio de nivel ${level}`, `Recuperar un espacio de nivel ${level}`)}</span></li>`).join('');
+  // Amendment D-37: a 0-max slot level (non-casters) shows no row —
+  // "0 / 0" counters are noise in the rest card.
+  const slotRows = SPELL_LEVELS
+    .filter(level => character.spells.slotsMax[level] > 0)
+    .map(level => `<li class="row"><span class="k">Espacios nivel ${level}</span><span class="counter"><span class="val">${session.spellSlotsUsed[level]} / ${character.spells.slotsMax[level]}</span>${stepper(`slot-${level}`, `Gastar un espacio de nivel ${level}`, `Recuperar un espacio de nivel ${level}`)}</span></li>`).join('');
   const conditions = session.conditions.length ? session.conditions.join(', ') : '—';
   const conditionChips = CONDITION_CATALOG.map(condition => {
     const active = session.conditions.includes(condition);
@@ -376,13 +380,15 @@ export function renderTraits(
   session: SessionState,
 ): string {
   return `<ul class="traits">${character.traits.map(trait => {
-    // Editable daily-use resource (model §4 resourcesUsed; amendment
-    // validated by the user 2026-11-18, C1 of phase 06).
-    const counter = trait.id === RESOURCE_FORTUNA
-      ? `<span class="counter"><span class="val">${session.resourcesUsed[RESOURCE_FORTUNA] ?? 0} / ${FORTUNA_USES_MAX}</span>${stepper(
-          'resource-fortuna',
-          'Gastar 1 uso de Fortuna del Erudito',
-          'Recuperar 1 uso de Fortuna del Erudito',
+    // Activable traits (amendment D-38 of D-16): any trait with an
+    // authored `uses` cap renders a 0/uses counter wired to
+    // sessionState.resourcesUsed[<trait id>] (generalizes the
+    // Phase 06 Fortuna special case).
+    const counter = trait.uses !== undefined
+      ? `<span class="counter"><span class="val">${session.resourcesUsed[trait.id] ?? 0} / ${trait.uses}</span>${stepper(
+          `resource-${trait.id}`,
+          `Gastar 1 uso de ${trait.name}`,
+          `Recuperar 1 uso de ${trait.name}`,
         )}</span>`
       : '';
     return `

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Moss Ferrow",
+    "race": "humano",
+    "class": "pícaro",
+    "subclass": "Ladrón",
+    "level": 4,
+    "background": "Criminal",
+    "alignment": "Neutral"
+  },
+  "abilities": {
+    "strength": 10,
+    "dexterity": 18,
+    "constitution": 14,
+    "intelligence": 14,
+    "wisdom": 12,
+    "charisma": 10
+  },
+  "combat": {
+    "armorClass": 16,
+    "speed": 30,
+    "maxHitPoints": 31,
+    "hitDice": { "die": "d8", "total": 4 }
+  },
+  "defense": {
+    "saveProficiencies": ["dexterity", "intelligence"]
+  },
+  "skillProficiencies": [
+    "acrobatics",
+    "deception",
+    "perception",
+    "stealth",
+    "investigation",
+    "sleight-of-hand"
+  ],
+  "skillExpertise": ["stealth", "sleight-of-hand"],
+  "attacks": [
+    {
+      "id": "daga",
+      "name": "Daga",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d4+4",
+      "damageType": "perforante",
+      "note": "finesse · ataque sigiloso +1d6"
+    },
+    {
+      "id": "arco-corto",
+      "name": "Arco corto",
+      "kind": "ranged",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "perforante",
+      "note": "alcance 80/320 ft"
+    }
+  ],
+  "traits": [
+    {
+      "id": "ataque-sigiloso",
+      "name": "Ataque sigiloso",
+      "source": "Pícaro (nivel 1)",
+      "description": "+1d6 de daño una vez por turno con ventaja (o aliado adyacente al objetivo); escala +1d6 en niveles 5/9/13/17."
+    },
+    {
+      "id": "accion-astuta",
+      "name": "Acción astuta",
+      "source": "Pícaro (nivel 2)",
+      "description": "Acción adicional: Carrera, Desenganche u Ocultarse."
+    },
+    {
+      "id": "manos-rapidas",
+      "name": "Manos rápidas",
+      "source": "Ladrón (nivel 3)",
+      "description": "Acción astuta también para Juego de manos, desactivar trampas y usar objetos."
+    },
+    {
+      "id": "humana-adaptable",
+      "name": "Adaptable",
+      "source": "Humana (raza 2024)",
+      "description": "Competencia en una habilidad de origen (contada con licencia en esta demo)."
+    },
+    {
+      "id": "humana-afortunada",
+      "name": "Ambicioso: dote de origen Afortunado",
+      "source": "Humana (raza 2024)",
+      "description": "Puntos de suerte: repite una tirada de ataque/salvación/habilidad fallida gastando 1 punto (recuperas 2 en descanso largo).",
+      "uses": 2
+    }
+  ],
+  "spells": {
+    "castingAbility": "strength",
+    "slotsMax": { "1": 0, "2": 0, "3": 0 },
+    "cantrips": [],
+    "prepared": []
+  },
+  "equipment": {
+    "equipped": [
+      { "name": "armadura de cuero tachonado", "qty": 1, "weightLb": 13 },
+      { "name": "daga", "qty": 2, "weightLb": 2 },
+      { "name": "arco corto", "qty": 1, "weightLb": 2 }
+    ],
+    "inventory": [
+      { "name": "cotxs de explorador", "qty": 1, "weightLb": 5 },
+      { "name": "herramientas de ladrón", "qty": 1, "weightLb": 1 },
+      { "name": "llavero con ganzúas", "qty": 1, "weightLb": 1 }
+    ],
+    "coins": { "gp": 42, "sp": 5 }
+  },
+  "proficiencies": {
+    "armor": ["ligeras"],
+    "weapons": ["sencillas", "ballestas de mano", "espadas largas", "espadas cortas"],
+    "tools": ["herramientas de ladrón"],
+    "languages": ["común", "ladrón (argot)"]
+  },
+  "hiddenBlocks": ["spells"],
+  "role": {
+    "summary": "Ojos y ganzúas del grupo: reconocimiento, trampas, candados y sacarse de apuros por donde no hay pasillo.",
+    "tableNotes": [
+      "Le debo a Seren 14 GP por los paquetes de hierbas (la deuda es de Dahna, yo pago).",
+      "Nunca abrir un candado sin comprobar si tiene trampa primero."
+    ],
+    "questions": [
+      "¿El guardián del portal habla celestial? Lo compruebo con el círculo de cuerda antes de tocar nada."
+    ]
+  },
+  "allies": [
+    { "name": "Seren Aldaard", "relationship": "compañera de grupo, clériga" },
+    { "name": "Dahna Voreio", "relationship": "compañera de grupo, guerrera" }
+  ],
+  "x_demoNotes": [
+    "Pícaro 4 (Fase 10): ASI de nivel 4 → DES 18; CA 16 = cuero tachonado 12 + DES 4; PG 31 (10 + 3×7).",
+    "Expertise (2 pericias a nivel 1 en 2024): sigilo y juego de manos — ejercita el estado ✓✓ de la ficha.",
+    "Ataque sigiloso a nivel 4 = 1d6 (escala +1d6 en 5/9/13/17, reglas 2024).",
+    "Sin conjuros: hiddenBlocks [\"spells\"] (D-37); castingAbility 'strength' es placeholder del modelo.",
+    "Competencias con licencia del explorador: 4 de clase (acrobacias/engaño/percepción/sigilo) + investigación, más 2 de trasfondo Criminal (juego de manos/engaño solapado con licencia)."
+  ]
+}

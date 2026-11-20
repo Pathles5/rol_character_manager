@@ -92,6 +92,10 @@ export interface Trait {
   name: string;
   source: string;
   description: string;
+  /** Uses per rest (amendment D-38 of D-16): when present, the trait
+      is activable and the sheet renders a 0/uses counter wired to
+      sessionState.resourcesUsed[<this id>]. */
+  uses?: number;
 }
 
 export interface SpellRef {
@@ -179,9 +183,31 @@ export interface Character {
   proficiencies: ProficienciesInfo;
   role: RoleInfo;
   allies: Ally[];
+  /** Authored per-character block visibility (amendment D-37 of D-16):
+      block ids the sheet must NEVER render for this character, in any
+      mode (e.g. a non-caster hides "spells"). Optional; default []. */
+  hiddenBlocks?: BlockId[];
   /** Tolerated fixture metadata (demo only); rejected for normal submissions. */
   x_demoNotes?: string[];
 }
+
+/** Sheet block ids of the filter matrix (model §6). Lives here so the
+    character type can reference it without a data-layer dependency;
+    blockConfig.ts re-exports it. */
+export type BlockId =
+  | 'identity'
+  | 'combat'
+  | 'attributes'
+  | 'defense'
+  | 'skills'
+  | 'attacks'
+  | 'spells'
+  | 'rest'
+  | 'equipment'
+  | 'traits'
+  | 'proficiencies'
+  | 'role'
+  | 'allies';
 
 // --- sessionState (model §4, client-only, never sent) -----------------
 

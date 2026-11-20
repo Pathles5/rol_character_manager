@@ -14,20 +14,12 @@
    `defense` block travel in sessionState, not in `character`.
    ============================================================ */
 
-export type BlockId =
-  | 'identity'
-  | 'combat'
-  | 'attributes'
-  | 'defense'
-  | 'skills'
-  | 'attacks'
-  | 'spells'
-  | 'rest'
-  | 'equipment'
-  | 'traits'
-  | 'proficiencies'
-  | 'role'
-  | 'allies';
+import type { BlockId } from '../types';
+
+/** Block ids live in types.ts (the character type references them
+    for hiddenBlocks, amendment D-37); re-exported here so every
+    consumer keeps its Phase 04 import path. */
+export type { BlockId } from '../types';
 
 export interface BlockConfigEntry {
   id: BlockId;

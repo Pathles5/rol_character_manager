@@ -3,38 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FichaSS — ficha de D&D 5e (2024), solo lectura.">
+  <meta name="description" content="FichaSS — fichas de D&D 5e (2024), solo lectura.">
   <title>FichaSS</title>
 </head>
 <body>
 
-  <header class="appbar">
-    <div class="appbar-home">
-      <strong>FichaSS</strong><span id="appbar-character"></span>
-    </div>
-    <nav class="mode-tabs" aria-label="Modos de vista">
-      <button type="button" class="chip" data-mode="combate" aria-pressed="false">Combate</button>
-      <button type="button" class="chip active" data-mode="aventura" aria-pressed="true">Aventura</button>
-      <button type="button" class="chip" data-mode="descanso" aria-pressed="false">Descanso</button>
-      <button type="button" class="chip" data-mode="mesa" aria-pressed="false">Mesa</button>
-    </nav>
-    <!-- Phase 06: restores the default session counters and clears localStorage. -->
-    <button type="button" class="chip" id="reset-session" aria-label="Restablecer los contadores de la sesión y borrar lo guardado">Reset</button>
-  </header>
+  <!-- Router root (Phase 10, D-33): every view (appbar included)
+       is mounted here by src/app.ts. -->
+  <main id="app"></main>
 
-  <!-- The full sheet is rendered at runtime by src/main.ts
-       (renderSheet over demoCharacter + computeDerived + BLOCK_CONFIG). -->
-  <main class="sheet-grid" id="sheet"></main>
-
-  <!-- Phase 06 (T-03): spell detail bottom sheet. Empty container;
-       the content is mounted by src/main.ts from the spell data. -->
-  <div class="backdrop" id="detail-backdrop" hidden></div>
-  <section class="sheet spell-sheet" id="detail-sheet" role="dialog" aria-modal="true" aria-label="Detalle de conjuro" hidden>
-    <div class="handle" aria-hidden="true"></div>
-    <button type="button" class="sheet-close" aria-label="Cerrar el detalle del conjuro">✕</button>
-    <div id="detail-content"></div>
-  </section>
-
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/app.ts"></script>
 </body>
 </html>

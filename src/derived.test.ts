@@ -7,7 +7,9 @@
    below is annotated with its source — none is guessed.
    ============================================================ */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { Character } from './types';
 import {
   computeDerived,
   getInitials,
@@ -20,7 +22,14 @@ import {
   getSpellAttack,
   getSpellDC,
 } from './derived';
-import { demoCharacter } from './data/character';
+
+/** Living fixture (Phase 10, D-33): public/characters/
+    character-demo.json, read at test time like the other
+    suites; the typed cast only aids field access. */
+import { join } from 'node:path';
+
+const fixturePath = join(import.meta.dirname, '../public/characters/character-demo.json');
+const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 
 describe('getModifier (§3: floor((score - 10) / 2))', () => {
   it('matches the fixture ability scores', () => {

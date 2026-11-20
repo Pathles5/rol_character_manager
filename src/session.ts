@@ -10,7 +10,8 @@
    never the whole #sheet — the active mode, the DOM order and
    the FLIP state owned by filters.ts must survive untouched.
 
-   Persistence: key `fichass-session-v1`, schemaVersion 1;
+   Persistence: one key per character, `fichass-session-v1:<id>`
+   (Phase 10, C2/C5; the id is the URL/file id), schemaVersion 1;
    load at startup (parse failure or version ≠ 1 → defaults);
    forward-only migration, unknown fields ignored (D-16 §4).
    Rule limits (HP, hit dice, slots, channel, death saves) are
@@ -30,24 +31,21 @@ import {
   renderTraits,
 } from './render/blocks';
 
-/** Versioned localStorage key (spec C2). */
-export const SESSION_STORAGE_KEY = 'fichass-session-v1';
+/** Versioned per-character localStorage key (spec Fase 10, C2/C5):
+    one session namespace per character id (the URL/file id), so
+    two characters never share counters. Orphaned keys of removed
+    characters are simply never read again (D-36). */
+export const sessionKey = (characterId: string): string => `fichass-session-v1:${characterId}`;
 
 const SESSION_SCHEMA_VERSION = 1;
 
 /** Generic 5e rule constants (not character data). Kept here as
     the single source; blocks.ts imports them for display. */
 /** Reasonable cap for temporary hit points (no strict rule cap). */
-export const TEMP_HP_MAX = 20;
-/** Death saves: 3 successes or 3 failures end the sequence (2024). */
+export const TEMP_HP_MAX = 20;/** Death saves: 3 successes or 3 failures end the sequence (2024). */
 export const DEATH_SAVE_MAX = 3;
 /** 2024 cleric: Channel Divinity tops at 2 uses (level 5). */
 export const CHANNEL_DIVINITY_MAX = 2;
-
-/** Scholar background feature: 1 use per day (model §4 resourcesUsed,
-    keyed by the trait id of the fixture character). */
-export const FORTUNA_USES_MAX = 1;
-export const RESOURCE_FORTUNA = 'fortuna-del-erudito';
 
 /** Default session state (model §4): derived from the character,
     everything unused. Owned here since Phase 06 (T-01); blocks.ts
@@ -55,8 +53,9 @@ export const RESOURCE_FORTUNA = 'fortuna-del-erudito';
 export function defaultSessionState(character: Character): SessionState {
   return {
     schemaVersion: 1,
-    // TODO: replace with a stable id once the character has one (D-16); the fixture is a single-character demo.
-    characterId: character.identity.name.toLowerCase().replace(/\s+/g, '-'),
+    // Name-derived fallback id; the URL id overrides it in
+    // initSession/resetSession (Phase 10 coherence, D-16 §4).
+    characterId: fallbackCharacterId(character),
     hp: { current: character.combat.maxHitPoints, temp: 0 },
     hitDice: { used: 0 },
     spellSlotsUsed: { 1: 0, 2: 0, 3: 0 },
@@ -68,9 +67,19 @@ export function defaultSessionState(character: Character): SessionState {
   };
 }
 
+/** Name-derived fallback id (the Phase 06 scheme kept by
+    defaultSessionState) for callers that don't pass an explicit
+    character id. */
+function fallbackCharacterId(character: Character): string {
+  return character.identity.name.toLowerCase().replace(/\s+/g, '-');
+}
+
 // --- Live context -----------------------------------------------------
 
 interface SessionContext {
+  /** Character id this session belongs to (the URL/file id when
+      the caller provides one; name-derived fallback otherwise). */
+  characterId: string;
   character: Character;
   derived: DerivedStats;
   state: SessionState;
@@ -103,14 +112,16 @@ function clamp(value: number, min: number, max: number): number {
 /** Rebuilds a valid SessionState from persisted JSON: only known
     fields are read (unknown ones ignored), invalid values fall
     back to defaults and everything is clamped to the rule limits. */
-function sanitizeLoaded(raw: unknown, character: Character): SessionState {
+function sanitizeLoaded(raw: unknown, character: Character, characterId: string): SessionState {
   const defaults = defaultSessionState(character);
   if (typeof raw !== 'object' || raw === null) return defaults;
   const data = raw as Record<string, unknown>;
   // Parse failure is caught by the caller; version ≠ 1 → defaults.
   if (data.schemaVersion !== SESSION_SCHEMA_VERSION) return defaults;
-  // A session belongs to one character: mismatch → fresh defaults.
-  if (data.characterId !== defaults.characterId) return defaults;
+  // A session belongs to one character: mismatch with the URL id
+  // (Phase 10) → fresh defaults. The state's own characterId mirrors
+  // that id (D-16 §4 coherence with the storage namespace).
+  if (data.characterId !== characterId) return defaults;
 
   const hp = (typeof data.hp === 'object' && data.hp !== null ? data.hp : {}) as Record<string, unknown>;
   const hitDice = (typeof data.hitDice === 'object' && data.hitDice !== null ? data.hitDice : {}) as Record<string, unknown>;
@@ -128,7 +139,7 @@ function sanitizeLoaded(raw: unknown, character: Character): SessionState {
 
   return {
     schemaVersion: 1,
-    characterId: defaults.characterId,
+    characterId,
     hp: {
       current: clamp(numberOr(hp.current, defaults.hp.current), 0, character.combat.maxHitPoints),
       temp: clamp(numberOr(hp.temp, defaults.hp.temp), 0, TEMP_HP_MAX),
@@ -152,11 +163,11 @@ function sanitizeLoaded(raw: unknown, character: Character): SessionState {
   };
 }
 
-function loadSession(character: Character): SessionState {
+function loadSession(character: Character, characterId: string): SessionState {
   try {
-    const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const stored = window.localStorage.getItem(sessionKey(characterId));
     if (!stored) return defaultSessionState(character);
-    return sanitizeLoaded(JSON.parse(stored), character);
+    return sanitizeLoaded(JSON.parse(stored), character, characterId);
   } catch {
     // Missing storage, quota error or broken JSON → defaults (spec C2).
     return defaultSessionState(character);
@@ -164,9 +175,9 @@ function loadSession(character: Character): SessionState {
 }
 
 function writeSession(): void {
-  const { state } = requireContext();
+  const { characterId, state } = requireContext();
   try {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(sessionKey(characterId), JSON.stringify(state));
   } catch {
     // Storage unavailable (private mode / quota): the session stays in memory.
   }
@@ -186,11 +197,15 @@ function clampToRules(state: SessionState, character: Character): void {
   state.channelDivinity.used = clamp(state.channelDivinity.used, 0, CHANNEL_DIVINITY_MAX);
   state.deathSaves.successes = clamp(state.deathSaves.successes, 0, DEATH_SAVE_MAX);
   state.deathSaves.failures = clamp(state.deathSaves.failures, 0, DEATH_SAVE_MAX);
-  state.resourcesUsed[RESOURCE_FORTUNA] = clamp(
-    state.resourcesUsed[RESOURCE_FORTUNA] ?? 0,
-    0,
-    FORTUNA_USES_MAX,
-  );
+  // Activable traits (amendment D-38 of D-16): each used counter is
+  // capped by the trait's authored `uses` (when the trait still
+  // exists in the character; unknown keys are left untouched).
+  for (const [traitId, used] of Object.entries(state.resourcesUsed)) {
+    const max = character.traits.find(trait => trait.id === traitId)?.uses;
+    if (max !== undefined) {
+      state.resourcesUsed[traitId] = clamp(used, 0, max);
+    }
+  }
 }
 
 // --- Partial re-render (C3: never the whole #sheet) -------------------
@@ -210,8 +225,6 @@ const PATCH_BLOCKS: { [K in keyof SessionPatch]: readonly BlockId[] } = {
 
 const ALL_SESSION_BLOCKS: readonly BlockId[] = ['identity', 'combat', 'defense', 'spells', 'rest', 'traits'];
 
-/** Render registry for the session-consuming blocks (renderers of
-    blocks.ts; identity/attributes/... don't depend on the session). */
 /** Render registry for the session-consuming blocks (renderers of
     blocks.ts; identity consumes the session since the inspiration
     dot moved there — user request 2026-11-19). */
@@ -289,9 +302,23 @@ export function update(patch?: SessionPatch): void {
 
 /** Bootstraps the session: loads persisted counters and syncs them
     into the freshly rendered sheet (renderSheet still shows the
-    defaults, Phase 04 signature kept intact). */
-export function initSession(character: Character, derived: DerivedStats): SessionState {
-  context = { character, derived, state: loadSession(character) };
+    defaults, Phase 04 signature kept intact). The character id
+    (Phase 10) keys the storage namespace AND is the identity the
+    D-16 §4 guard compares against: a stored session whose
+    characterId differs from the URL id gets fresh defaults.
+    When omitted, the name-derived fallback id of Phase 06 is used
+    (retrocompatible). */
+export function initSession(character: Character, derived: DerivedStats, characterId?: string): SessionState {
+  const id = characterId ?? fallbackCharacterId(character);
+  context = {
+    characterId: id,
+    character,
+    derived,
+    state: loadSession(character, id),
+  };
+  // D-16 §4 coherence: the state's own characterId mirrors the URL id,
+  // so a persisted session under another character is never accepted.
+  if (context.state.characterId !== id) context.state.characterId = id;
   update();
   return context.state;
 }
@@ -320,15 +347,21 @@ export function patchSession(patch: SessionPatch): SessionState {
 }
 
 /** Reset (spec C2): restores the defaults derived from the
-    character and deletes the persisted key. */
+    character and deletes this character's persisted key.
+    Review fix (Phase 10 major 1): the state's characterId must
+    stay the URL id — the name-derived fallback id inside
+    defaultSessionState would make the next persisted write
+    rejected by sanitizeLoaded after a reload. */
 export function resetSession(): SessionState {
-  const { character } = requireContext();
+  const { character, characterId } = requireContext();
   try {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    window.localStorage.removeItem(sessionKey(characterId));
   } catch {
     // Storage unavailable: nothing to remove.
   }
-  if (context) context.state = defaultSessionState(character);
+  if (context) {
+    context.state = { ...defaultSessionState(character), characterId };
+  }
   update();
   return requireContext().state;
 }
@@ -356,10 +389,12 @@ export type StepperTarget =
   | 'channel-divinity'
   | 'death-successes'
   | 'death-failures'
-  | 'resource-fortuna'
+  /** Any activable trait: `resource-<traitId>` (amendment D-38 of
+      D-16). The trait's authored `uses` caps the counter. */
+  | `resource-${string}`
   | 'inspiration';
 
-const STEPPER_TARGETS: readonly StepperTarget[] = [
+const FIXED_STEPPER_TARGETS: readonly string[] = [
   'hp-current',
   'hp-temp',
   'hit-dice',
@@ -369,7 +404,6 @@ const STEPPER_TARGETS: readonly StepperTarget[] = [
   'channel-divinity',
   'death-successes',
   'death-failures',
-  'resource-fortuna',
   'inspiration',
 ];
 
@@ -378,10 +412,19 @@ export function isStepperAction(value: string): value is StepperAction {
 }
 
 export function isStepperTarget(value: string): value is StepperTarget {
-  return (STEPPER_TARGETS as readonly string[]).includes(value);
+  return FIXED_STEPPER_TARGETS.includes(value)
+    || (value.startsWith('resource-') && value.length > 'resource-'.length);
+}
+
+/** Activable trait id of a `resource-<traitId>` target (D-38). */
+function resourceTraitId(target: StepperTarget): string {
+  return target.slice('resource-'.length);
 }
 
 function readCounter(state: SessionState, target: StepperTarget): number {
+  if (target.startsWith('resource-')) {
+    return state.resourcesUsed[resourceTraitId(target)] ?? 0;
+  }
   switch (target) {
     case 'hp-current': return state.hp.current;
     case 'hp-temp': return state.hp.temp;
@@ -392,12 +435,17 @@ function readCounter(state: SessionState, target: StepperTarget): number {
     case 'channel-divinity': return state.channelDivinity.used;
     case 'death-successes': return state.deathSaves.successes;
     case 'death-failures': return state.deathSaves.failures;
-    case 'resource-fortuna': return state.resourcesUsed[RESOURCE_FORTUNA] ?? 0;
     case 'inspiration': return state.inspiration ? 1 : 0;
+    // Unreachable in practice: isStepperTarget guards the callers and
+    // resource-* targets return early above (TS exhaustiveness guard).
+    default: return 0;
   }
 }
 
 function writeCounter(target: StepperTarget, value: number): SessionPatch {
+  if (target.startsWith('resource-')) {
+    return { resourcesUsed: { [resourceTraitId(target)]: value } };
+  }
   switch (target) {
     case 'hp-current': return { hp: { current: value } };
     case 'hp-temp': return { hp: { temp: value } };
@@ -408,8 +456,9 @@ function writeCounter(target: StepperTarget, value: number): SessionPatch {
     case 'channel-divinity': return { channelDivinity: { used: value } };
     case 'death-successes': return { deathSaves: { successes: value } };
     case 'death-failures': return { deathSaves: { failures: value } };
-    case 'resource-fortuna': return { resourcesUsed: { [RESOURCE_FORTUNA]: value } };
     case 'inspiration': return { inspiration: value >= 1 };
+    // Unreachable in practice (see readCounter): no-op patch.
+    default: return {};
   }
 }
 

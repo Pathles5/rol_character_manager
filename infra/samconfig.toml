@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "fichass-infra"
+resolve_s3 = true
+s3_prefix = "fichass-infra"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "BucketName=\"fichass-site\" GitHubOrg=\"Pathles5\" GitHubRepo=\"rol_character_manager\" GitHubBranch=\"master\" UseExistingOidcProvider=\"true\" ExistingOidcProviderArn=\"arn:aws:iam::159177056493:oidc-provider/token.actions.githubusercontent.com\""
+image_repositories = []
+
+[default.global.parameters]
+region = "eu-west-1"

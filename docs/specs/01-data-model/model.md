@@ -149,9 +149,17 @@ Los bloques son configuración editada en **un único sitio** (un array en Fase 
 - `*` salvaciones de muerte: bloque `defense` muestra los contadores de `sessionState`.
 - Cierre de deudas de Fase 00: "defensas" = `defense`; `spells` visible también en `descanso`; nombre canónico del modo catch-all = **"mesa"** (congelado, ya usado en el mockup). Si la matriz difiere del mockup archivado, el mockup NO se toca (era provisorio); lo que manda es esta matriz.
 
+## Amendment 1 · 2026-11-19 · `hiddenBlocks` por personaje (D-37)
+
+La matriz §6 sigue siendo el **default** para todos los personajes. Enmienda (con OK del usuario, propose·validate): el `character` acepta un campo opcional **`hiddenBlocks?: BlockId[]`** — ids de bloques que NO se renderizan para ese personaje en NINGÚN modo (default `[]`), p. ej. un no-caster con `"hiddenBlocks": ["spells"]`. Es dato autoriado (viaja en el contrato D-17); el validador acepta solo ids de §6 sin duplicados. La sección oculta sigue siendo requerida en el JSON (la ficha declara sus datos; la vista decide qué mostrar). Motivado por el QA multi-personaje: la guerrera demo no debe ver el bloque Conjuros.
+
 ## 7. Mapeo bloques → entidades
 
 `identity`→identity · `combat`→combat · `attributes`→abilities · `defense`→defense+sessionState.deathSaves · `skills`→skillProficiencies/skillExpertise+catálogo · `attacks`→attacks (+DC/ataque de conjuro derivados) · `spells`→spells · `rest`→combat.hitDice+spells.slotsMax+traits(recursos)+sessionState · `traits`→traits (+sessionState.resourcesUsed para sus contadores) · `equipment`→equipment · `proficiencies`→proficiencies · `role`→role · `allies`→allies.
+
+## Amendment 2 · 2026-11-19 · `trait.uses`: rasgos activables (D-38)
+
+Segunda enmienda (con OK del usuario, propose·validate): `Trait` acepta **`uses?: number`** (usos por descanso, dato autoriado). Un rasgo con `uses` es **activable**: la ficha pinta un contador `0/uses` en la propia línea del rasgo, conectado a `sessionState.resourcesUsed[<trait id>]` (el mecanismo §4 existente — la excepción especial de Fortuna del Erudito se generaliza). El clamp de sesión respeta el `uses` del rasgo mientras el personaje lo conserve. Ejemplos: Furia `uses: 2`, Segundo aliento `uses: 1`, Fortuna `uses: 1`, Afortunado `uses: 2`, Aguante implacable `uses: 1`.
 
 ## 8. Traducciones de catálogo
 

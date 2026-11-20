@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "characters": [
+    {
+      "id": "character-demo",
+      "name": "Seren Aldaard",
+      "class": "clériga",
+      "level": 5,
+      "initials": "SA"
+    },
+    {
+      "id": "dahna-voreio",
+      "name": "Dahna Voreio",
+      "class": "guerrera",
+      "level": 5,
+      "initials": "DV"
+    },
+    {
+      "id": "gorruk-piedraalta",
+      "name": "Gorruk Piedraalta",
+      "class": "bárbaro",
+      "level": 4,
+      "initials": "GP"
+    },
+    {
+      "id": "moss-ferrow",
+      "name": "Moss Ferrow",
+      "class": "pícaro",
+      "level": 4,
+      "initials": "MF"
+    }
+  ]
+}

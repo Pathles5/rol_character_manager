@@ -1,0 +1,173 @@
+# ============================================================================
+# FichaSS — infra SAM template (Fase 09, D-34: SAM a petición del usuario)
+# ============================================================================
+#
+# SIMPLIFICACIÓN (2026-11-20, tras el diagnóstico de Fase 09): el stack
+# requere que el OIDC provider de GitHub YA exista en la cuenta
+# (token.actions.githubusercontent.com). Si no existe, créalo una vez:
+#   aws iam create-open-id-connect-provider \
+#     --url https://token.actions.githubusercontent.com \
+#     --client-id-list sts.amazonaws.com \
+#     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+# (los thumbprints históricos valen; AWS valida GitHub por su librería de CAs)
+#
+# SAM vs CloudFormation: SAM es CloudFormation con transform; este template
+# usa tipos nativos (sin Lambda/API — v1 100% estática). El transform SAM
+# permite usar `sam validate/build/deploy` como en el otro proyecto del
+# usuario. `sam build` es no-op aquí.
+#
+# DECISIÓN D-39: el workflow NO despliega stacks (sync-only). Este stack se
+# crea/actualiza UNA VEZ con las credenciales del usuario (sam deploy o
+# create-stack). El rol tiene SOLO permisos S3 + lectura SSM (D-40).
+#
+# NOTA DE OPERACIÓN (2026-11-20): la validación temprana de CloudFormation
+# resultó FLAKY con la versión condicional de este template (fallos
+# AWS::EarlyValidation no deterministas y "Stack does not exist" para
+# changesets CREATE). Se simplificó a un solo rol incondicional. Si un
+# deploy falla con EarlyValidation sin detalle: reintentar (y documentar).
+#
+# COSTE €0 (I2/D-11): S3 Free Tier, IAM gratis, CFN gratis, sin CloudFront.
+# Tags obligatorios: project: FichaSS · cost-policy: free-tier-only.
+# ============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FichaSS - static S3 hosting (Free Tier) + OIDC role for GitHub Actions (sync deploy, no long-lived keys).
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: fichass-site
+    Description: Hosting bucket name (globally unique; if taken, pick another).
+    AllowedPattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
+  GitHubOrg:
+    Type: String
+    Description: GitHub repository owner (org or user).
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name.
+  GitHubBranch:
+    Type: String
+    Default: master
+    Description: Branch allowed to deploy (only this branch triggers the sync).
+
+Resources:
+
+  # --------------------------------------------------------------------------
+  # Static hosting bucket (website endpoint S3; NO CloudFront per I2)
+  # --------------------------------------------------------------------------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+
+  # Public READ-ONLY policy (only s3:GetObject; ACLs deprecated — the correct
+  # way is a BucketPolicy).
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadForWebsiteHosting
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${SiteBucket}/*
+
+  # --------------------------------------------------------------------------
+  # Deployment settings in SSM (D-40): the workflow reads the bucket name
+  # from here — the only secret left is AWS_OIDC_ROLE_ARN.
+  # --------------------------------------------------------------------------
+  SsmBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /fichass/bucket-name
+      Type: String
+      Value: !Ref SiteBucket
+      # NOTE: SSM Parameter Tags must be a KEY-VALUE MAP (not a list like
+      # S3 Bucket Tags) — the list form trips CloudFormation's early
+      # validation with an opaque "AWS::EarlyValidation::PropertyValidation"
+      # error (diagnosed 2026-11-20 with cfn-lint E3012).
+      Tags:
+        project: FichaSS
+        cost-policy: free-tier-only
+
+  # --------------------------------------------------------------------------
+  # Role assumed by GitHub Actions via web identity (no long-lived keys).
+  # Trust pinned to: aud=sts.amazonaws.com and the exact repo/branch sub.
+  # --------------------------------------------------------------------------
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub fichass-github-actions-${GitHubRepo}
+      MaxSessionDuration: 3600
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
+      # Inline policies (NOT ManagedPolicy): the CFN early-validation rejects
+      # AWS::IAM::ManagedPolicy resources in this template (diagnosed 2026-11-20,
+      # see Phase 09 spec) — inline role policies deploy fine.
+      Policies:
+        - PolicyName: fichass-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ListBucketForSync
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !Sub arn:${AWS::Partition}:s3:::${SiteBucket}
+              - Sid: ReadWriteObjectsForSync
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub arn:${AWS::Partition}:s3:::${SiteBucket}/*
+              - Sid: ReadDeploymentSettingsFromSsm
+                Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
+
+Outputs:
+  WebsiteURL:
+    Description: Public URL of the static hosting (S3 website endpoint).
+    Value: !GetAtt SiteBucket.WebsiteURL
+  BucketName:
+    Description: Hosting bucket name (for the AWS_S3_BUCKET secret).
+    Value: !Ref SiteBucket
+  OidcRoleArn:
+    Description: Role ARN (for the AWS_OIDC_ROLE_ARN secret).
+    Value: !GetAtt GitHubActionsRole.Arn

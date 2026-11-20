@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "FichaSS \u2014 hosting est\xE1tico S3 (Free Tier) + rol OIDC para GitHub\
+  \ Actions (deploy por aws s3 sync, sin claves longevas)."
+Parameters:
+  BucketName:
+    Type: String
+    Default: fichass-site
+    Description: "Nombre del bucket de hosting (debe ser \xFAnico globalmente; si\
+      \ est\xE1 ocupado, el despliegue falla \u2014 elegir otro, p. ej. fichass-site-<usuario>)."
+    AllowedPattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
+  GitHubOrg:
+    Type: String
+    Description: Propietario del repositorio de GitHub (org o usuario).
+  GitHubRepo:
+    Type: String
+    Description: Nombre del repositorio de GitHub.
+  GitHubBranch:
+    Type: String
+    Default: master
+    Description: Rama que puede desplegar (solo esta rama dispara el sync).
+  UseExistingOidcProvider:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Description: Poner 'true' SOLO si la cuenta ya tiene el provider de token.actions.githubusercontent.com
+      (evita el fallo AlreadyExists).
+  ExistingOidcProviderArn:
+    Type: String
+    Default: ''
+    Description: ARN del provider OIDC existente (requerido si UseExistingOidcProvider=true).
+      Ejemplo arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com
+Conditions:
+  CreateOidcProvider:
+    Fn::Equals:
+    - Ref: UseExistingOidcProvider
+    - 'false'
+  UseExistingOidcProvider:
+    Fn::Not:
+    - Condition: CreateOidcProvider
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      BucketName:
+        Ref: BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      Tags:
+      - Key: project
+        Value: FichaSS
+      - Key: cost-policy
+        Value: free-tier-only
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: PublicReadForWebsiteHosting
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${SiteBucket}/*
+  SsmBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /fichass/bucket-name
+      Type: String
+      Value:
+        Ref: SiteBucket
+      Tags:
+      - Key: project
+        Value: FichaSS
+      - Key: cost-policy
+        Value: free-tier-only
+  GitHubOidcProvider:
+    Type: AWS::IAM::OpenIdConnectProvider
+    Condition: CreateOidcProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+      - sts.amazonaws.com
+      ThumbprintList:
+      - 7560d6f40fa55195f740ee2b1b7c0b4836cbe103
+      - dd55b4520291e276588f0dd02fafd83a7368e0fa
+      - 2b18947a6a9fc7764fd8b5fb18a863b0c6dac24f
+      - 6938fd4d98bab03faadb97b34396831e3780aea1
+      - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Condition: CreateOidcProvider
+    Properties:
+      RoleName:
+        Fn::Sub: fichass-github-actions-${GitHubRepo}
+      MaxSessionDuration: 3600
+      Tags:
+      - Key: project
+        Value: FichaSS
+      - Key: cost-policy
+        Value: free-tier-only
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated:
+              Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              token.actions.githubusercontent.com:aud: sts.amazonaws.com
+            StringLike:
+              token.actions.githubusercontent.com:sub:
+                Fn::Sub: repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
+  GitHubActionsRoleExisting:
+    Type: AWS::IAM::Role
+    Condition: UseExistingOidcProvider
+    Properties:
+      RoleName:
+        Fn::Sub: fichass-github-actions-${GitHubRepo}
+      MaxSessionDuration: 3600
+      Tags:
+      - Key: project
+        Value: FichaSS
+      - Key: cost-policy
+        Value: free-tier-only
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated:
+              Ref: ExistingOidcProviderArn
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              token.actions.githubusercontent.com:aud: sts.amazonaws.com
+            StringLike:
+              token.actions.githubusercontent.com:sub:
+                Fn::Sub: repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
+  GitHubActionsDeployPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateOidcProvider
+    Properties:
+      Description: FichaSS deploy policy (sync-only, minimum privilege)
+      Roles:
+      - Ref: GitHubActionsRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ListBucketForSync
+          Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetBucketLocation
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${SiteBucket}
+        - Sid: ReadWriteObjectsForSync
+          Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:PutObject
+          - s3:DeleteObject
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${SiteBucket}/*
+        - Sid: ReadDeploymentSettingsFromSsm
+          Effect: Allow
+          Action: ssm:GetParameter
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
+  GitHubActionsDeployPolicyExisting:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: UseExistingOidcProvider
+    Properties:
+      Description: FichaSS deploy policy (sync-only, minimum privilege)
+      Roles:
+      - Ref: GitHubActionsRoleExisting
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ListBucketForSync
+          Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetBucketLocation
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${SiteBucket}
+        - Sid: ReadWriteObjectsForSync
+          Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:PutObject
+          - s3:DeleteObject
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${SiteBucket}/*
+        - Sid: ReadDeploymentSettingsFromSsm
+          Effect: Allow
+          Action: ssm:GetParameter
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
+Outputs:
+  WebsiteURL:
+    Description: "URL p\xFAblica del hosting est\xE1tico (endpoint website de S3;\
+      \ GetAtt calcula el formato correcto por regi\xF3n, incl. us-east-1)."
+    Value:
+      Fn::GetAtt:
+      - SiteBucket
+      - WebsiteURL
+  BucketName:
+    Description: Nombre del bucket de hosting (para el secret AWS_S3_BUCKET).
+    Value:
+      Ref: SiteBucket
+  OidcRoleArn:
+    Description: ARN del rol para el secret AWS_OIDC_ROLE_ARN (uno de los dos roles
+      condicionales).
+    Value:
+      Fn::If:
+      - CreateOidcProvider
+      - Fn::GetAtt:
+        - GitHubActionsRole
+        - Arn
+      - Fn::GetAtt:
+        - GitHubActionsRoleExisting
+        - Arn

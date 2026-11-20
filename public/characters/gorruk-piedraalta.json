@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Gorruk Piedraalta",
+    "race": "medio-orco",
+    "class": "bárbaro",
+    "subclass": "Frenético",
+    "level": 4,
+    "background": "Forastero",
+    "alignment": "Caótico Bueno"
+  },
+  "abilities": {
+    "strength": 18,
+    "dexterity": 14,
+    "constitution": 16,
+    "intelligence": 8,
+    "wisdom": 10,
+    "charisma": 10
+  },
+  "combat": {
+    "armorClass": 15,
+    "speed": 40,
+    "maxHitPoints": 45,
+    "hitDice": { "die": "d12", "total": 4 }
+  },
+  "defense": {
+    "saveProficiencies": ["strength", "constitution"]
+  },
+  "skillProficiencies": [
+    "atletismo",
+    "intimidation",
+    "survival",
+    "perception"
+  ],
+  "skillExpertise": [],
+  "attacks": [
+    {
+      "id": "hacha-grande",
+      "name": "Hacha grande",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d12+4",
+      "damageType": "cortante",
+      "note": "+2 de furia en la primera tirada de daño del turno"
+    },
+    {
+      "id": "jabalina",
+      "name": "Jabalina",
+      "kind": "ranged",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "perforante",
+      "note": "lanzada 30/120 ft"
+    }
+  ],
+  "traits": [
+    {
+      "id": "furia",
+      "name": "Furia",
+      "source": "Bárbaro (nivel 1)",
+      "description": "Acción adicional, 2 usos/descanso: ventaja en FUE, resistencia a contundente/perforante/cortante y +2 al daño mientras dure (concentración permitida en Furia, 10 min)."
+    },
+    {
+      "id": "defensa-sin-armadura",
+      "name": "Defensa sin armadura",
+      "source": "Bárbaro (nivel 1)",
+      "description": "CA = 10 + mod de DES + mod de CON sin armadura (15)."
+    },
+    {
+      "id": "sentido-peligro",
+      "name": "Sentido del peligro",
+      "source": "Bárbaro (nivel 2)",
+      "description": "Ventaja en salvaciones de DES contra efectos que pueda ver."
+    },
+    {
+      "id": "frenesi",
+      "name": "Frenesí",
+      "source": "Frenético (nivel 3)",
+      "description": "Mientras furia: +2 de daño extra en la primera tirada de daño de cada turno (niveles 3–8)."
+    },
+    {
+      "id": "vision-oscuridad",
+      "name": "Visión en la oscuridad",
+      "source": "Medio-orco (raza 2024)",
+      "description": "Ves en penumbra como con luz plena y en oscuridad hasta 60 ft (gris apagado)."
+    },
+    {
+      "id": "aguante-implacable",
+      "name": "Aguante implacable",
+      "source": "Medio-orco (raza 2024)",
+      "description": "Con 0 PG en lugar de caer quedas a 1 PG (1/descanso largo).",
+      "uses": 1
+    },
+    {
+      "id": "impulso-adrenalina",
+      "name": "Impulso de adrenalina",
+      "source": "Medio-orco (raza 2024)",
+      "description": "Acción adicional: Dash; al terminar, la próxima tirada de ataque este turno lleva ventaja (usos = PB por descanso).",
+      "uses": 2
+    }
+  ],
+  "spells": {
+    "castingAbility": "strength",
+    "slotsMax": { "1": 0, "2": 0, "3": 0 },
+    "cantrips": [],
+    "prepared": []
+  },
+  "equipment": {
+    "equipped": [
+      { "name": "hacha grande", "qty": 1, "weightLb": 7 },
+      { "name": "jabalina", "qty": 2, "weightLb": 2 },
+      { "name": "amuleto tribal", "qty": 1, "weightLb": 1 }
+    ],
+    "inventory": [
+      { "name": "equipo de explorador", "qty": 1, "weightLb": 10 },
+      { "name": "cuerno de caza", "qty": 1, "weightLb": 1 },
+      { "name": "pieles de invierno", "qty": 1, "weightLb": 4 }
+    ],
+    "coins": { "gp": 9, "sp": 30 }
+  },
+  "proficiencies": {
+    "armor": ["ligeras", "medias", "escudos"],
+    "weapons": ["sencillas", "marciales"],
+    "tools": [],
+    "languages": ["común", "orco"]
+  },
+  "hiddenBlocks": ["spells"],
+  "role": {
+    "summary": "Rompe puertas, rompe filas y grita primero: mientras yo llamo la atención, el resto trabaja.",
+    "tableNotes": [
+      "Juré sobre el hacha de mi padre que volvería a Piedraalta con el colmillo del wyvern.",
+      "No confío en gremios: si hay papel de por medio, que lea Seren."
+    ],
+    "questions": [
+      "¿Por qué los espíritus de la montaña huyen de la lámina de bronce del sepulturero?"
+    ]
+  },
+  "allies": [
+    { "name": "Seren Aldaard", "relationship": "compañera de grupo, clériga" },
+    { "name": "Dahna Voreio", "relationship": "compañera de grupo, guerrera" },
+    { "name": "Moss Ferrow", "relationship": "compañero de grupo, pícaro" }
+  ],
+  "x_demoNotes": [
+    "Bárbaro 4 (Fase 10): ASI de nivel 4 → FUE 18; CA 15 = 10 + DES 2 + CON 3 (Defensa sin armadura); velocidad 40 ft (medio-orco 2024); PG 45 (15 + 3×10).",
+    "Furia: 2 usos a nivel 4, +2 de daño (reglas 2024); Frenesí añade +2 extra en la primera tirada de daño del turno (niveles 3–8).",
+    "Competencias con licencia del explorador: 2 de clase (atletismo/intimidación) + Forastero (supervivencia/atletismo, atletismo solapado con licencia) + percepción.",
+    "Sin conjuros: hiddenBlocks [\"spells\"] (D-37); castingAbility 'strength' es placeholder del modelo.",
+    "La nota sobre los espíritus enlaza con las dudas de mesa de Seren (ecos entre fichas de la demo)."
+  ]
+}

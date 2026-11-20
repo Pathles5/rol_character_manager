@@ -1,0 +1,150 @@
+# ============================================================================
+# FichaSS — CI/CD (Fase 09, D-12). Quality gate + sync S3 vía OIDC.
+# ============================================================================
+#
+# DECISIÓN (validada con el usuario, 2026-11-19) — supera a la spec original:
+#   Este workflow NO hace `sam build`/`sam deploy`. El stack (bucket + OIDC +
+#   rol) se despliega ONE-TIME y manualmente por el usuario con sus credenciales
+#   (`sam deploy --guided`, ver infra/README.md). Aquí solo:
+#     quality-gate (lint → test → build)  →  aws s3 sync dist/ → S3.
+#   El rol OIDC tiene SOLO permisos S3 (mínimo privilegio). Sin claves
+#   longevas: autenticación por role-to-assume (OIDC), nada de
+#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY en secrets.
+#
+# COSTE €0 (constitución I2 / D-11):
+#   - Minutos de Actions: dentro de la cuota gratuita (repo público = gratis;
+#     runners ubuntu-latest ×1 en workflow corto). Nada de runners self-hosted
+#     ni matrices grandes.
+#   - S3: dentro de Free Tier / cuota siempre-gratis para un proyecto de un
+#     jugador. Alerta de facturación $0 obligatoria (infra/README.md, paso 4).
+#
+# NOTA sobre `check.ps1` (compuerta documental del harness):
+#   `npm run check` es un script PowerShell del harness LOCAL y el gate de fase
+#   se ejecuta en el repo por el orquestador/revisor (D-08 del harness). En el
+#   runner Linux no es aplicable; su función documental (constitución, spec
+#   vigente, INDEX.md coherente) se garantiza en la compuerta de fase local
+#   ANTES del push que dispara este workflow. NO se sustituye aquí por nada.
+#   (Se podría ejecutar con pwsh en ubuntu, pero es una compuerta de proceso,
+#   no de producto; deliberadamente fuera del workflow.)
+#
+# Estrategia de Cache-Control (ver decisión en el job deploy).
+# ============================================================================
+name: deploy
+
+on:
+  push:
+    branches: [master]        # rama parametrizada en el stack (GitHubBranch)
+  workflow_dispatch:          # arranque manual desde la pestaña Actions
+
+# Un solo despliegue a la vez: si llegan pushes rápidos en ráfaga, se encolan
+# en orden (cancel-in-progress: false) para que nunca corran dos sync
+# simultáneos contra el mismo bucket.
+concurrency:
+  group: fichass-deploy-master
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- quality
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Compuertas del proyecto (I6/I7). El prebuild genera
+      # characters-manifest.json antes del build (hook npm "prebuild").
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test
+      - name: Build (incluye manifest via prebuild)
+        run: npm run build
+
+      # El job deploy no re-construye: baja este artefacto (mismo dist que
+      # pasó el gate). Retención 1 día: desaparece solo, 0 coste.
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  # ----------------------------------------------------------------- deploy
+  deploy:
+    needs: quality-gate
+    # Solo despliega en la rama protegida (workflow_dispatch desde otra rama
+    # compilaría pero NO tocaría el bucket).
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # imprescindible para OIDC (aws-actions + STS)
+
+    steps:
+      - name: Download dist (del quality-gate)
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Configure AWS credentials (OIDC, sin claves longevas)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ---------------------------------------------------------------
+      # Config de despliegue desde la IaC (D-40): el stack publica el
+      # nombre del bucket en SSM (/fichass/bucket-name) y el workflow
+      # lo lee aquí — AWS_S3_BUCKET ya no es un secret. (AWS_REGION sí
+      # sigue siendo secret: hay que conocerla ANTES de autenticarse.)
+      # ---------------------------------------------------------------
+      - name: Read deployment settings from SSM (IaC)
+        run: |
+          BUCKET=$(aws ssm get-parameter --name /fichass/bucket-name --query Parameter.Value --output text)
+          echo "AWS_S3_BUCKET=$BUCKET" >> "$GITHUB_ENV"
+          echo "Deploy target bucket: $BUCKET"
+
+      # ---------------------------------------------------------------
+      # Estrategia Cache-Control:
+      #   Los flags --cache-control de `s3 sync` se aplican a TODO lo que ese
+      #   sync SUBE (los objetos que ya existen con mismo tamaño+ETag no se
+      #   re-suben y conservan sus cabeceras). Aprovechamos eso con DOS sync:
+      #     1) dist/assets/  →  s3://.../assets  con immutable:
+      #        los assets de Vite llevan hash en el nombre → pueden cachearse
+      #        1 año. --delete limpia hashes de builds anteriores.
+      #     2) dist/ → raíz con must-revalidate: index.html,
+      #        characters-manifest.json y characters/*.json SIEMPRE revalidados
+      #        (max-age=0): así los edits de personajes se ven al instante. Los
+      #        assets ya subidos en el paso 1 se saltan por el sync y NO pierden
+      #        su cabecera immutable (documentado en el template y el README).
+      #   SPA por hash-routing + rutas relativas: sin reglas de redirección.
+      # ---------------------------------------------------------------
+      - name: Sync immutable assets (hashed, 1 año)
+        run: >
+          aws s3 sync dist/assets s3://$AWS_S3_BUCKET/assets
+          --cache-control "max-age=31536000,immutable"
+          --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+
+      - name: Sync site (HTML/manifest/characters, siempre revalidar)
+        run: >
+          aws s3 sync dist/ s3://$AWS_S3_BUCKET/
+          --cache-control "max-age=0,must-revalidate"
+          --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}

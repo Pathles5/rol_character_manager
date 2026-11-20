@@ -12,7 +12,11 @@
    tests); Spanish copy is a server-response or UI concern.
    ============================================================ */
 
-import type { AttackKind, LiteralAbility, PreparedSource } from './types';
+import type { AttackKind, BlockId, LiteralAbility, PreparedSource } from './types';
+import { BLOCK_CONFIG } from './data/blockConfig';
+
+/** Block ids from the frozen matrix (model §6, single source I4). */
+const BLOCK_IDS: readonly string[] = BLOCK_CONFIG.map(entry => entry.id);
 
 /** Discriminated result: `{ ok: true }` or a field-path error map. */
 export type ValidationResult =
@@ -48,6 +52,8 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   'proficiencies',
   'role',
   'allies',
+  // Authored per-character block visibility (amendment D-37 of D-16).
+  'hiddenBlocks',
   // Fixture-only tolerance (D-17 asymmetry / D-22).
   'x_demoNotes',
 ]);
@@ -399,7 +405,25 @@ export function validateCharacter(value: unknown): ValidationResult {
     });
   }
 
-  // 15) x_demoNotes: tolerated fixture metadata, but still typed as
+  // 15) hiddenBlocks (amendment D-37 of D-16): optional authored
+  //     visibility — array of known block ids, no duplicates.
+  const hiddenBlocks = c.hiddenBlocks;
+  if (hiddenBlocks !== undefined) {
+    if (!Array.isArray(hiddenBlocks)) {
+      fail('hiddenBlocks', 'optional array of block ids (model §6)');
+    } else {
+      hiddenBlocks.forEach((id, index) => {
+        if (typeof id !== 'string' || !BLOCK_IDS.includes(id as BlockId)) {
+          fail(`hiddenBlocks[${index}]`, `unknown block id: "${String(id)}" (model §6)`);
+        }
+      });
+      if (new Set(hiddenBlocks).size !== hiddenBlocks.length) {
+        fail('hiddenBlocks', 'duplicate block ids');
+      }
+    }
+  }
+
+  // 16) x_demoNotes: tolerated fixture metadata, but still typed as
   //     string[] when present (D-17 asymmetry / D-22).
   const demoNotes = c.x_demoNotes;
   if (demoNotes !== undefined && !isStringArray(demoNotes)) {

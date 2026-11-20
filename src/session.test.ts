@@ -22,13 +22,12 @@
    the exported initSession() load path.
    ============================================================ */
 
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { Character } from './types';
 import {
   CHANNEL_DIVINITY_MAX,
   DEATH_SAVE_MAX,
-  FORTUNA_USES_MAX,
-  RESOURCE_FORTUNA,
-  SESSION_STORAGE_KEY,
   TEMP_HP_MAX,
   applyStepper,
   defaultSessionState,
@@ -38,15 +37,30 @@ import {
   isStepperTarget,
   patchSession,
   resetSession,
+  sessionKey,
   toggleCondition,
 } from './session';
-import { demoCharacter } from './data/character';
 import { computeDerived } from './derived';
+
+/** Living fixture (Phase 10, D-33): public/characters/
+    character-demo.json, read at test time — src/ → repo root →
+    public/characters/. The validator and the session sanitize
+    guard the shape, so the typed cast only aids field access. */
+import { join } from 'node:path';
+
+const fixturePath = join(import.meta.dirname, '../public/characters/character-demo.json');
+const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 
 const derived = computeDerived(demoCharacter);
 const MAX_HP = demoCharacter.combat.maxHitPoints; // 38
 const SLOT_MAX = demoCharacter.spells.slotsMax[1]; // 4
 const HIT_DICE_TOTAL = demoCharacter.combat.hitDice.total; // 5
+
+/** initSession without an explicit id falls back to the
+    name-derived id (Phase 06 scheme kept by
+    defaultSessionState): "Seren Aldaard" → seren-aldaard. */
+const FALLBACK_ID = 'seren-aldaard';
+const KEY = sessionKey(FALLBACK_ID);
 
 /** Minimal #sheet skeleton: refreshBlock only rewrites the inner
     content of the five session-consuming cards, keeping headers. */
@@ -63,13 +77,29 @@ function mountSheet(): void {
 
 /** Reads back the persisted raw JSON (null when absent). */
 function storedRaw(): Record<string, unknown> | null {
-  const text = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  const text = window.localStorage.getItem(KEY);
   return text ? (JSON.parse(text) as Record<string, unknown>) : null;
 }
 
 beforeEach(() => {
   mountSheet();
   window.localStorage.clear();
+});
+
+describe('sessionKey — one storage namespace per character (spec Fase 10, C2/C5)', () => {
+  it('maps every character id to its versioned key', () => {
+    expect(sessionKey('x')).toBe('fichass-session-v1:x');
+    expect(sessionKey('character-demo')).toBe('fichass-session-v1:character-demo');
+  });
+
+  it('persists the session under the EXPLICIT character id', () => {
+    // The character view passes the URL id (Phase 10, T-04): the
+    // storage key must follow it, never another character's.
+    initSession(demoCharacter, derived, 'character-demo');
+    patchSession({ hp: { current: 10 } });
+    expect(window.localStorage.getItem(sessionKey('character-demo'))).not.toBeNull();
+    expect(window.localStorage.getItem(sessionKey('seren-aldaard'))).toBeNull();
+  });
 });
 
 describe('initSession — defaults (model §4)', () => {
@@ -138,10 +168,15 @@ describe('patchSession — clamps (spec C5)', () => {
     });
   });
 
-  it('caps Fortuna del Erudito at 1 use per day', () => {
-    expect(FORTUNA_USES_MAX).toBe(1);
-    const state = patchSession({ resourcesUsed: { [RESOURCE_FORTUNA]: 5 } });
-    expect(state.resourcesUsed[RESOURCE_FORTUNA]).toBe(FORTUNA_USES_MAX);
+  it('caps activable traits at their authored `uses` (D-38)', () => {
+    // The demo cleric's Fortuna del Erudito carries uses: 1 in the JSON.
+    const state = patchSession({ resourcesUsed: { 'fortuna-del-erudito': 5 } });
+    expect(state.resourcesUsed['fortuna-del-erudito']).toBe(1);
+  });
+
+  it('does not cap resources without a matching trait `uses`', () => {
+    const state = patchSession({ resourcesUsed: { 'desconocido': 5 } });
+    expect(state.resourcesUsed['desconocido']).toBe(5);
   });
 
   it('persists the clamped state after every patch', () => {
@@ -195,17 +230,32 @@ describe('resetSession — restore defaults and clear storage (spec C2)', () => 
   it('restores every counter and deletes the persisted key', () => {
     initSession(demoCharacter, derived);
     patchSession({ hp: { current: 5 }, deathSaves: { failures: 3 } });
-    expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).not.toBeNull();
+    expect(window.localStorage.getItem(KEY)).not.toBeNull();
     const state = resetSession();
     expect(state).toEqual(defaultSessionState(demoCharacter));
-    expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  /** Regression of the Phase 10 review major 1: after a reset, the
+      state's characterId must stay the URL id (the name-derived
+      fallback would make the next persisted write rejected by
+      sanitizeLoaded after a reload). */
+  it('keeps the URL characterId after a reset (Phase 10)', () => {
+    initSession(demoCharacter, derived, 'character-demo');
+    const state = resetSession();
+    expect(state.characterId).toBe('character-demo');
+    patchSession({ hp: { current: 10 } });
+    const stored = JSON.parse(
+      window.localStorage.getItem(sessionKey('character-demo')) as string,
+    ) as { characterId: string };
+    expect(stored.characterId).toBe('character-demo');
   });
 });
 
 describe('load migration — sanitizeLoaded through initSession (D-16 §4)', () => {
   it('falls back to defaults when schemaVersion ≠ 1 (forward-only)', () => {
     window.localStorage.setItem(
-      SESSION_STORAGE_KEY,
+      KEY,
       JSON.stringify({ schemaVersion: 2, characterId: 'seren-aldaard', hp: { current: 3, temp: 0 } }),
     );
     expect(initSession(demoCharacter, derived)).toEqual(defaultSessionState(demoCharacter));
@@ -213,20 +263,20 @@ describe('load migration — sanitizeLoaded through initSession (D-16 §4)', () 
 
   it('falls back to defaults when the session belongs to another character', () => {
     window.localStorage.setItem(
-      SESSION_STORAGE_KEY,
+      KEY,
       JSON.stringify({ schemaVersion: 1, characterId: 'someone-else', hp: { current: 3, temp: 0 } }),
     );
     expect(initSession(demoCharacter, derived)).toEqual(defaultSessionState(demoCharacter));
   });
 
   it('falls back to defaults on broken JSON (corrupt storage)', () => {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, '{"hp":{"current":');
+    window.localStorage.setItem(KEY, '{"hp":{"current":');
     expect(initSession(demoCharacter, derived)).toEqual(defaultSessionState(demoCharacter));
   });
 
   it('loads valid counters, clamps them and ignores unknown fields', () => {
     window.localStorage.setItem(
-      SESSION_STORAGE_KEY,
+      KEY,
       JSON.stringify({
         schemaVersion: 1,
         characterId: 'seren-aldaard',
@@ -237,7 +287,7 @@ describe('load migration — sanitizeLoaded through initSession (D-16 §4)', () 
         inspiration: true,
         deathSaves: { successes: 1, failures: 2 },
         conditions: ['cegado', 42], // non-string entries are dropped
-        resourcesUsed: { [RESOURCE_FORTUNA]: 1 },
+        resourcesUsed: { 'fortuna-del-erudito': 1 },
         futureField: 'added by a later schema — ignored',
       }),
     );
@@ -249,13 +299,13 @@ describe('load migration — sanitizeLoaded through initSession (D-16 §4)', () 
     expect(state.inspiration).toBe(true);
     expect(state.deathSaves).toEqual({ successes: 1, failures: 2 });
     expect(state.conditions).toEqual(['cegado']);
-    expect(state.resourcesUsed).toEqual({ [RESOURCE_FORTUNA]: 1 });
+    expect(state.resourcesUsed).toEqual({ 'fortuna-del-erudito': 1 });
     expect(Object.keys(state)).not.toContain('futureField');
   });
 
   it('clamps stored out-of-range counters back into the rule limits', () => {
     window.localStorage.setItem(
-      SESSION_STORAGE_KEY,
+      KEY,
       JSON.stringify({
         schemaVersion: 1,
         characterId: 'seren-aldaard',

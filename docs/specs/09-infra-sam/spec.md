@@ -1,0 +1,42 @@
+# Spec — Fase 09: Infra AWS con SAM + CI/CD (GitHub Actions)
+
+Fase: 09 · Estado: waiting (se activa tras la Fase 10) · Compuerta: workflow en verde + despliegue verificado + Coste €0
+
+## Objetivo
+
+Despliegue continuo de FichaSS en AWS mediante **AWS SAM** (petición del usuario: es el formato que ya usa en otro proyecto) y **GitHub Actions**, manteniendo el invariante **Coste €0** (D-11). El subagente devops (D-12) se activa aquí; su primera tarea es revisar sus permisos contra las herramientas reales.
+
+## Alcance
+
+- **Template SAM** (`template.yaml` / `infra/`): bucket S3 con hosting estático público (OAC no aplica: sin CloudFront), **rol IAM con OIDC para GitHub Actions** (sin claves longevas en secrets), y lo que el usuario tenga estandarizado en su otro proyecto (convenciones SAM a respetar). Parámetros de stack (nombre de bucket, repo, rama) parametrizados.
+- **Workflow de Actions** (`**/.github/workflows/deploy.yml`): en push a `master` → quality gate (`lint` → `test` → `build` → `check`) → `sam build` + `sam deploy` (con confirmación del orquestador o auto según decisión) → sync de `dist/` a S3 (incluye `characters/*.json` y manifest).
+- **Caching**: `Cache-Control` corto en `index.html` (los cambios deben verse) y TTL mayor para assets con hash (fuentes/js/css).
+- **Documentación de puesta en marcha una-vez** (crear el stack, OIDC role ARN en repo secrets, nombre del bucket).
+- Sin CloudFront (invariante y decisión de v1): sin invalidaciones; las páginas son estáticas.
+
+## Fuera de alcance
+
+- Funcionalidad de la app (Fase 10 la cubre); dominio propio; WAF/monitorización avanzada; entornos múltiples.
+
+## Decisiones previstas
+
+- D-34 (ya registrada): SAM como formato IaC, petición del usuario.
+- D-37: despliegue automático en push vs. manual con visto (propuesta: automático tras quality gate, con rollback manual = re-run de commit anterior).
+
+## Criterios de aceptación (verificables)
+
+- C1: `sam build` + `sam validate` sin errores; el template describe SOLO recursos Free Tier (grep de tipos de recurso; sin CloudFront/ALB).
+- C2: workflow ejecuta las 4 compuertas y despliega en push a `master`; usa OIDC (sin `AWS_ACCESS_KEY_ID` en secrets).
+- C3: la URL del endpoint S3 sirve la v1 (raíz + ficha por hash + characters/*.json); `Cache-Control` aplicado según política.
+- C4: alerta de facturación $0 configurada; ningún recurso pagado en el stack (revisión en compuerta).
+- C5: revisor fresh-eyes + devops (si disponible) contra C1–C5; D-37 registrada; documentación one-time en `infra/README.md`.
+
+## Riesgos / deviations
+
+- (abierta; aquí se registran bloqueos y desviaciones aceptadas)
+- Enmienda D-39 (2026-11-19): el workflow es **sync-only** (la spec original incluía `sam deploy` en el workflow). El stack es one-time manual del usuario; el rol OIDC queda con mínimo privilegio S3. Motivo y riesgo en DECISIONS.md.
+- `sam validate/build` NO ejecutados aún: ni el agente devops (su shell es solo inspección, D-12) ni el orquestador tienen SAM CLI local instalado. **C1 queda pendiente del paso 1 de `infra/README.md`** (el usuario corre `sam validate && sam build` antes de desplegar). Verificación alternativa: lectura del template por orquestador + revisor.
+- C3 (URL real sirviendo + cabeceras) queda pendiente del deploy real del usuario — la fase no cierra hasta ese paso (T-05).
+- Thumbprints OIDC: incluidos los vigentes 2025 + históricos de GitHub (2023); AWS valida GitHub por su librería de CAs — el campo es obligatorio pero no operativo.
+- **Diagnóstico del fallo silencioso de validación (2026-11-20):** la causa raíz era el formato de `Tags` en el `AWS::SSM::Parameter` — CloudFormation exige un **mapa objeto**, no una lista (cfn-lint oficial E3012 lo destapó; el error del servicio era opaco: `AWS::EarlyValidation::PropertyValidation` sin detalle por recurso). Corregido a forma mapa; 4 recursos CREATE_COMPLETE.
+- **Quirks documentados del proceso:** (1) `CreateChangeSet` con `ChangeSetType=CREATE` falla con "Stack does not exist" engañoso en esta cuenta (vía CLI y boto3, ambas regiones) — el bootstrap se hizo con `create-stack` directo; los updates futuros por `sam deploy` usan changesets UPDATE (vía probada). (2) `sam build` cachea `.aws-sam/build/template.yaml`: **ejecutar `sam build` antes de cada `sam deploy`** tras cambiar el template. (3) Diagnóstico posible gracias a **cfn-lint oficial de Python** instalado en el runtime de SAM (`python -m pip install cfn-lint`).

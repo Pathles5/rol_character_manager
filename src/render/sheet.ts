@@ -71,8 +71,12 @@ export function renderSheet(
   config: BlockConfigEntry[] = BLOCK_CONFIG,
 ): string {
   const session = defaultSessionState(character);
+  // Per-character visibility (amendment D-37 of D-16): authored block
+  // ids that must never render for this character, in any mode.
+  const hidden = new Set(character.hiddenBlocks ?? []);
   return [...config]
     .sort((a, b) => a.weight - b.weight)
+    .filter(entry => !hidden.has(entry.id))
     .map(entry => {
       const modes = MODE_KEYS.filter(mode => entry[mode]).join(' ');
       const hidden = entry.aventura ? '' : ' is-hidden';

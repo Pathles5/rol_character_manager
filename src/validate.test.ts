@@ -1,17 +1,30 @@
 /* ============================================================
    Phase 07 — validator tests (contract of model §5, D-17).
-   Control input: docs/data/character-demo.json (as transcribed
-   in src/data/character.ts) must be ACCEPTED; every contract
+   Control input: public/characters/character-demo.json (the
+   LIVING fixture since Phase 10, D-33; docs/data keeps a
+   historical copy) must be ACCEPTED; every contract
    rejection (derived values, session state, unknown/x-* fields,
    empty required fields) must produce an ok:false with a
    field-path message map.
    ============================================================ */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Character } from './types';
 import type { ValidationResult } from './validate';
 import { validateCharacter } from './validate';
-import { demoCharacter } from './data/character';
+
+/** The fixture is read at test time from its public location
+    (src/ → repo root → public/characters/), exactly like the
+    former D-21 coherence test did: no JSON duplicated into a
+    bundle, no copied literals. import.meta.dirname works in
+    both vitest environments (node and jsdom). The validator
+    itself guards the shape, so the typed cast below only aids
+    field access. */
+import { join } from 'node:path';
+
+const fixturePath = join(import.meta.dirname, '../public/characters/character-demo.json');
+const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 
 /** Narrows a ValidationResult to the error map, failing the test
     when the validator unexpectedly accepted the payload. */
@@ -77,6 +90,35 @@ describe('validateCharacter — required fields empty or mistyped', () => {
     expect(fields['identity.name']).toBeDefined();
   });
 
+  /** hiddenBlocks (amendment D-37 of D-16): optional authored
+      visibility — valid ids pass, unknown ids / non-array /
+      duplicates fail. */
+  describe('hiddenBlocks (amendment D-37 of D-16)', () => {
+    it('accepts a known block id and passes validation', () => {
+      const clone: Character = structuredClone(demoCharacter);
+      clone.hiddenBlocks = ['spells'];
+      expect(validateCharacter(clone).ok).toBe(true);
+    });
+
+    it('rejects an unknown block id', () => {
+      const bad = { ...structuredClone(demoCharacter), hiddenBlocks: ['no-existe'] };
+      const fields = expectRejected(validateCharacter(bad));
+      expect(fields['hiddenBlocks[0]']).toBeDefined();
+    });
+
+    it('rejects a non-array hiddenBlocks', () => {
+      const bad = { ...structuredClone(demoCharacter), hiddenBlocks: 'spells' };
+      const fields = expectRejected(validateCharacter(bad));
+      expect(fields['hiddenBlocks']).toBeDefined();
+    });
+
+    it('rejects duplicate block ids', () => {
+      const bad = { ...structuredClone(demoCharacter), hiddenBlocks: ['spells', 'spells'] };
+      const fields = expectRejected(validateCharacter(bad));
+      expect(fields['hiddenBlocks']).toBeDefined();
+    });
+  });
+
   it('rejects an out-of-range ability score (0)', () => {
     const clone: Character = structuredClone(demoCharacter);
     clone.abilities.wisdom = 0;
@@ -107,4 +149,32 @@ describe('validateCharacter — required fields empty or mistyped', () => {
     const fields = expectRejected(validateCharacter('seren'));
     expect(fields['(root)']).toBeDefined();
   });
+});
+
+/** Phase 10 (D-33): the build-time manifest check is structural
+    (parse + identity fields, scripts/generate-manifest.mjs); the
+    FULL D-17 contract for every published character is enforced
+    here, in the test gate. Reads the generated manifest and each
+    referenced public/characters/<id>.json from disk. */
+describe('validateCharacter — every published character passes the full contract (Phase 10)', () => {
+  const manifestPath = join(import.meta.dirname, '../public/characters-manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    schemaVersion: number;
+    characters: { id: string }[];
+  };
+
+  it('the manifest exists and has a valid schemaVersion', () => {
+    expect(manifest.schemaVersion).toBe(1);
+    expect(Array.isArray(manifest.characters)).toBe(true);
+  });
+
+  it.each(manifest.characters.map(entry => [entry.id]))(
+    'character "%s" passes validateCharacter',
+    id => {
+      const path = join(import.meta.dirname, '../public/characters', `${id}.json`);
+      const character = JSON.parse(readFileSync(path, 'utf8'));
+      const result = validateCharacter(character);
+      expect(result.ok, `character "${id}" must pass the D-17 contract`).toBe(true);
+    },
+  );
 });
