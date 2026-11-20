@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Patx Vane",
+    "race": "humano",
+    "class": "pícaro",
+    "subclass": "Pícaro psiónico",
+    "level": 4,
+    "background": "Criminal",
+    "alignment": "Caótico bueno"
+  },
+  "abilities": {
+    "strength": 8,
+    "dexterity": 18,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 12,
+    "charisma": 14
+  },
+  "combat": {
+    "armorClass": 17,
+    "speed": 30,
+    "maxHitPoints": 31,
+    "hitDice": {
+      "die": "d8",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "dexterity",
+      "intelligence"
+    ]
+  },
+  "skillProficiencies": [
+    "acrobatics",
+    "deception",
+    "intimidation",
+    "sleight-of-hand",
+    "perception",
+    "perspicacia",
+    "stealth"
+  ],
+  "skillExpertise": [
+    "stealth",
+    "intimidation"
+  ],
+  "attacks": [
+    {
+      "id": "seda",
+      "name": "Seda",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d4+4",
+      "damageType": "perforante",
+      "note": "daga · 6/18 m · alcance, arrojadiza, ligera, maestría: mellar, sutil"
+    },
+    {
+      "id": "barro",
+      "name": "Barro",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d4",
+      "damageType": "perforante",
+      "note": "daga en la otra mano (sin modificador) · 6/18 m · alcance, arrojadiza, ligera, maestría: mellar, sutil"
+    },
+    {
+      "id": "ballesta-ligera",
+      "name": "Ballesta ligera",
+      "kind": "ranged",
+      "bonus": 6,
+      "damage": "1d8+4",
+      "damageType": "perforante",
+      "note": "24/96 m · a dos manos, alcance, distancia, maestría: ralentizar, munición, recarga"
+    },
+    {
+      "id": "seda-psi",
+      "name": "Seda psi",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "psíquico",
+      "note": "cuchilla psíquica (mayor) · 5,4/10,8 m · arrojadiza, ligera, sutil, maestría: molestar"
+    },
+    {
+      "id": "barro-psi",
+      "name": "Barro psi",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d6",
+      "damageType": "psíquico",
+      "note": "cuchilla psíquica menor (segunda cuchilla, sin modificador) · 5,4/10,8 m · arrojadiza, ligera, maestría: molestar, sutil"
+    }
+  ],
+  "traits": [
+    {
+      "id": "humano-diestro",
+      "name": "Diestro",
+      "source": "Humano (raza 2024)",
+      "description": "Ganas competencia en una habilidad de tu elección."
+    },
+    {
+      "id": "humano-ingenioso",
+      "name": "Ingenioso",
+      "source": "Humano (raza 2024)",
+      "description": "Obtienes inspiración heroica tras finalizar un descanso largo."
+    },
+    {
+      "id": "humano-versatil",
+      "name": "Versátil",
+      "source": "Humano (raza 2024)",
+      "description": "Obtienes una dote de origen de tu elección (consulta el capítulo 5). Se recomienda Habilidoso."
+    },
+    {
+      "id": "accion-astuta",
+      "name": "Acción astuta",
+      "source": "Pícaro (nivel 4)",
+      "description": "En tu turno, puedes llevar a cabo una de estas acciones como acción adicional: correr, destrabarse o esconderse."
+    },
+    {
+      "id": "ataque-furtivo",
+      "name": "Ataque furtivo",
+      "source": "Pícaro (nivel 4)",
+      "description": "Una vez por turno, 1d6 de daño adicional a una criatura a la que aciertes, con ventaja (o si un aliado está a 1,5 m) usando un arma sutil o a distancia. Daño adicional: 2d6."
+    },
+    {
+      "id": "cuchillas-psiquicas",
+      "name": "Cuchillas psíquicas",
+      "source": "Pícaro psiónico",
+      "description": "Puedes atacar o reaccionar invocando una cuchilla psíquica: arma cuerpo a cuerpo sencilla, 1d6 de daño psíquico + mod, arrojadiza (18/36), maestría: molestar. Segunda cuchilla como acción adicional: 1d4."
+    },
+    {
+      "id": "don-psi-reforzado",
+      "name": "Don psi-reforzado",
+      "source": "Pícaro psiónico",
+      "description": "Si fallas una prueba con una habilidad o herramienta en la que seas competente, tiras un dado de energía psiónica y lo sumas; el dado solo se gasta si la tirada acaba en éxito."
+    },
+    {
+      "id": "jerga-de-ladrones",
+      "name": "Jerga de Ladrones",
+      "source": "Pícaro (nivel 4)",
+      "description": "Conoces la jerga de ladrones y otro idioma de tu elección."
+    },
+    {
+      "id": "maestria-con-armas",
+      "name": "Maestría con armas",
+      "source": "Pícaro (nivel 4)",
+      "description": "Puedes usar las propiedades de maestría con dos tipos de armas con las que tengas competencia (por ejemplo dagas y arcos cortos); cambiables tras un descanso largo."
+    },
+    {
+      "id": "poder-psionico",
+      "name": "Poder psiónico",
+      "source": "Pícaro psiónico",
+      "description": "Dados psiónicos 4d6: alimentan los poderes de subclase; sin dados no puedes usar los rasgos que los requieran. Recuperas 1 con un descanso corto y todos tras un descanso largo.",
+      "uses": 4
+    },
+    {
+      "id": "punteria-certera",
+      "name": "Puntería certera",
+      "source": "Pícaro psiónico",
+      "description": "Como acción adicional, te concedes ventaja en tu siguiente tirada de ataque del turno; sin haberte movido este turno y con velocidad 0 hasta el final del turno."
+    },
+    {
+      "id": "susurros-psiquicos",
+      "name": "Susurros psíquicos",
+      "source": "Pícaro psiónico",
+      "description": "Como acción mágica, hasta tantas criaturas como tu bono de competencia gastan 1 dado psiónico: comunicación telepática a 1,5 km durante tantas horas como el resultado; cada criatura puede cortar el enlace."
+    },
+    {
+      "id": "dote-afortunado",
+      "name": "Afortunado",
+      "source": "Dote",
+      "description": "Puntos de suerte iguales a tu bonificador de competencia: gasta 1 para darte Ventaja o para dar Desventaja a una criatura que te ataque. Recuperas los gastados tras un descanso largo.",
+      "uses": 2
+    },
+    {
+      "id": "dote-acechador",
+      "name": "Acechador",
+      "source": "Dote",
+      "description": "Aumenta tu Destreza en 1. Visión ciega hasta 3 m. Ventaja en Sigilo al esconderte en combate; si un ataque hecho escondido falla, no revela tu ubicación."
+    },
+    {
+      "id": "dote-alerta",
+      "name": "Alerta",
+      "source": "Dote",
+      "description": "Al tirar iniciativa, puedes sumar tu bonificador de competencia. Justo después de tirar, puedes cambiar tu iniciativa con la de un aliado dispuesto en el mismo combate."
+    }
+  ],
+  "spells": {
+    "castingAbility": "strength",
+    "slotsMax": {
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    "cantrips": [],
+    "prepared": []
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "tatuaje de barrera (CA 17)"
+      },
+      {
+        "name": "capa protectora (CA +2)"
+      },
+      {
+        "name": "armadura de cuero"
+      },
+      {
+        "name": "herramientas de ladrón",
+        "qty": 2
+      },
+      {
+        "name": "ballesta ligera"
+      }
+    ],
+    "inventory": [
+      {
+        "name": "bolsas",
+        "qty": 2
+      },
+      {
+        "name": "aljaba"
+      },
+      {
+        "name": "ropa de viaje"
+      },
+      {
+        "name": "paquete de ladrón"
+      },
+      {
+        "name": "bolas de metal"
+      },
+      {
+        "name": "campana"
+      },
+      {
+        "name": "cantimplora"
+      },
+      {
+        "name": "cuerda"
+      },
+      {
+        "name": "frascos de aceite",
+        "qty": 7
+      },
+      {
+        "name": "linterna sorda"
+      },
+      {
+        "name": "mochila"
+      },
+      {
+        "name": "palanqueta"
+      },
+      {
+        "name": "raciones para 5 días"
+      },
+      {
+        "name": "velas",
+        "qty": 10
+      },
+      {
+        "name": "yesquero"
+      },
+      {
+        "name": "manzanas",
+        "qty": 3
+      },
+      {
+        "name": "carcaj (20 virotes)"
+      },
+      {
+        "name": "puñado de clavos"
+      },
+      {
+        "name": "daga",
+        "qty": 4
+      }
+    ],
+    "coins": {
+      "gp": 17,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [
+      "ligeras"
+    ],
+    "weapons": [
+      "armas sencillas",
+      "ballesta de mano",
+      "cimitarra",
+      "espada corta",
+      "estoque",
+      "látigo"
+    ],
+    "tools": [
+      "herramientas de ladrón"
+    ],
+    "languages": [
+      "común",
+      "dracónido",
+      "gnomo",
+      "jerga de ladrones"
+    ]
+  },
+  "role": {
+    "summary": "Roge",
+    "tableNotes": [
+      "EXP: 2700 (nivel 4).",
+      "Lucero del alba rayo??? → Maza +1 1d6 radiante a no muertos."
+    ],
+    "questions": []
+  },
+  "allies": [],
+  "hiddenBlocks": [
+    "spells"
+  ]
+}

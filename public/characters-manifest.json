@@ -28,6 +28,13 @@
       "class": "pícaro",
       "level": 4,
       "initials": "MF"
+    },
+    {
+      "id": "patx-vane",
+      "name": "Patx Vane",
+      "class": "pícaro",
+      "level": 4,
+      "initials": "PV"
     }
   ]
 }

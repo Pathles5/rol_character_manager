@@ -27,6 +27,7 @@ Convenciones:
 - **`README.md` en la raíz**: guía para levantar la app (requisitos, comandos, despliegue, estructura y punteros a la documentación). Referenciado desde aquí y desde las specs de entrega (Fase 08); mantenerlo al día con los scripts del `package.json`.
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
-Fases futuras (fuera de la v1 del brief, para memoria — sin filas de tabla para que la compuerta no las trate como activas):
+Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 
-- **Fase 11 (activada): tiradas con dados animados** — ver fila en la tabla principal con su spec (`docs/specs/11-dice-roller/`).
+- **Fase 11 (activada): tiradas con dados animados** - ver fila en la tabla principal con su spec (`docs/specs/11-dice-roller/`).
+- **Dados custom rápidos**: desplegable con lista de dados (1d20, 2d6, 1d4, 1d100...) para tiradas rápidas fuera de ataques/conjuros - petición del usuario (2026-11-20, durante la ingesta de Patx Vane). Encaja con el diálogo de dados de la Fase 11.
