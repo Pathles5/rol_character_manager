@@ -51,13 +51,15 @@ En `--guided` responde:
 
 ## Paso 2 · Secrets de GitHub (lista EXACTA)
 
-GitHub → **Settings → Secrets and variables → Actions → New repository secret**
-(2 secrets, ninguno de ellos es una access key — OIDC no los necesita):
+GitHub → **Settings → Environments → dev → Add environment secret**
+(los secrets son de **ENTORNO "dev"**, no de repo — el job `deploy` los consume
+declarando `environment: dev` en el workflow; 2 secrets, ninguno es una access
+key — OIDC no los necesita):
 
 | Secret | Valor |
 |---|---|
 | `AWS_OIDC_ROLE_ARN` | Output `OidcRoleArn` del stack |
-| `AWS_REGION` | Región elegida en el deploy (p. ej. `eu-south-2`) — necesaria ANTES de autenticarse, por eso sigue siendo secret |
+| `AWS_REGION` | Región elegida en el deploy (p. ej. `eu-west-1`) — necesaria ANTES de autenticarse, por eso sigue siendo secret |
 
 El nombre del bucket NO es un secret: el stack lo publica en SSM (`/fichass/bucket-name`, D-40) y el workflow lo lee en runtime con `ssm:GetParameter` (único permiso SSM del rol).
 

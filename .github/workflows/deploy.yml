@@ -88,6 +88,9 @@ jobs:
     # Solo despliega en la rama protegida (workflow_dispatch desde otra rama
     # compilaría pero NO tocaría el bucket).
     if: github.ref == 'refs/heads/master'
+    # Los secrets (AWS_OIDC_ROLE_ARN / AWS_REGION) viven en el environment
+    # "dev" (creado por el usuario 2026-11-20) — ver infra/README.md.
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
