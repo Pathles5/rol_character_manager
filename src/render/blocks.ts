@@ -72,6 +72,29 @@ function stepper(target: StepperTarget, incLabel: string, decLabel: string): str
       </span>`;
 }
 
+/** Quick-change strip for hit points (user request 2026-11-20, final
+    layout after visual feedback): THREE left-aligned rows under the
+    ±1 pair — row 2 is ±10 (`-- ++`), row 3 is the fill-to-max button
+    (absolute `set` action with the character's max HP — render-time
+    value, no hardcoding). The ±5 step is dropped (user decision). */
+function hpStrip(maxHitPoints: number): string {
+  const button = (action: 'dec' | 'inc' | 'set', step: number, label: string, text: string, extraClass = ''): string =>
+    `<button type="button" class="step ${extraClass}" data-action="${action}" data-target="hp-current" data-value="${step}" aria-label="${label}">${text}</button>`;
+  return `<span class="step-wrap">
+        <span class="step-row">
+          ${button('dec', 1, 'Restar 1 punto de golpe', '-')}
+          ${button('inc', 1, 'Sumar 1 punto de golpe', '+')}
+        </span>
+        <span class="step-row">
+          ${button('dec', 10, 'Restar 10 puntos de golpe', '--')}
+          ${button('inc', 10, 'Sumar 10 puntos de golpe', '++')}
+        </span>
+        <span class="step-row">
+          ${button('set', maxHitPoints, 'Rellenar los PG al máximo', '\u2764')}
+        </span>
+      </span>`;
+}
+
 /** Official 2024 condition catalog (model §8, Spanish labels for
     the player; sessionState.conditions stores these labels). */
 export const CONDITION_CATALOG: readonly string[] = [
@@ -175,7 +198,7 @@ export function renderCombat(
     <div class="stat">
       <span class="num">${session.hp.current}<span class="den">/${combat.maxHitPoints}</span></span>
       <span class="lbl">PG</span>
-      ${stepper('hp-current', 'Sumar 1 punto de golpe actual', 'Restar 1 punto de golpe actual')}
+      ${hpStrip(combat.maxHitPoints)}
     </div>
     <div class="stat">
       <span class="num">${session.hp.temp}</span><span class="lbl">PG temp</span>
@@ -340,7 +363,7 @@ export function renderRest(
   }).join('');
   return `
     <ul class="rows">
-      <li class="row"><span class="k">PG</span><span class="counter"><span class="val">${session.hp.current} / ${combat.maxHitPoints}</span>${stepper('hp-current', 'Sumar 1 punto de golpe actual', 'Restar 1 punto de golpe actual')}</span></li>
+      <li class="row"><span class="k">PG</span><span class="counter"><span class="val">${session.hp.current} / ${combat.maxHitPoints}</span>${hpStrip(combat.maxHitPoints)}</span></li>
       <li class="row"><span class="k">PG temporales</span><span class="counter"><span class="val">${session.hp.temp}</span>${stepper('hp-temp', 'Sumar 1 punto de golpe temporal', 'Restar 1 punto de golpe temporal')}</span></li>
       <li class="row"><span class="k">Dados golpe</span><span class="counter"><span class="val">${session.hitDice.used} / ${combat.hitDice.total} ${combat.hitDice.die}</span>${stepper('hit-dice', 'Gastar 1 dado de golpe', 'Recuperar 1 dado de golpe')}</span></li>
       ${slotRows}

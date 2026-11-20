@@ -57,16 +57,31 @@ a { color: var(--accent); text-decoration: none; }
   top: 0;
   z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-3);
   background: rgba(11, 13, 18, .86); /* frozen backdrop derived from --canvas */
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--hairline);
 }
 
+/* Appbar layout (Phase 10 usability amendment, user feedback 2026-11-20):
+   row 1 = home (back arrow + wordmark) ... Reset;
+   row 2 = character identity (name over class·level) ... mode buttons.
+   Everything aligns within its row — no overlap at 390px. */
+.appbar-top,
+.appbar-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .appbar-home {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-dense);
   color: var(--text-dim);
   white-space: nowrap;
@@ -78,9 +93,7 @@ a { color: var(--accent); text-decoration: none; }
   letter-spacing: .02em;
 }
 
-/* --- Phase 10 amendment (user choice): back to overview from the
-   character view — explicit "← Personajes" + the wordmark as a
-   home link (both plain <a>, keyboard-free navigation). --- */
+/* --- Home + back (plain <a>, keyboard-free navigation) --- */
 .appbar-back,
 .appbar-home-link {
   color: inherit;
@@ -88,12 +101,9 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .appbar-back {
-  margin-right: var(--space-2);
-  padding: 2px 8px;
+  padding: 2px 9px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-md);
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
   color: var(--text-dim);
 }
 
@@ -103,11 +113,81 @@ a { color: var(--accent); text-decoration: none; }
   border-color: var(--accent);
 }
 
+/* Character identity: two lines (name / class · level) */
+.appbar-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.appbar-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appbar-sub {
+  font-size: var(--text-dense);
+  color: var(--text-dim);
+}
+
+/* Mode buttons: icon-only on mobile, icon + label from 834px */
 .mode-tabs {
   display: flex;
   gap: var(--space-2);
-  flex-wrap: wrap;
   justify-content: flex-end;
+  flex: none;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mode-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.mode-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mode-label {
+  display: none;
+  font-size: var(--text-dense);
+}
+
+@media (min-width: 834px) {
+  .mode-label {
+    display: inline;
+  }
 }
 
 /* --- Chip (small pill label) --- */
@@ -212,6 +292,11 @@ a { color: var(--accent); text-decoration: none; }
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-dim);
+  /* Long labels ("Condicionales") wrap inside the cell instead of
+     overflowing it (user feedback 2026-11-20). */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 
 .stat-grid {
@@ -679,6 +764,81 @@ main {
 /* Clickable death-save dots are native buttons (button reset
    already removes borders/padding; .dot paints the shape). */
 .dots .dot { cursor: pointer; }
+
+/* Quick-change strip for HP (user request 2026-11-20): two rows —
+   row 1: `- +` (±1), `-- ++` (±5) and the fill button; row 2: `--- +++`
+   (±10) right-aligned under the ±5 pair. */
+.step-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.step-row {
+  display: flex;
+  gap: 3px;
+}
+
+/* The fill row (single ❤ button) is centered within the strip. */
+.step-wrap .step-row:last-child {
+  align-self: center;
+}
+
+.step-row .step {
+  padding: 2px 5px;
+  font-size: var(--text-dense);
+}
+
+.step-fill {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Reset confirmation dialog (user request 2026-11-20): centered card
+   over the shared backdrop — same tokens as the spell detail sheet. */
+.confirm-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  max-width: 340px;
+  width: calc(100% - var(--space-6) * 2);
+}
+
+.confirm-title {
+  font-size: var(--text-title);
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.confirm-text {
+  font-size: var(--text-body);
+  color: var(--text-dim);
+  margin: 0 0 var(--space-3);
+}
+
+.confirm-text strong {
+  color: var(--text);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.confirm-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.confirm-danger:hover,
+.confirm-danger:focus-visible {
+  background: var(--danger);
+  color: var(--canvas);
+}
 
 /* Condition chips reuse .chip; pressed state = .chip.active. */
 .chip-set {

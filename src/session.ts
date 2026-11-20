@@ -462,12 +462,15 @@ function writeCounter(target: StepperTarget, value: number): SessionPatch {
   }
 }
 
-/** Applies one stepper interaction (+1 / −1, or an absolute value
-    for the death-save dots). Limits are enforced by patchSession. */
+/** Applies one stepper interaction (+1 / −1, ±N via `value`, or an
+    absolute value for the death-save dots and the HP fill button).
+    Limits are enforced by patchSession. */
 export function applyStepper(action: StepperAction, target: StepperTarget, value?: number): SessionState {
   const { state } = requireContext();
   const current = readCounter(state, target);
-  const next = action === 'set' ? numberOr(value, current) : current + (action === 'inc' ? 1 : -1);
+  const next = action === 'set'
+    ? numberOr(value, current)
+    : current + (numberOr(value, 1)) * (action === 'inc' ? 1 : -1);
   return patchSession(writeCounter(target, next));
 }
 

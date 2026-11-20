@@ -234,6 +234,20 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** indicación explícita del usuario; coherente con el lenguaje visual de dots ya aprobado.
 - **Riesgo:** la identidad es la única tarjeta que ahora consume sesión fuera de los contadores clásicos — el test de foco y los de clamps siguen en verde (72/72); el dot hereda el fix de restauración de foco de Fase 06. Colocación final (misma fecha, feedback visual del usuario): dentro de `identity-lines`, como última línea bajo "humana · clériga 5…", alineada con flex (`align-items: center`), para no romper el eje del retrato.
 
+## D-42 · 2026-11-20 · Tira rápida de PG: ±10/±5/±1 + rellenar
+
+- **Contexto:** petición de un usuario de la app: "poder bajar la vida y subirla en más cantidad: ±5, ±10 y rellenar".
+- **Elección:** en la celda de PG (tarjeta Combate) y en la fila de PG (bloque Descanso), el par ±1 se sustituye por una tira compacta **−10 · −5 · −1 · +1 · +5 · +10 · ❤ rellenar** (rellenar = `set` al maxHP, render-time). Mecánica: `applyStepper` usa el `value` del botón como **tamaño de paso** para inc/dec (default 1 — retrocompatible con todos los steppers ±1 existentes). Límites 0..maxHP ya garantizados por el clamp. Estilo: `.step-row` compacto, botón ❤ en acento.
+- **Motivo:** en combate mover 10 PG de golpe era diez pulsaciones; ahora es una.
+- **Riesgo:** un toque accidental — mitigado por la reversibilidad (+ al lado). Los PG temporales mantienen ±1 (fuera de la petición). Evolución visual por feedback del usuario (misma fecha): 1) ±10/±5/±1 en tira → 2) guiones en pares → 3) solo `- +` + ❤ → **4) final: tres filas alineadas bajo el ±1 — fila 1 = `- +` (±1), fila 2 = `-- ++` (±10), fila 3 = ❤ rellenar** (el ±5 se retira por decisión del usuario). `applyStepper` usa el valor como paso.
+
+## D-43 · 2026-11-20 · Reset con popup de confirmación
+
+- **Contexto:** petición del usuario durante el QA: el Reset borraba la sesión sin confirmación — riesgo de borrado accidental en partida.
+- **Elección:** diálogo de confirmación centrado con la misma estética (tokens del sistema, backdrop compartido): "¿Restablecer contadores?" + texto con el nombre del personaje + botones **Cancelar** / **Restablecer** (en `--danger`). El botón Reset abre el diálogo; Cancelar/backdrop cierran; aceptar ejecuta `resetSession()` y cierra. Foco: al abrir va a Cancelar; al cerrar vuelve al botón Reset.
+- **Motivo:** evita borrados accidentales sin romper la estética (mismo lenguaje visual que la hoja de detalle de conjuros).
+- **Riesgo:** sin cierre por Esc en v0.1.x (botones y backdrop cubren el caso); añadir Esc si se pide.
+
 ## D-31 · 2026-11-19 · Pulido de cierre: CSS muerto retirado, `data-modes` se mantiene
 
 - **Contexto:** Fase 08; deudas de las fases 05–07 (elección validada con el usuario: retirar CSS muerto, mantener `data-modes`).
@@ -275,6 +289,13 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Elección:** `Trait` gana **`uses?: number`** (dato autoriado del JSON). Cualquier rasgo con `uses` pinta un contador `0/uses` en su línea, conectado a `sessionState.resourcesUsed[<trait id>]` vía targets `resource-<traitId>` generalizados (la excepción de Fortuna desaparece). El clamp de sesión respeta el `uses` del rasgo. Rasgos de raza añadidos a las 4 fichas (Humana: Adaptable + Afortunado uses 2; Medio-orco: Visión en la oscuridad, Aguante implacable uses 1, Impulso de adrenalina uses 2) — petición del usuario.
 - **Motivo:** regla general en vez de casos especiales; el editor del JSON decide qué rasgos son activables sin tocar código.
 - **Riesgo:** un `uses` faltante desactiva el contador silenciosamente (decisión de diseño: sin `uses` = rasgo pasivo); si el JSON cambia el id de un rasgo, la sesión previa queda huérfana (D-36 la ignora).
+
+## D-41 · 2026-11-20 · Appbar usable en móvil: dos filas, modos como iconos SVG
+
+- **Contexto:** feedback de usabilidad del usuario probando la app en el responsive móvil: los chips de modo se solapaban y salían del viewport; pidió iconos, alineación, quitar "Personajes" de la flecha y la identidad en dos líneas.
+- **Elección:** appbar reestructurada en dos filas — fila 1: `←` (solo flecha) + **FichaSS** … Reset; fila 2: identidad en dos líneas (nombre / clase · nivel) … **4 botones de modo como iconos SVG inline** (espada/brújula/luna/grupo, sin recursos externos I2) con `title`/`aria-label` y estado activo en acento; etiqueta de texto visible desde 834px.
+- **Motivo:** petición explícita del usuario; todo queda alineado dentro de su fila a 390px sin solapes.
+- **Riesgo:** los iconos SVG requieren `title`/`aria-label` para accesibilidad (aplicado); el Reset permanece como texto (a petición del usuario).
 
 ## D-39 · 2026-11-19 · Workflow sync-only: el despliegue del stack es one-time manual
 

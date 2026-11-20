@@ -239,20 +239,40 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
 
   // Success: full appbar (modes + reset) + sheet + detail sheet.
   const identity = character.identity;
+  // Mode icons: inline SVG (stroke), self-contained — no external
+  // resources (constitution I2). Lucide-style geometry, viewBox 24.
+  const MODE_ICONS: Record<string, string> = {
+    combate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>',
+    aventura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>',
+    descanso: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+    mesa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  };
+  const modeButtonsHtml = (['combate', 'aventura', 'descanso', 'mesa'] as const)
+    .map(mode => `
+      <button type="button" class="mode-btn${mode === 'aventura' ? ' active' : ''}" data-mode="${mode}" aria-pressed="${mode === 'aventura'}" title="Modo ${mode.charAt(0).toUpperCase()}${mode.slice(1)}" aria-label="Modo ${mode}">
+        ${MODE_ICONS[mode]}<span class="mode-label">${mode.charAt(0).toUpperCase()}${mode.slice(1)}</span>
+      </button>`)
+    .join('');
+
   root.innerHTML = `
   <header class="appbar">
-    <div class="appbar-home">
-      <a class="appbar-back" href="#/" aria-label="Volver a la vista de personajes">← Personajes</a>
-      <strong><a class="appbar-home-link" href="#/">FichaSS</a></strong><span id="appbar-character"> · ${escapeHtml(identity.name)} · ${escapeHtml(identity.class)} ${identity.level}</span>
+    <div class="appbar-top">
+      <div class="appbar-home">
+        <a class="appbar-back" href="#/" aria-label="Volver a la vista de personajes">←</a>
+        <a class="appbar-home-link" href="#/"><strong>FichaSS</strong></a>
+      </div>
+      <!-- Phase 06: restores the default session counters and clears localStorage. -->
+      <button type="button" class="chip" id="reset-session" aria-label="Restablecer los contadores de la sesión y borrar lo guardado">Reset</button>
     </div>
-    <nav class="mode-tabs" aria-label="Modos de vista">
-      <button type="button" class="chip" data-mode="combate" aria-pressed="false">Combate</button>
-      <button type="button" class="chip active" data-mode="aventura" aria-pressed="true">Aventura</button>
-      <button type="button" class="chip" data-mode="descanso" aria-pressed="false">Descanso</button>
-      <button type="button" class="chip" data-mode="mesa" aria-pressed="false">Mesa</button>
-    </nav>
-    <!-- Phase 06: restores the default session counters and clears localStorage. -->
-    <button type="button" class="chip" id="reset-session" aria-label="Restablecer los contadores de la sesión y borrar lo guardado">Reset</button>
+    <div class="appbar-main">
+      <div class="appbar-identity">
+        <span class="appbar-name">${escapeHtml(identity.name)}</span>
+        <span class="appbar-sub">${escapeHtml(identity.class)} · nivel ${identity.level}</span>
+      </div>
+      <nav class="mode-tabs" aria-label="Modos de vista">
+        ${modeButtonsHtml}
+      </nav>
+    </div>
   </header>
 
   <!-- The full sheet is rendered below (renderSheet over the
@@ -262,6 +282,17 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   <!-- Phase 06 (T-03): spell detail bottom sheet. Empty container;
        the content is mounted from the spell data. -->
   <div class="backdrop" id="detail-backdrop" hidden></div>
+  <!-- Phase 06 amendment (user request 2026-11-20): Reset asks for
+       confirmation before wiping the session (no accidental deletes). -->
+  <div class="backdrop" id="reset-backdrop" hidden></div>
+  <section class="card confirm-dialog" id="reset-confirm" role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title" hidden>
+    <h2 class="confirm-title" id="reset-confirm-title">¿Restablecer contadores?</h2>
+    <p class="confirm-text">Se restauran los valores por defecto de <strong>${escapeHtml(identity.name)}</strong> y se borra la sesión guardada.</p>
+    <div class="confirm-actions">
+      <button type="button" class="chip" id="reset-cancel">Cancelar</button>
+      <button type="button" class="chip confirm-danger" id="reset-accept">Restablecer</button>
+    </div>
+  </section>
   <section class="sheet spell-sheet" id="detail-sheet" role="dialog" aria-modal="true" aria-label="Detalle de conjuro" hidden>
     <div class="handle" aria-hidden="true"></div>
     <button type="button" class="sheet-close" aria-label="Cerrar el detalle del conjuro">✕</button>
@@ -298,9 +329,27 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     });
   }
 
-  // Reset (Phase 06, C2): defaults + per-character key removal.
-  root.querySelector<HTMLButtonElement>('#reset-session')?.addEventListener('click', () => {
+  // Reset (Phase 06, C2): defaults + per-character key removal —
+  // behind a confirmation dialog (user request 2026-11-20: avoid
+  // accidental wipes). Cancel/backdrop close; accept resets.
+  const resetButton = root.querySelector<HTMLButtonElement>('#reset-session');
+  const resetDialog = root.querySelector<HTMLElement>('#reset-confirm');
+  const resetBackdrop = root.querySelector<HTMLElement>('#reset-backdrop');
+  const closeReset = (): void => {
+    if (resetDialog) resetDialog.hidden = true;
+    if (resetBackdrop) resetBackdrop.hidden = true;
+    resetButton?.focus();
+  };
+  resetButton?.addEventListener('click', () => {
+    if (resetDialog) resetDialog.hidden = false;
+    if (resetBackdrop) resetBackdrop.hidden = false;
+    root.querySelector<HTMLButtonElement>('#reset-cancel')?.focus();
+  });
+  root.querySelector<HTMLButtonElement>('#reset-cancel')?.addEventListener('click', closeReset);
+  resetBackdrop?.addEventListener('click', closeReset);
+  root.querySelector<HTMLButtonElement>('#reset-accept')?.addEventListener('click', () => {
     resetSession();
+    closeReset();
   });
 
   sheet?.addEventListener('click', event => {
