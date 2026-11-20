@@ -15,7 +15,7 @@ Estados: `spec` → `implement` → `verified` (+ `approved` si requiere visto d
 | 07 | Tests y QA | verified | 72 tests en verde (D-29); revisor PASS with remarks; QA manual aprobado por el usuario; D-30 (inspiración como dot en identidad) |
 | 08 | Pulido y entrega | approved | Deudas limpiadas (D-31, ampliada con drawer/flag CSS muerto), informe docs/ENTREGA.md (D-32); revisor APROBADO CON OBSERVACIONES (minors resueltos); **v1 cerrada y etiquetada v0.0.1** (commit 649013a, pushed) |
 | 10 | Multi-personaje (JSON + vista raíz + routing) | verified | Multi-personaje completo (D-33/D-35/D-36/D-37/D-38): router hash, overview, manifest validado en build, sesión por id, 4 personajes publicados, rasgos activables; revisor PASS (tras 1 corrección); QA usuario "todo ok"; 86/86 tests |
-| 09 | Infra AWS SAM + CI/CD | implement | Infra escrita (D-34/D-39): SAM template + workflow sync-only + guía one-time; pendiente despliegue del usuario (3 secrets + sam deploy) y revisor |
+| 09 | Infra AWS SAM + CI/CD | verified | Infra desplegada y verificada: stack fichass-infra (S3+OIDC+SSM, D-34/D-39/D-40), workflow success (gates + sync), URL pública HTTP 200; cadenas de fallo documentadas (spec deviations); pendiente revisor fresh-eyes en la próxima compuerta |
 
 Convenciones:
 - Cada fase vive en `docs/specs/NN-<nombre>/` con `spec.md` y `tasks.md`.
