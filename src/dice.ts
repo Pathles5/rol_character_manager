@@ -42,3 +42,18 @@ export function rollDice(
   const sum = rolls.reduce((total, roll) => total + roll, 0);
   return { rolls, mod: parsed.mod, total: sum + parsed.mod };
 }
+
+/** Flavor call-out for a finished roll (Phase 13, D-51): a natural
+    20 on a d20 gets the crit cry (any notation); a BARE death save
+    (notation exactly "1d20") with natural 1 marks the double
+    failure of the 2024 rules — a nat 1 on any other roll is just
+    a roll, so no call-out. Pure: no DOM, testable. */
+export function rollFlavor(notation: string, rolls: number[]): string {
+  const parsed = parseDamage(notation);
+  if (!parsed) return '';
+  if (parsed.faces === 20 && rolls.some(roll => roll === 20)) return '¡CRÍTICO!';
+  if (notation === '1d20' && rolls.length === 1 && rolls[0] === 1) {
+    return '¡fallo doble!';
+  }
+  return '';
+}

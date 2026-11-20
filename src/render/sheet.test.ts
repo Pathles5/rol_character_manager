@@ -66,3 +66,16 @@ describe('renderSheet — initiative roll + temp strip (Phase 12, D-50)', () => 
     expect(html).toContain('aria-label="Vaciar los PG temporales"');
   });
 });
+
+describe('renderSheet — save rolls (Phase 13, D-51)', () => {
+  const html = renderSheet(demoCharacter, demoDerived);
+
+  it('every one of the 6 saves carries a d20 with its ASCII notation', () => {
+    expect(html.match(/Tirar salvación de (?:FUE|DES|CON|INT|SAB|CAR): 1d20[+-]\d+/g)?.length).toBe(6);
+  });
+
+  it('the death-save head carries a bare 1d20 button', () => {
+    expect(html).toContain('aria-label="Tirar salvación de muerte: 1d20"');
+    expect(html).toContain('data-notation="1d20"');
+  });
+});

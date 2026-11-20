@@ -260,7 +260,11 @@ export function renderDefense(
 ): string {
   const saves = ABILITY_ORDER.map(ability => {
     const proficient = character.defense.saveProficiencies.includes(ability);
-    return `<div class="row skill${proficient ? ' prof' : ''}"><span class="k">${ABILITY_LABELS[ability]}</span><span class="v">${formatModifier(derived.saveTotals[ability])}</span></div>`;
+    const mod = derived.saveTotals[ability];
+    // Dice button per save (Phase 13, D-51): same d20 pattern as the
+    // initiative stat (validated by the user).
+    const notation = diceNotation(mod);
+    return `<div class="row skill${proficient ? ' prof' : ''}"><span class="k">${ABILITY_LABELS[ability]}</span><span class="v">${formatModifier(mod)}${d20Button(notation, `Tirar salvación de ${ABILITY_LABELS[ability]}: ${notation}`)}</span></div>`;
   }).join('');
   /** Clickable death-save dots (T-02): clicking a dot marks up to
       it; clicking the LAST active dot unmarks it (validated UX).
@@ -286,7 +290,7 @@ export function renderDefense(
   return `
     <div class="skill-list">${saves}</div>
     <p class="legend">✓ con competencia de salvación</p>
-    <div class="subhead">Salvaciones de muerte</div>
+    <div class="subhead death-head">Salvaciones de muerte${d20Button('1d20', 'Tirar salvación de muerte: 1d20')}</div>
     <div class="dot-row"><span class="dense dim">Éxitos</span><span class="dots">${deathDots('success', session.deathSaves.successes)}</span></div>
     <div class="dot-row"><span class="dense dim">Fracasos</span><span class="dots">${deathDots('failure', session.deathSaves.failures)}</span></div>`;
 }

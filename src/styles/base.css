@@ -403,6 +403,19 @@ a { color: var(--accent); text-decoration: none; }
 .skill-list .k { color: var(--text-dim); }
 .skill-list .v { color: var(--text-dim); font-size: var(--text-dense); }
 
+/* Per-save roll buttons (Phase 13, D-51): the d20 rides right
+   after the modifier, on the same line. */
+.skill-list .v .dice-btn {
+  margin-left: 6px;
+}
+
+/* Death-save head carries its bare d20 (Phase 13, D-51). */
+.death-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .skill.prof .k { color: var(--text); }
 .skill.prof .k::before { content: "\2713\00a0"; color: var(--accent); }
 .skill.prof .v { color: var(--text); font-size: var(--text-body); }

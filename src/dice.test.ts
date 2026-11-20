@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { describe, expect, it, vi } from 'vitest';
-import { parseDamage, rollDice } from './dice';
+import { parseDamage, rollDice, rollFlavor } from './dice';
 
 describe('parseDamage — fixture notations (Phase 11, C1)', () => {
   it('parses "1d8+4" (espada larga, Dahna)', () => {
@@ -59,5 +59,26 @@ describe('rollDice — deterministic with injected random', () => {
     const result = rollDice({ count: 2, faces: 6, mod: 3 }, random);
     expect(result.rolls).toEqual([1, 6]);
     expect(result.total).toBe(10);
+  });
+});
+
+describe('rollFlavor - crit + death-save double failure (Phase 13, D-51)', () => {
+  it('a natural 20 on any d20 notation gets the crit call-out', () => {
+    expect(rollFlavor('1d20+5', [20])).toBe('¡CRÍTICO!');
+    expect(rollFlavor('1d20', [20])).toBe('¡CRÍTICO!');
+  });
+
+  it('a bare death save with natural 1 marks the double failure (2024)', () => {
+    expect(rollFlavor('1d20', [1])).toBe('¡fallo doble!');
+  });
+
+  it('a nat 1 on any other roll is just a roll (no call-out)', () => {
+    expect(rollFlavor('1d20+3', [1])).toBe('');
+    expect(rollFlavor('2d6+2', [1, 1])).toBe('');
+    expect(rollFlavor('1d8', [1])).toBe('');
+  });
+
+  it('an unparseable notation gets no flavor', () => {
+    expect(rollFlavor('2d8+1d6', [1])).toBe('');
   });
 });

@@ -279,6 +279,13 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Sin cambios en session.ts:** la acción `set` con `data-value` ya estaba soportada; clamp 0..20 intacto.
 - **Riesgo:** ninguno operativo — 101/101 tests (5 nuevos), QA visual del usuario pendiente sobre producción.
 
+## D-51 · 2026-11-20 · Fase 13: tiradas de salvaciones + salvación de muerte
+
+- **Contexto:** continuación natural de la Fase 12 ("después iremos con la iniciativa y salvaciones"); propuesta validada por el usuario hoy.
+- **Elección (validada):** (1) dado d20 **junto a cada una de las 6 salvaciones** en la tarjeta defense (`1d20+total` ASCII, mismo diálogo), descartado el botón-con-selector. (2) **Sí** a la tirada de salvación de muerte: d20 pelado en el subhead; nat 20 → "¡CRÍTICO!" (regla 2024: recuperas 1 PG) y nat 1 → "¡fallo doble!" (2 fracasos). El nat 1 en cualquier otra tirada NO se marca (es solo un 1).
+- **Refactor:** el crítico inline de `renderRoll` (Fase 11) pasa a la función pura `rollFlavor(notation, rolls)` en dice.ts — comportaminto idéntico para ataques/iniciativa, ahora testeable.
+- **Riesgo:** bajo — la notación `1d20` pelada solo la produce el botón de muerte (los ataques siempre llevan bonus); si en el futuro se añade otra tirada sin modificador, habría que re-visitar la marca de fallo doble. 107/107 tests (6 nuevos); QA visual del usuario pendiente sobre producción.
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.

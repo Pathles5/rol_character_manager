@@ -16,7 +16,7 @@
    ============================================================ */
 
 import { BLOCK_CONFIG } from '../data/blockConfig';
-import { parseDamage, rollDice } from '../dice';
+import { parseDamage, rollDice, rollFlavor } from '../dice';
 import { computeDerived } from '../derived';
 import { isModeId, setMode } from '../filters';
 import { escapeHtml } from '../lib/manifest';
@@ -411,9 +411,11 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     rollDiceRow.innerHTML = result.rolls
       .map((value, index) => `<span class="die" style="animation-delay: ${index * 80}ms">${value}</span>`)
       .join('');
-    // Natural 20 on an attack roll (d20) gets the crit call-out.
-    const crit = parsed.faces === 20 && result.rolls.some(r => r === 20) ? ' · ¡CRÍTICO!' : '';
-    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}${crit}`;
+    // Roll flavor (Phase 13, D-51): natural 20 → crit cry; a bare
+    // death save (1d20) with natural 1 → double failure (2024).
+    const flavor = rollFlavor(notation, result.rolls);
+    const callout = flavor ? ` · ${flavor}` : '';
+    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}${callout}`;
   };
   const openRoll = (notation: string, opener: HTMLButtonElement): void => {
     // Guard (review minor, Phase 11): never open the dialog for a
