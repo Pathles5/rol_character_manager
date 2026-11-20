@@ -2,32 +2,27 @@
 # FichaSS — infra SAM template (Fase 09, D-34: SAM a petición del usuario)
 # ============================================================================
 #
-# SIMPLIFICACIÓN (2026-11-20, tras el diagnóstico de Fase 09): el stack
-# requere que el OIDC provider de GitHub YA exista en la cuenta
-# (token.actions.githubusercontent.com). Si no existe, créalo una vez:
-#   aws iam create-open-id-connect-provider \
-#     --url https://token.actions.githubusercontent.com \
-#     --client-id-list sts.amazonaws.com \
-#     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
-# (los thumbprints históricos valen; AWS valida GitHub por su librería de CAs)
-#
-# SAM vs CloudFormation: SAM es CloudFormation con transform; este template
-# usa tipos nativos (sin Lambda/API — v1 100% estática). El transform SAM
-# permite usar `sam validate/build/deploy` como en el otro proyecto del
-# usuario. `sam build` es no-op aquí.
+# SIMPLIFICACIÓN FINAL (2026-11-20, tras el diagnóstico de Fase 09):
+# 1. El OIDC provider de GitHub DEBE existir en la cuenta (el usuario ya lo
+#    tiene por su otro proyecto). Si no existiera, crearlo UNA vez:
+#      aws iam create-open-id-connect-provider \
+#        --url https://token.actions.githubusercontent.com \
+#        --client-id-list sts.amazonaws.com \
+#        --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+# 2. UN solo rol incondicional, SIN ManagedPolicy (inline policies) y SIN
+#    recursos condicionales: la validación temprana de CloudFormation
+#    (AWS::EarlyValidation::ResourceExistenceCheck) rechaza Refs a recursos
+#    con Condition=false aunque el recurso no se cree, y resultó flaky en
+#    las variantes condicionales. Sin condiciones = determinista.
+# 3. El trust acepta DOS subs (StringEquals con lista = OR): la rama
+#    protegida (jobs sin environment) y el environment "dev" del job deploy.
 #
 # DECISIÓN D-39: el workflow NO despliega stacks (sync-only). Este stack se
-# crea/actualiza UNA VEZ con las credenciales del usuario (sam deploy o
-# create-stack). El rol tiene SOLO permisos S3 + lectura SSM (D-40).
-#
-# NOTA DE OPERACIÓN (2026-11-20): la validación temprana de CloudFormation
-# resultó FLAKY con la versión condicional de este template (fallos
-# AWS::EarlyValidation no deterministas y "Stack does not exist" para
-# changesets CREATE). Se simplificó a un solo rol incondicional. Si un
-# deploy falla con EarlyValidation sin detalle: reintentar (y documentar).
+# crea/actualiza UNA VEZ con las credenciales del usuario. El rol tiene SOLO
+# permisos S3 + lectura SSM (D-40).
 #
 # COSTE €0 (I2/D-11): S3 Free Tier, IAM gratis, CFN gratis, sin CloudFront.
-# Tags obligatorios: project: FichaSS · cost-policy: free-tier-only.
+# Tags: project: FichaSS · cost-policy: free-tier-only (S3/SSM; IAM no soporta).
 # ============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
@@ -50,6 +45,9 @@ Parameters:
     Type: String
     Default: master
     Description: Branch allowed to deploy (only this branch triggers the sync).
+  ExistingOidcProviderArn:
+    Type: String
+    Description: ARN of the GitHub OIDC provider that must ALREADY exist (arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com).
 
 Resources:
 
@@ -94,6 +92,9 @@ Resources:
   # --------------------------------------------------------------------------
   # Deployment settings in SSM (D-40): the workflow reads the bucket name
   # from here — the only secret left is AWS_OIDC_ROLE_ARN.
+  # NOTE: SSM Parameter Tags must be a KEY-VALUE MAP (not a list like S3
+  # Bucket Tags) — the list form trips early validation with an opaque
+  # "AWS::EarlyValidation::PropertyValidation" error (cfn-lint E3012).
   # --------------------------------------------------------------------------
   SsmBucketName:
     Type: AWS::SSM::Parameter
@@ -101,17 +102,15 @@ Resources:
       Name: /fichass/bucket-name
       Type: String
       Value: !Ref SiteBucket
-      # NOTE: SSM Parameter Tags must be a KEY-VALUE MAP (not a list like
-      # S3 Bucket Tags) — the list form trips CloudFormation's early
-      # validation with an opaque "AWS::EarlyValidation::PropertyValidation"
-      # error (diagnosed 2026-11-20 with cfn-lint E3012).
       Tags:
         project: FichaSS
         cost-policy: free-tier-only
 
   # --------------------------------------------------------------------------
   # Role assumed by GitHub Actions via web identity (no long-lived keys).
-  # Trust pinned to: aud=sts.amazonaws.com and the exact repo/branch sub.
+  # Trust pinned to: aud=sts.amazonaws.com and TWO allowed subs (branch ref
+  # for jobs without an environment; environment sub because the deploy job
+  # declares environment: dev — the OIDC token sub changes accordingly).
   # --------------------------------------------------------------------------
   GitHubActionsRole:
     Type: AWS::IAM::Role
@@ -128,16 +127,35 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+              Federated: !Ref ExistingOidcProviderArn
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
-      # Inline policies (NOT ManagedPolicy): the CFN early-validation rejects
-      # AWS::IAM::ManagedPolicy resources in this template (diagnosed 2026-11-20,
-      # see Phase 09 spec) — inline role policies deploy fine.
+                # GitHub cambió el formato del sub en 2025: ahora incluye los
+                # IDs numéricos (@<org-id>/<repo-id>). StringLike con comodines
+                # cubre ambos formatos (viejo con nombres + nuevo con IDs):
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
+                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:ref:refs/heads/${GitHubBranch}
+                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:environment:dev
+                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:environment:dev
+          - Effect: Allow
+            Principal:
+              Federated: !Ref ExistingOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:environment:dev
+                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:environment:dev
+      # Inline policies (NOT ManagedPolicy: early validation rejects it in
+      # this template — see header). Least privilege for `aws s3 sync
+      # --delete` (D-39: the workflow NEVER deploys stacks → no
+      # cloudformation:*, no sam:*, no IAM:PassRole) + SSM read (D-40).
       Policies:
         - PolicyName: fichass-deploy
           PolicyDocument:

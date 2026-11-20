@@ -141,13 +141,12 @@ jobs:
           aws s3 sync dist/assets s3://$AWS_S3_BUCKET/assets
           --cache-control "max-age=31536000,immutable"
           --delete
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        # AWS_S3_BUCKET llega via GITHUB_ENV desde el paso "Read deployment
+        # settings from SSM" (D-40) — NO usar secrets.AWS_S3_BUCKET (ya no
+        # existe como secret y pisa el valor con vacío).
 
       - name: Sync site (HTML/manifest/characters, siempre revalidar)
         run: >
           aws s3 sync dist/ s3://$AWS_S3_BUCKET/
           --cache-control "max-age=0,must-revalidate"
           --delete
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
