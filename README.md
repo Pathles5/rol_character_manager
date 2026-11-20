@@ -77,6 +77,7 @@ scripts/check.ps1        compuerta documental del harness
 
 - **Estado y proceso:** [`docs/specs/INDEX.md`](docs/specs/INDEX.md) (fuente de verdad del progreso) y [`AGENTS.md`](AGENTS.md) (contrato operativo del harness).
 - **Modelo de datos y contrato del futuro `POST /characters`:** [`docs/specs/01-data-model/model.md`](docs/specs/01-data-model/model.md).
+- **Ingesta de personajes (ficha original → JSON):** [`docs/ingest/PROMPT.md`](docs/ingest/PROMPT.md) — prompt maestro versionado con el procedimiento completo (vía agente, revisión humana obligatoria).
 - **Decisiones (log append-only):** [`DECISIONS.md`](DECISIONS.md).
 - **Design tokens congelados:** [`docs/design/tokens.md`](docs/design/tokens.md) · **Fuente Inter:** [`docs/design/fonts.md`](docs/design/fonts.md) · **Capturas:** [`docs/design/capturas/`](docs/design/capturas/).
 - **Constitución (invariantes):** [`docs/specs/constitution.md`](docs/specs/constitution.md) — incluye el invariante de **coste €0** (I2).

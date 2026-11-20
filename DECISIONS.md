@@ -286,6 +286,15 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Refactor:** el crítico inline de `renderRoll` (Fase 11) pasa a la función pura `rollFlavor(notation, rolls)` en dice.ts — comportaminto idéntico para ataques/iniciativa, ahora testeable.
 - **Riesgo:** bajo — la notación `1d20` pelada solo la produce el botón de muerte (los ataques siempre llevan bonus); si en el futuro se añade otra tirada sin modificador, habría que re-visitar la marca de fallo doble. 107/107 tests (6 nuevos); QA visual del usuario pendiente sobre producción.
 
+## D-52 · 2026-11-20 · Fase 14: ingesta de personajes vía agente (y CI/CD pospuesta)
+
+- **Contexto:** el usuario pidió la ingesta como "por medio de un buen prompt almacenado se indique el manual, la ficha original y el modelo JSON; con eso la ficha acaba transformada en JSON", con idea futura de trasladarlo a CI/CD.
+- **Elección (validada por el usuario hoy):** **vía A — asistida por agente**: prompt maestro versionado en `docs/ingest/PROMPT.md`; la transformación la ejecuta el agente. Entrada en **ambos formatos** (texto/markdown y foto/PDF). **Revisión humana siempre** antes del push. La vía **CI/CD con LLM queda POSPUESTA**: exigiría API de LLM facturada por tokens + secret de API, rompiendo I2 (Coste €0) sin enmienda del usuario; si algún día se aprueba la enmienda, se reutiliza el mismo prompt ejecutado por el job.
+- **Ajuste clave del diseño:** el "manual completo" como entrada se sustituye por **referencias vivas** (contrato en `src/types.ts`, 4 JSON few-shot de `public/characters/`, `blockConfig.ts`) + la regla **autoriado vs derivado** (los derivados los calcula `derived.ts`; el agente solo transcribe) — menos ruido, menos alucinación.
+- **Muralla de calidad:** el JSON ingestado pasa por las compuertas existentes (manifest en build = estructura, suite de contrato = campos completos, D-35/D-36) y por la tabla de cotejo con el usuario.
+- **Evidencia (dry-run punta a punta):** hoja markdown sintética (`docs/ingest/examples/demo-sheet.md`) generada desde el personaje demo → ingesta siguiendo el prompt → diff semántico contra el original = **solo `x_demoNotes`** (campo de fixture que el prompt excluye correctamente); build + 108/108 tests con el JSON ingestado en el manifest.
+- **Riesgo:** el OCR de fotos/PDF puede fallar en dígitos — mitigado por el checklist del prompt y la revisión obligatoria del usuario; el proceso depende de que el prompt se mantenga actualizado si el contrato evoluciona (referencias vivas, no copias).
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.
