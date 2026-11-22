@@ -1,0 +1,326 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Elira",
+    "race": "aasimar",
+    "class": "clériga",
+    "subclass": "Dominio del Engaño",
+    "level": 4,
+    "background": "Vagabundo",
+    "alignment": "Caótica buena"
+  },
+  "abilities": {
+    "strength": 8,
+    "dexterity": 10,
+    "constitution": 14,
+    "intelligence": 12,
+    "wisdom": 18,
+    "charisma": 14
+  },
+  "combat": {
+    "armorClass": 15,
+    "speed": 30,
+    "maxHitPoints": 33,
+    "hitDice": {
+      "die": "d8",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "wisdom",
+      "charisma"
+    ]
+  },
+  "skillProficiencies": [
+    "arcanos",
+    "historia",
+    "perspicacia",
+    "religion",
+    "sigilo",
+    "persuasion"
+  ],
+  "skillExpertise": [],
+  "attacks": [
+    {
+      "id": "daga",
+      "name": "Daga",
+      "kind": "melee",
+      "bonus": 1,
+      "damage": "1d4-1",
+      "damageType": "perforante",
+      "note": "6/18 m · alcance, arrojadiza, ligera, maestría: mellar, sutil"
+    }
+  ],
+  "traits": [
+    {
+      "id": "aasimar-resistencia-celestial",
+      "name": "Resistencia celestial",
+      "source": "Aasimar (especie 2024)",
+      "description": "Tienes resistencia al daño necrótico y al radiante."
+    },
+    {
+      "id": "aasimar-vision-en-la-oscuridad",
+      "name": "Visión en la oscuridad",
+      "source": "Aasimar (especie 2024)",
+      "description": "Tienes visión en la oscuridad hasta 18 metros."
+    },
+    {
+      "id": "aasimar-manos-curativas",
+      "name": "Manos curativas",
+      "source": "Aasimar (especie 2024)",
+      "description": "Como acción de magia, tocas a una criatura y tiras tantos d4 como tu modificador de competencia: la criatura recupera el total en PG. Una vez por descanso largo.",
+      "uses": 1
+    },
+    {
+      "id": "bendicion-del-embaucador",
+      "name": "Bendición del embaucador",
+      "source": "Dominio del Engaño",
+      "description": "Como acción de magia, tú o una criatura voluntaria a 9 m o menos tienen ventaja en Destreza (Sigilo) hasta tu próximo descanso largo o hasta que vuelvas a usar el rasgo."
+    },
+    {
+      "id": "canalizar-divinidad",
+      "name": "Canalizar Divinidad",
+      "source": "Clérigo (nivel 4)",
+      "description": "Canalizas energía divina en dos efectos: Chispa divina y Expulsar muertos vivientes. 2 usos: recuperas 1 con un descanso corto y todos con uno largo. CD = CD de salvación de conjuros."
+    },
+    {
+      "id": "canalizar-chispa-divina",
+      "name": "Canalizar Divinidad: Chispa divina",
+      "source": "Clérigo (nivel 4)",
+      "description": "Como acción, una criatura a 9 m o menos recupera 1d8 + tu mod. de SAB en PG, o supera una TS CON o recibe el resultado como daño necrótico/radiante (mitad si la supera)."
+    },
+    {
+      "id": "canalizar-expulsar-muertos",
+      "name": "Canalizar Divinidad: Expulsar muertos vivientes",
+      "source": "Clérigo (nivel 4)",
+      "description": "Como acción de magia, cada muerto viviente de tu elección a 9 m o menos hace una TS SAB: si falla, queda asustado e incapacitado 1 minuto; se acaba si sufre daño."
+    },
+    {
+      "id": "conjuros-de-dominio-del-engano",
+      "name": "Conjuros de dominio del Engaño",
+      "source": "Dominio del Engaño",
+      "description": "Aprendes los conjuros de clérigo listados en Conjuros del dominio del Engaño (la hoja de Nivel20 imprime \"dominio de la vida\" por error)."
+    },
+    {
+      "id": "invocar-duplicidad",
+      "name": "Invocar duplicidad",
+      "source": "Dominio del Engaño",
+      "description": "Creas un duplicado ilusorio con Canalizar Divinidad a 9 m: dura 1 minuto, te imita, no es tangible; ventaja en ataques si ambos estáis cerca del enemigo, puedes lanzar conjuros desde su posición y moverlo como acción adicional."
+    },
+    {
+      "id": "lanzamiento-de-conjuros",
+      "name": "Lanzamiento de conjuros",
+      "source": "Clérigo (nivel 4)",
+      "description": "Conjuros de clérigo con Sabiduría. Preparas tantos como mod. de SAB + nivel de clérigo tras un descanso largo; para lanzar gastas un espacio de igual nivel o superior (salvo trucos)."
+    },
+    {
+      "id": "dote-revelacion-celestial",
+      "name": "Revelación celestial",
+      "source": "Dote",
+      "description": "Como acción adicional te transformas 1 minuto: velocidad de vuelo, luz brillante 3 m y tenue 3 m más, o miedo a no aliados a 3 m. Daño adicional radiante = bono de competencia 1 vez/turno. 1 vez por descanso largo.",
+      "uses": 1
+    },
+    {
+      "id": "dote-influencia-feerica",
+      "name": "Influencia feérica",
+      "source": "Dote",
+      "description": "Aumenta INT, SAB o CAR en 1. Concede Paso brumoso y un conjuro adicional de encantamiento o adivinación, lanzable 1 vez por descanso largo o con espacios. (Duda de ingesta: el conjuro adicional no se identifica en la hoja.)"
+    },
+    {
+      "id": "dote-afortunado",
+      "name": "Afortunado",
+      "source": "Dote",
+      "description": "Puntos de suerte iguales a tu bonificador de competencia: gasta 1 para darte Ventaja o para dar Desventaja a una criatura que te ataque. Recuperas los gastados tras un descanso largo.",
+      "uses": 2
+    }
+  ],
+  "spells": {
+    "castingAbility": "wisdom",
+    "slotsMax": {
+      "1": 4,
+      "2": 3,
+      "3": 0
+    },
+    "cantrips": [
+      {
+        "id": "guia",
+        "name": "Guía",
+        "description": "+1d4 a una prueba de característica de la criatura tocada (concentración, 1 min)"
+      },
+      {
+        "id": "llama-sagrada",
+        "name": "Llama sagrada",
+        "description": "TS DES o 1d8 radiante (sube 1d8 en niveles 5/11/17)",
+        "damage": "1d8"
+      },
+      {
+        "id": "luz",
+        "name": "Luz",
+        "description": "Un objeto emite luz brillante 6 m y tenue 6 m más (1 h)"
+      },
+      {
+        "id": "palabra-de-resplandor",
+        "name": "Palabra de resplandor",
+        "description": "Emanación 1,5 m: TS CON o 1d6 radiante (sube 1d6 en niveles 5/11/17)",
+        "damage": "1d6"
+      },
+      {
+        "id": "piedad-con-los-moribundos",
+        "name": "Piedad con los moribundos",
+        "description": "Estabiliza a una criatura a 0 PG (alcance sube con el nivel)"
+      },
+      {
+        "id": "taumaturgia",
+        "name": "Taumaturgia",
+        "description": "Maravilla menor (1 min)"
+      }
+    ],
+    "prepared": [
+      {
+        "id": "bendicion",
+        "name": "Bendición",
+        "level": 1,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "Hasta 3 criaturas: +1d4 a ataques y salvaciones (1 min); 1 más por espacio superior"
+      },
+      {
+        "id": "disfrazarse",
+        "name": "Disfrazarse",
+        "level": 1,
+        "source": "domain",
+        "castTime": "acción",
+        "description": "Cambia tu apariencia y equipo (ilusión; Investigación contra tu CD la revela)"
+      },
+      {
+        "id": "hechizar-persona",
+        "name": "Hechizar persona",
+        "level": 1,
+        "source": "domain",
+        "castTime": "acción",
+        "description": "Humanoide: TS SAB (ventaja si lucha contra vosotros); hechizado hasta que termine o le hagáis daño"
+      },
+      {
+        "id": "orden-imperiosa",
+        "name": "Orden imperiosa",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "Orden de una palabra a 1 criatura/nivel: TS SAB para no cumplirla en su siguiente turno"
+      },
+      {
+        "id": "palabra-de-curacion",
+        "name": "Palabra de curación",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "2d4+4 PG a una criatura que veas (18 m); +2d4 por nivel superior",
+        "damage": "2d4+4"
+      },
+      {
+        "id": "saeta-guia",
+        "name": "Saeta guía",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "Ataque de conjuro a distancia: 4d6 radiante y la próxima tirada de ataque contra el objetivo con ventaja (1 asalto)",
+        "damage": "4d6"
+      },
+      {
+        "id": "santuario",
+        "name": "Santuario",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "Quien ataque a la criatura protegida debe superar una TS SAB o elegir otro objetivo (1 min; termina si ella ataca o daña)"
+      },
+      {
+        "id": "arma-espiritual",
+        "name": "Arma espiritual",
+        "level": 2,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción adicional",
+        "description": "Arma espectral flotante: ataque de conjuro, 1d8+4 de fuerza; acción adicional para moverla 6 m y repetir (+1d8 por cada 2 niveles sobre 2)",
+        "damage": "1d8+4"
+      },
+      {
+        "id": "invisibilidad",
+        "name": "Invisibilidad",
+        "level": 2,
+        "source": "domain",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "La criatura tocada queda invisible hasta que ataque, cause daño o lance un conjuro; 1 criatura más por espacio superior"
+      },
+      {
+        "id": "pasar-sin-rastro",
+        "name": "Pasar sin rastro",
+        "level": 2,
+        "source": "domain",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "Aura de ocultación 9 m: +10 a Destreza (Sigilo) y sin huellas (1 h)"
+      },
+      {
+        "id": "paso-brumoso",
+        "name": "Paso brumoso",
+        "level": 2,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "Te teleportas hasta 9 m a un lugar sin ocupar que puedas ver (concedido por la dote Influencia feérica)"
+      },
+      {
+        "id": "plegaria-de-curacion",
+        "name": "Plegaria de curación",
+        "level": 2,
+        "source": "free",
+        "castTime": "10 minutos",
+        "description": "Hasta 5 criaturas: 2d8 PG y beneficios de un descanso corto (1 vez por descanso largo; +1d8 por nivel superior)",
+        "damage": "2d8"
+      }
+    ]
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "camisa de malla (CA 13)"
+      },
+      {
+        "name": "escudo (CA +2)"
+      },
+      {
+        "name": "amuleto de devoción"
+      }
+    ],
+    "inventory": [],
+    "coins": {
+      "gp": 0,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [
+      "ligeras",
+      "medias",
+      "escudos"
+    ],
+    "weapons": [
+      "armas sencillas"
+    ],
+    "tools": [],
+    "languages": [
+      "común",
+      "celestial",
+      "dracónico"
+    ]
+  },
+  "role": {
+    "summary": "Clériga de la diosa Tymora: su relación con la diosa no es obediencia rígida, es confianza y juego. Errante, sin templo fijo, fe vivida por el camino; ayuda a quien se le cruza, pero siempre desde su lema «La suerte es de quien se arriesga». La vida es una apuesta.",
+    "tableNotes": [],
+    "questions": []
+  },
+  "allies": []
+}
