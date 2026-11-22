@@ -182,12 +182,20 @@ jobs:
               --template-body file://.aws-sam/packaged.yaml \
               --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
               --region $REGION
-            echo "Esperando al changeset $CHGSET (timeout generoso)..."
-            aws cloudformation wait change-set-create-complete \
-              --stack-name $STACK \
-              --change-set-name "$CHGSET" \
-              --waiter-attempts 40 \
-              --region $REGION
+            echo "Esperando al changeset $CHGSET (sondeo manual, timeout generoso)..."
+            # AWS CLI v2 NO soporta --waiter-attempts: sondeo manual.
+            for i in $(seq 1 60); do
+              CS=$(aws cloudformation describe-change-set --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+              echo "[$i] changeset: $CS"
+              case "$CS" in
+                CREATE_COMPLETE) break ;;
+                FAILED) echo "Changeset FAILED"; exit 1 ;;
+              esac
+              sleep 10
+            done
+            if [ "$CS" != "CREATE_COMPLETE" ]; then echo "Timeout en el changeset"; exit 1; fi
           fi
           echo "Ejecutando el changeset..."
           aws cloudformation execute-change-set \
