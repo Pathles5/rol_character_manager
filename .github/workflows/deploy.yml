@@ -196,21 +196,23 @@ jobs:
             --region $REGION
 
       - name: Wait for the stack to settle
+        # AWS CLI v2 NO soporta --waiter-attempts: bucle de sondeo manual
+        # con timeout generoso (la cuenta es lenta — saga Fase 09).
         run: |
-          if aws cloudformation describe-stacks --stack-name fichass-session \
-              --query "Stacks[0].StackStatus" --output text \
-            | grep -qE "CREATE_COMPLETE|UPDATE_COMPLETE"; then
-            aws cloudformation wait stack-update-complete \
-              --stack-name fichass-session --waiter-attempts 60 \
-              --region ${{ secrets.AWS_REGION }} || \
-            aws cloudformation wait stack-create-complete \
-              --stack-name fichass-session --waiter-attempts 60 \
-              --region ${{ secrets.AWS_REGION }}
-          else
-            aws cloudformation wait stack-create-complete \
-              --stack-name fichass-session --waiter-attempts 60 \
-              --region ${{ secrets.AWS_REGION }}
-          fi
+          REGION=${{ secrets.AWS_REGION }}
+          for i in $(seq 1 60); do
+            STATUS=$(aws cloudformation describe-stacks --stack-name fichass-session \
+              --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+            echo "[$i] estado del stack: $STATUS"
+            case "$STATUS" in
+              CREATE_COMPLETE|UPDATE_COMPLETE)
+                echo "Stack asentado en $STATUS"; exit 0 ;;
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_FAILED)
+                echo "Stack en estado terminal: $STATUS"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Timeout esperando al stack"; exit 1
 
   # ----------------------------------------------------------------- deploy
   deploy:

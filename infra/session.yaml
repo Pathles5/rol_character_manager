@@ -36,6 +36,8 @@ Resources:
   # --------------------------------------------------------------------------
   # Session table: PK characterId; state + optimistic version + updatedAt
   # (Amendment 4 del modelo, D-55). On-demand billing (I2).
+  # SIN Tags: declararlos obligaría a conceder dynamodb:TagResource al rol
+  # OIDC; el etiquetado va en el propio nombre del recurso (fichass-*).
   # --------------------------------------------------------------------------
   SessionsTable:
     Type: AWS::DynamoDB::Table
@@ -50,21 +52,11 @@ Resources:
       KeySchema:
         - AttributeName: characterId
           KeyType: HASH
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
 
   SessionFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub fichass-session-${GitHubRepo}
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -107,9 +99,6 @@ Resources:
       MemorySize: 256
       Timeout: 10
       Role: !GetAtt SessionFunctionRole.Arn
-      Tags:
-        project: FichaSS
-        cost-policy: free-tier-only
       Environment:
         Variables:
           SESSIONS_TABLE: !Ref SessionsTable
