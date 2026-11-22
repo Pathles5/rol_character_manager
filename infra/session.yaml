@@ -93,7 +93,7 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
 
   SessionFunction:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub fichass-session-${GitHubRepo}
       Runtime: nodejs22.x
@@ -108,10 +108,8 @@ Resources:
       Timeout: 10
       Role: !GetAtt SessionFunctionRole.Arn
       Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
+        project: FichaSS
+        cost-policy: free-tier-only
       Environment:
         Variables:
           SESSIONS_TABLE: !Ref SessionsTable
@@ -125,12 +123,13 @@ Resources:
       AuthType: NONE
       Cors:
         # Pinned to the site origin (hardened-open endpoint, D-55).
+        # OPTIONS is NOT allowed here (spec): the Function URL answers
+        # the CORS preflight itself.
         AllowOrigins:
           - !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com
         AllowMethods:
           - GET
           - PATCH
-          - OPTIONS
         AllowHeaders:
           - content-type
         MaxAge: 86400
