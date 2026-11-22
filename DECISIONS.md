@@ -302,6 +302,20 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Descartado:** subagente-ingester — la ingesta exige interacción con el usuario (dudosos y cotejo), que un subagente en segundo plano no puede hacer; el ejecutor sigue siendo el orquestador.
 - **Riesgo:** bajo — un fichero de markdown versionado; si el prompt maestro cambia, la skill no necesita edición (referencia viva). La skill queda en el repo y viaja con él (cualquier agente en este repo la descubre).
 
+## D-54 · 2026-11-22 · Enmienda de la constitución I1 (backend mínimo de sesión) `supersedes` cláusula "sin backend en v1" de I1
+
+- **Contexto:** el usuario pidió la persistencia de estados en DynamoDB y validó el planteamiento completo ("todo lo que sugieres es lo que yo tenia planeado, perfecto"). I1 (en su forma D-48) excluía "backend en v1" — la persistencia ES un backend, así que hace falta enmienda formal (mismo procedimiento que D-48).
+- **Elección (OK explícito del usuario de hoy):** I1 enmendada — "Sí hay (desde la Fase 15): backend mínimo de sesión — persistencia de estados en DynamoDB vía Lambda — invariablemente sujeto a I2 (coste €0) y limitado a estados de sesión (no hay edición de ficha ni almacenamiento de personajes personales ahí)". Sigue sin haber: edición completa de ficha, PDF, PWA, i18n, tema claro.
+- **Motivo:** reflejar el alcance real acordado; la enmienda es deliberadamente ESTRECHA (solo estados de sesión) para no abrir la puerta a un backend general.
+- **Riesgo:** la guardia mecánica de check.ps1 sobre el texto de la constitución se mantiene; cualquier ampliación futura del backend exige nueva enmienda.
+
+## D-55 · 2026-11-22 · Fase 15: diseño de la persistencia de estados (spec 15)
+
+- **Contexto:** planteamiento validado íntegro por el usuario (fue su plan original).
+- **Elección:** (1) **Arquitectura A**: Lambda + Function URL (sin API Gateway — único free tier de 12 meses, riesgo I2); Function URL gratis, Lambda Free Tier 1M req/mes always-free, CORS bloqueado al origen S3, IaC en `infra/template.yaml`, deploy por el pipeline existente. (2) **Sync local-first + debounce (~1,5 s) + cola de reintentos**: localStorage sigue mandando al instante (UX sin cambios); PATCH batch tras quietud; flush al reconectar. (3) **Conflicto optimista** con campo `version`: 409 devuelve el estado remoto y toast "cargar remoto / sobrescribir con el mío" — sin pérdida silenciosa. (4) **Auth: endpoint abierto endurecido** para v1 (validación estricta del contrato, ids limitados al manifest, CORS, dato de sesión de valor bajo, alertas 3€/10€); Cognito descartado por desproporcionado. (5) **Modelo Dynamo**: tabla única, PK characterId, atributos state/version/updatedAt, ~1 KB/ítem. (6) **Carga inicial**: si hay estado remoto válido, manda el remoto (local = respaldo si la red falla). (7) El Reset es un PATCH más (versión +1).
+- **Motivo:** minimizar piezas y coste real a €0 dentro de I2; el contrato de sesión reutiliza la sanitización/migración existente (D-16 §4).
+- **Riesgo:** la Lambda depende del contrato actual (evolución del sessionState → misma versión de migración); el endpoint abierto es un riesgo de abuso asumido y documentado; recordatorios del repo: `sam build` antes de cada deploy, usar el `sam.cmd` (no el .exe), Tags de SSM como mapa.
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.

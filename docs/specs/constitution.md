@@ -6,7 +6,8 @@ Si hay conflicto entre una spec y la constitución, gana la constitución y la s
 ## I1. Alcance
 - Solo D&D 5e (2024). Un jugador, sus personajes (múltiples, vía JSON autoriado), navegación entre vista de personajes y vista de ficha.
 - Sí hay (desde la Fase 10/11, petición expresa del usuario): selector de personajes y tirada de dados.
-- Sigue sin haber: edición completa de ficha, PDF, PWA, i18n, tema claro, backend en v1.
+- Sí hay (desde la Fase 15, petición expresa del usuario): backend mínimo de sesión — persistencia de estados en DynamoDB vía Lambda — invariablemente sujeto al invariante I2 (coste €0) y limitado a estados de sesión (no hay edición de ficha ni almacenamiento de personajes personales ahí).
+- Sigue sin haber: edición completa de ficha, PDF, PWA, i18n, tema claro.
 
 ## I2. Build y despliegue
 - Build 100 % estático, subible a S3 sin servidor.
