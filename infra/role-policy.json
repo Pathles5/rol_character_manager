@@ -47,6 +47,16 @@
       ]
     },
     {
+      "Sid": "CreateAndHealFichassStacks",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:DeleteStack",
+        "cloudformation:UpdateStack"
+      ],
+      "Resource": "arn:aws:cloudformation:eu-west-1:159177056493:stack/fichass-*"
+    },
+    {
       "Sid": "TemplateInspection",
       "Effect": "Allow",
       "Action": ["cloudformation:GetTemplateSummary", "cloudformation:ValidateTemplate"],

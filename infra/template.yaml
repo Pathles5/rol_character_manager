@@ -230,6 +230,17 @@ Resources:
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-*/*
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/samdeploy-*
                   - arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31
+              - Sid: CreateAndHealFichassStacks
+                # CreateStack DIRECTO para la primera creación (los changesets
+                # CREATE de esta cuenta fallan la validación temprana de
+                # forma flaky — saga Fase 09/15) + DeleteStack para el
+                # auto-sanado de shells en ROLLBACK/REVIEW.
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:UpdateStack
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-*
               - Sid: TemplateInspection
                 Effect: Allow
                 Action:
