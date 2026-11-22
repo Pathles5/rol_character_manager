@@ -136,16 +136,63 @@ jobs:
           --base-dir .
           --build-dir .aws-sam/build
 
-      - name: Sam deploy (stack update desde la pipeline)
+      # Empaqueta el código de la Lambda (zip a S3, sam-artifacts/) y
+      # reescribe el CodeUri del template a la ubicación S3 — sin esto,
+      # un changeset con --template-body no puede resolver rutas locales.
+      - name: Sam package
         run: >
-          sam deploy
-          --stack-name fichass-session
+          sam package
           --template .aws-sam/build/template.yaml
           --s3-bucket $AWS_S3_BUCKET
           --s3-prefix sam-artifacts
+          --output-template-file .aws-sam/packaged.yaml
+
+      # Deploy explícito vía CloudFormation (no `sam deploy`): los waiters
+      # de la CLI aceptan --waiter-attempts (la cuenta es LENTA creando
+      # changesets — el waiter de sam se rinde antes de tiempo, saga
+      # documentada de la Fase 09). Flujo: create-change-set →
+      # wait change-set-create-complete → execute-change-set → wait
+      # stack-create/update-complete.
+      - name: Create changeset (fichass-session)
+        run: >
+          aws cloudformation create-change-set
+          --stack-name fichass-session
+          --change-set-name samdeploy-${{ github.run_id }}
+          --template-body file://.aws-sam/packaged.yaml
           --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
-          --no-confirm-changeset
-          --no-fail-on-empty-changeset
+          --region ${{ secrets.AWS_REGION }}
+
+      - name: Wait for changeset (timeout generoso)
+        run: >
+          aws cloudformation wait change-set-create-complete
+          --stack-name fichass-session
+          --change-set-name samdeploy-${{ github.run_id }}
+          --waiter-attempts 40
+          --region ${{ secrets.AWS_REGION }}
+
+      - name: Execute changeset
+        run: >
+          aws cloudformation execute-change-set
+          --stack-name fichass-session
+          --change-set-name samdeploy-${{ github.run_id }}
+          --region ${{ secrets.AWS_REGION }}
+
+      - name: Wait for the stack to settle
+        run: |
+          if aws cloudformation describe-stacks --stack-name fichass-session \
+              --query "Stacks[0].StackStatus" --output text \
+            | grep -qE "CREATE_COMPLETE|UPDATE_COMPLETE"; then
+            aws cloudformation wait stack-update-complete \
+              --stack-name fichass-session --waiter-attempts 60 \
+              --region ${{ secrets.AWS_REGION }} || \
+            aws cloudformation wait stack-create-complete \
+              --stack-name fichass-session --waiter-attempts 60 \
+              --region ${{ secrets.AWS_REGION }}
+          else
+            aws cloudformation wait stack-create-complete \
+              --stack-name fichass-session --waiter-attempts 60 \
+              --region ${{ secrets.AWS_REGION }}
+          fi
 
   # ----------------------------------------------------------------- deploy
   deploy:

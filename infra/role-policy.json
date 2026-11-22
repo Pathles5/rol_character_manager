@@ -33,6 +33,7 @@
         "cloudformation:ExecuteChangeSet",
         "cloudformation:DeleteChangeSet",
         "cloudformation:DescribeChangeSet",
+        "cloudformation:DescribeStackEvents",
         "cloudformation:DescribeStacks",
         "cloudformation:GetTemplate",
         "cloudformation:ListChangeSets",
