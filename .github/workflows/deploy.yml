@@ -165,7 +165,7 @@ jobs:
           fi
           aws cloudformation create-change-set \
             --stack-name fichass-session \
-            --change-set-name samdeploy-${{ github.run_id }} \
+            --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }} \
             --change-set-type $TYPE \
             --template-body file://.aws-sam/packaged.yaml \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
