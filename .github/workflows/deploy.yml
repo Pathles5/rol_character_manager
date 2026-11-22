@@ -175,7 +175,7 @@ jobs:
         run: >
           aws cloudformation wait change-set-create-complete
           --stack-name fichass-session
-          --change-set-name samdeploy-${{ github.run_id }}
+          --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }}
           --waiter-attempts 40
           --region ${{ secrets.AWS_REGION }}
 
@@ -183,7 +183,7 @@ jobs:
         run: >
           aws cloudformation execute-change-set
           --stack-name fichass-session
-          --change-set-name samdeploy-${{ github.run_id }}
+          --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }}
           --region ${{ secrets.AWS_REGION }}
 
       - name: Wait for the stack to settle
