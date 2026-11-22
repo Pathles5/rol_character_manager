@@ -189,7 +189,7 @@ jobs:
               aws cloudformation create-stack \
                 --stack-name $STACK \
                 --template-body file://.aws-sam/packaged.yaml \
-                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
                 --region $REGION
               ;;
             CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
