@@ -1,0 +1,144 @@
+# ============================================================================
+# FichaSS — session persistence stack (Fase 15, D-54/D-55) — GESTIONADO POR CI
+# ============================================================================
+#
+# Este stack (fichass-session) lo CREA y ACTUALIZA el job `infra` del
+# workflow (sam build + sam deploy, changeset). Es un stack NUEVO e
+# independiente del hosting: los recursos de hosting (bucket, rol OIDC, SSM)
+# quedaron HUÉRFANOS tras el bootstrap de la Fase 09 (ver infra/template.yaml)
+# y NO se tocan.
+#
+# COSTE €0 (I2/D-11): DynamoDB on-demand dentro de Free Tier (I1 enmendada
+# lo permite expresamente), Lambda 1M req/mes always-free, Function URL
+# gratis, CloudWatch Logs free tier. SIN API Gateway (free tier de 12
+# meses → riesgo I2). Sin CloudFront.
+#
+# La Lambda valida el estado de sesión con la MISMA lógica pura que el
+# cliente (src/session-schema.ts, bundle esbuild de backend/session.ts).
+# ============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FichaSS - session persistence (DynamoDB + Lambda Function URL, Free Tier only, CORS pinned to the site origin).
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: rol_character_manager
+    Description: GitHub repository name (resource-name suffix).
+  SiteBucketName:
+    Type: String
+    Default: fichass-site
+    Description: Hosting bucket name (read-only source of the authored JSONs).
+
+Resources:
+
+  # --------------------------------------------------------------------------
+  # Session table: PK characterId; state + optimistic version + updatedAt
+  # (Amendment 4 del modelo, D-55). On-demand billing (I2).
+  # --------------------------------------------------------------------------
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub fichass-sessions-${GitHubRepo}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: characterId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: characterId
+          KeyType: HASH
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+
+  SessionFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub fichass-session-${GitHubRepo}
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: fichass-session-runtime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadWriteOwnTableOnly
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt SessionsTable.Arn
+              # Basic execution logging (CloudWatch Logs free tier).
+              - Sid: LambdaLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
+
+  SessionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub fichass-session-${GitHubRepo}
+      Runtime: nodejs22.x
+      Architectures:
+        - arm64
+      Handler: index.handler
+      # Pre-bundled by `npm run build:backend` (esbuild, single-file ESM
+      # with the AWS SDK inlined) — NO SAM esbuild metadata: the bundle
+      # is deterministic and built by the workflow before `sam build`.
+      CodeUri: backend/dist
+      MemorySize: 256
+      Timeout: 10
+      Role: !GetAtt SessionFunctionRole.Arn
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+      Environment:
+        Variables:
+          SESSIONS_TABLE: !Ref SessionsTable
+          MANIFEST_URL: !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com/characters-manifest.json
+          SITE_URL: !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com
+
+  SessionFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt SessionFunction.Arn
+      AuthType: NONE
+      Cors:
+        # Pinned to the site origin (hardened-open endpoint, D-55).
+        AllowOrigins:
+          - !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com
+        AllowMethods:
+          - GET
+          - PATCH
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 86400
+
+Outputs:
+  SessionUrl:
+    Description: Lambda Function URL of the session persistence API (Fase 15).
+    Value: !GetAtt SessionFunctionUrl.FunctionUrl
+  SessionsTableName:
+    Description: Session table name (verification/tooling).
+    Value: !Ref SessionsTable

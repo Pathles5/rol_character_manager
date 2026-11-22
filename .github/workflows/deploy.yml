@@ -132,14 +132,14 @@ jobs:
       - name: Sam build
         run: >
           sam build
-          --template infra/template.yaml
+          --template infra/session.yaml
           --base-dir .
           --build-dir .aws-sam/build
 
       - name: Sam deploy (stack update desde la pipeline)
         run: >
           sam deploy
-          --stack-name fichass-infra
+          --stack-name fichass-session
           --template .aws-sam/build/template.yaml
           --s3-bucket $AWS_S3_BUCKET
           --s3-prefix sam-artifacts
@@ -195,7 +195,7 @@ jobs:
       # ---------------------------------------------------------------
       - name: Publish session API URL (Fase 15) into dist
         run: |
-          URL=$(aws cloudformation describe-stacks --stack-name fichass-infra \
+          URL=$(aws cloudformation describe-stacks --stack-name fichass-session \
             --query "Stacks[0].Outputs[?OutputKey=='SessionUrl'].OutputValue" --output text)
           if [ -n "$URL" ] && [ "$URL" != "None" ]; then
             printf '{"url":"%s"}\n' "$URL" > dist/session-url.json

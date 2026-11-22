@@ -2,6 +2,19 @@
 # FichaSS — infra SAM template (Fase 09, D-34: SAM a petición del usuario)
 # ============================================================================
 #
+# ⚠️ ESTADO DE ESTE STACK (diagnóstico 2026-11-22): los recursos de hosting
+# de este template (bucket, bucket policy, rol OIDC, parámetro SSM) están
+# VIVOS PERO HUÉRFANOS — ningún stack los gestiona. Durante la saga de la
+# Fase 09 (changesets CREATE rotos en esta cuenta) el stack que los creó fue
+# borrado con UpdateReplacePolicy/DeletionPolicy: Retain, y el nombre
+# `fichass-infra` quedó ocupado por un zombie ROLLBACK_COMPLETE sin
+# recursos (borrado en la Fase 15). ESTE template es el IaC-de-referencia
+# del hosting: no se despliega ni desde CI ni en local. Cualquier cambio
+# futuro en el hosting exige intervención manual del usuario (documentada
+# en infra/README.md). La infra GESTIONADA POR CI (crea/actualiza el job
+# `infra` del workflow en cada push) vive en `infra/session.yaml` (stack
+# `fichass-session`, Fase 15, D-54/D-55).
+#
 # SIMPLIFICACIÓN FINAL (2026-11-20, tras el diagnóstico de Fase 09):
 # 1. El OIDC provider de GitHub DEBE existir en la cuenta (el usuario ya lo
 #    tiene por su otro proyecto). Si no existiera, crearlo UNA vez:
@@ -116,110 +129,6 @@ Resources:
         cost-policy: free-tier-only
 
   # --------------------------------------------------------------------------
-  # SESSION PERSISTENCE (Fase 15, D-54/D-55): DynamoDB + Lambda + Function URL.
-  # Free Tier: DynamoDB on-demand (I2 lo permite expresamente), Lambda
-  # 1M req/mes always-free, Function URL gratis. SIN API Gateway (su free
-  # tier es de 12 meses → riesgo I2). CORS fijado al origin del site.
-  # --------------------------------------------------------------------------
-  SessionsTable:
-    Type: AWS::DynamoDB::Table
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
-    Properties:
-      TableName: !Sub fichass-sessions-${GitHubRepo}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: characterId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: characterId
-          KeyType: HASH
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
-
-  SessionFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub fichass-session-${GitHubRepo}
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: fichass-session-runtime
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Sid: ReadWriteOwnTableOnly
-                Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                Resource: !GetAtt SessionsTable.Arn
-              # Basic execution logging (CloudWatch Logs free tier).
-              - Sid: LambdaLogs
-                Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
-
-  SessionFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub fichass-session-${GitHubRepo}
-      Runtime: nodejs22.x
-      Architectures:
-        - arm64
-      Handler: index.handler
-      # Pre-bundled by `npm run build:backend` (esbuild, single-file ESM
-      # with the AWS SDK inlined) — NO SAM esbuild metadata: the bundle
-      # is deterministic and built by the workflow before `sam build`.
-      CodeUri: backend/dist
-      MemorySize: 256
-      Timeout: 10
-      Role: !GetAtt SessionFunctionRole.Arn
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
-      Environment:
-        Variables:
-          SESSIONS_TABLE: !Ref SessionsTable
-          MANIFEST_URL: !Sub http://${SiteBucket}.s3-website-${AWS::Region}.amazonaws.com/characters-manifest.json
-          SITE_URL: !Sub http://${SiteBucket}.s3-website-${AWS::Region}.amazonaws.com
-
-  SessionFunctionUrl:
-    Type: AWS::Lambda::Url
-    Properties:
-      TargetFunctionArn: !GetAtt SessionFunction.Arn
-      AuthType: NONE
-      Cors:
-        # Pinned to the site origin (hardened-open endpoint, D-55).
-        AllowOrigins:
-          - !GetAtt SiteBucket.WebsiteURL
-        AllowMethods:
-          - GET
-          - PATCH
-          - OPTIONS
-        AllowHeaders:
-          - content-type
-        MaxAge: 86400
-
-  # --------------------------------------------------------------------------
   # Role assumed by GitHub Actions via web identity (no long-lived keys).
   # Trust pinned to: aud=sts.amazonaws.com and TWO allowed subs (branch ref
   # for jobs without an environment; environment sub because the deploy job
@@ -316,8 +225,9 @@ Resources:
                   - cloudformation:ListChangeSets
                   - cloudformation:ListStackResources
                 Resource:
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-infra/*
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-infra/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-*/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/samdeploy-*
               - Sid: TemplateInspection
                 Effect: Allow
                 Action:
@@ -386,6 +296,3 @@ Outputs:
   OidcRoleArn:
     Description: Role ARN (for the AWS_OIDC_ROLE_ARN secret).
     Value: !GetAtt GitHubActionsRole.Arn
-  SessionUrl:
-    Description: Lambda Function URL of the session persistence API (Fase 15).
-    Value: !GetAtt SessionFunctionUrl.FunctionUrl
