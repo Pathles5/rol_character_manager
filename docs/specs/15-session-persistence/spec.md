@@ -39,10 +39,19 @@ hoy no cambia.
   del bucket vía SSM o fetch), tamaño máximo del body, sin campos sueltos.
 - **Enmienda del modelo D-17** (model.md §5): nueva sección "contrato de
   sesión" documentando los endpoints. Amendment registrado.
-- Deploy: con `sam build` ANTES de cada deploy (quirk del repo) y con el
-  visto del usuario para el despliegue (proceso Fase 09). Quirks: usar
-  `sam.cmd` (no el .exe); si se añade un `AWS::SSM::Parameter`, Tags en forma
-  MAPA.
+- Deploy: **toda la infra se gestiona desde la pipeline** (criterio del
+  usuario, 2026-11-22): el workflow gana un job `infra` que hace `sam build`
+  + `sam deploy` del stack con la OIDC existente (environment `dev`); el rol
+  OIDC amplía su policy con lo mínimo para desplegar (CloudFormation, Lambda
+  incl. PassRole, DynamoDB sobre `fichass-*`, SSM) — acotado por prefijo,
+  sin recursos pagados (I2). **En local no se ejecutan despliegues** (el
+  bootstrap de Fase 09 ya existe: el quirk roto era solo el CREATE via
+  changeset; las actualizaciones funcionan). El despliegue por push
+  reemplaza al visto-por-despliegue local; el OK del usuario se da sobre el
+  cambio del template en la revisión de la tarea, no sobre cada ejecución.
+  Quirks que siguen aplicando (ahora en CI): si un job de CFN falla con
+  "Stack does not exist" en CREATE, es el quirk del changeset-CREATE roto
+  (remediado por el bootstrap ya hecho); Tags de SSM en forma MAPA.
 
 **Criterios de aceptación 15a**
 - **C1**: tabla + Lambda + Function URL desplegados y visibles en el stack

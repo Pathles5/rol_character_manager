@@ -5,8 +5,8 @@
 - [ ] T-01 Enmienda D-17 en `model.md` (contrato de sesión: GET/PATCH, version, 409).
 - [ ] T-02 `infra/template.yaml`: tabla `fichass-sessions` (PAY_PER_REQUEST, Retain) + Lambda Node 22 + Function URL con CORS al origin + permisos mínimos.
 - [ ] T-03 Handler de la Lambda: GET (404 si no existe) / PATCH (validación de contrato + concurrencia optimista + 409 con estado remoto) + endurecimiento (ids del manifest, tamaño de body).
-- [ ] T-04 `sam build` + deploy con visto del usuario; verificación del stack y de los criterios C1–C5 (round-trip real contra la Function URL).
-- [ ] T-05 Compuertas (lint/build/check) + despliegue del site si toca + docs (INDEX, D-56 si hay desvíos).
+- [ ] T-04 Job `infra` en `.github/workflows/deploy.yml`: `sam build` + `sam deploy` del stack con la OIDC (environment dev) + ampliación least-privilege de la policy del rol (`infra/role-policy.json`) para CloudFormation/Lambda/DynamoDB/SSM acotada a `fichass-*`; actualización de `infra/README.md`; **en local no se despliega**.
+- [ ] T-05 Verificación de los criterios C1–C5 (round-trip real contra la Function URL) tras el despliegue por pipeline + compuertas (lint/build/check) + docs (INDEX, D-56 si hay desvíos).
 
 ## 15b — Capa de sincronización en el cliente
 
