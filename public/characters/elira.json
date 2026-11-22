@@ -46,8 +46,8 @@
       "id": "daga",
       "name": "Daga",
       "kind": "melee",
-      "bonus": 1,
-      "damage": "1d4-1",
+      "bonus": 2,
+      "damage": "1d4",
       "damageType": "perforante",
       "note": "6/18 m · alcance, arrojadiza, ligera, maestría: mellar, sutil"
     }
