@@ -228,6 +228,7 @@ Resources:
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-*
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-*/*
                   - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/samdeploy-*
+                  - arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31
               - Sid: TemplateInspection
                 Effect: Allow
                 Action:

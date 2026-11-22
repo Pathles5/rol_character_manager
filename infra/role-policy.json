@@ -41,7 +41,8 @@
       "Resource": [
         "arn:aws:cloudformation:eu-west-1:159177056493:stack/fichass-*",
         "arn:aws:cloudformation:eu-west-1:159177056493:changeset/fichass-*/*",
-        "arn:aws:cloudformation:eu-west-1:159177056493:changeset/samdeploy-*"
+        "arn:aws:cloudformation:eu-west-1:159177056493:changeset/samdeploy-*",
+        "arn:aws:cloudformation:*:aws:transform/Serverless-2016-10-31"
       ]
     },
     {
