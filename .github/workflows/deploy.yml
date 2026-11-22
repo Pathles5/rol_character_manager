@@ -154,13 +154,22 @@ jobs:
       # wait change-set-create-complete → execute-change-set → wait
       # stack-create/update-complete.
       - name: Create changeset (fichass-session)
-        run: >
-          aws cloudformation create-change-set
-          --stack-name fichass-session
-          --change-set-name samdeploy-${{ github.run_id }}
-          --template-body file://.aws-sam/packaged.yaml
-          --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
-          --region ${{ secrets.AWS_REGION }}
+        # ChangeSetType CREATE cuando el stack aún no existe (el default
+        # UPDATE exige stack existente: ESTE era el quirk "rotó" de la
+        # Fase 09 — "Stack does not exist" engañoso).
+        run: |
+          TYPE=UPDATE
+          if ! aws cloudformation describe-stacks --stack-name fichass-session > /dev/null 2>&1; then
+            TYPE=CREATE
+            echo "El stack no existe: changeset CREATE"
+          fi
+          aws cloudformation create-change-set \
+            --stack-name fichass-session \
+            --change-set-name samdeploy-${{ github.run_id }} \
+            --change-set-type $TYPE \
+            --template-body file://.aws-sam/packaged.yaml \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --region ${{ secrets.AWS_REGION }}
 
       - name: Wait for changeset (timeout generoso)
         run: >
