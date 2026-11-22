@@ -1,3 +1,5 @@
 node_modules/
 dist/
 infra/.aws-sam/
+.aws-sam/
+backend/dist/

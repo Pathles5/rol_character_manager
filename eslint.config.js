@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'node_modules/', 'mockup/', 'scripts/'],
+    ignores: ['dist/', 'node_modules/', 'mockup/', 'scripts/', 'backend/dist/'],
   },
   ...tseslint.configs.recommended.map(config => ({
     ...config,

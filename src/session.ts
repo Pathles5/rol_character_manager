@@ -22,6 +22,17 @@
 import type { Character, SessionState, SpellLevel } from './types';
 import type { DerivedStats } from './derived';
 import type { BlockId } from './data/blockConfig';
+// Session contract rules (model §4) live in the PURE shared module
+// session-schema.ts — the same source the backend Lambda uses for
+// PATCH validation (Fase 15, D-55). Re-exported here so the
+// existing Phase 06/10 imports keep working unchanged.
+import {
+  defaultSessionState,
+  sanitizeSessionState,
+  clampSessionToRules,
+  fallbackCharacterId,
+  numberOr,
+} from './session-schema';
 import {
   renderCombat,
   renderDefense,
@@ -31,48 +42,10 @@ import {
   renderTraits,
 } from './render/blocks';
 
-/** Versioned per-character localStorage key (spec Fase 10, C2/C5):
-    one session namespace per character id (the URL/file id), so
-    two characters never share counters. Orphaned keys of removed
-    characters are simply never read again (D-36). */
 export const sessionKey = (characterId: string): string => `fichass-session-v1:${characterId}`;
 
-const SESSION_SCHEMA_VERSION = 1;
-
-/** Generic 5e rule constants (not character data). Kept here as
-    the single source; blocks.ts imports them for display. */
-/** Reasonable cap for temporary hit points (no strict rule cap). */
-export const TEMP_HP_MAX = 20;/** Death saves: 3 successes or 3 failures end the sequence (2024). */
-export const DEATH_SAVE_MAX = 3;
-/** 2024 cleric: Channel Divinity tops at 2 uses (level 5). */
-export const CHANNEL_DIVINITY_MAX = 2;
-
-/** Default session state (model §4): derived from the character,
-    everything unused. Owned here since Phase 06 (T-01); blocks.ts
-    re-exports it so Phase 04 imports keep working. */
-export function defaultSessionState(character: Character): SessionState {
-  return {
-    schemaVersion: 1,
-    // Name-derived fallback id; the URL id overrides it in
-    // initSession/resetSession (Phase 10 coherence, D-16 §4).
-    characterId: fallbackCharacterId(character),
-    hp: { current: character.combat.maxHitPoints, temp: 0 },
-    hitDice: { used: 0 },
-    spellSlotsUsed: { 1: 0, 2: 0, 3: 0 },
-    channelDivinity: { used: 0 },
-    inspiration: false,
-    deathSaves: { successes: 0, failures: 0 },
-    conditions: [],
-    resourcesUsed: {},
-  };
-}
-
-/** Name-derived fallback id (the Phase 06 scheme kept by
-    defaultSessionState) for callers that don't pass an explicit
-    character id. */
-function fallbackCharacterId(character: Character): string {
-  return character.identity.name.toLowerCase().replace(/\s+/g, '-');
-}
+export { defaultSessionState } from './session-schema';
+export { TEMP_HP_MAX, DEATH_SAVE_MAX, CHANNEL_DIVINITY_MAX } from './session-schema';
 
 // --- Live context -----------------------------------------------------
 
@@ -95,79 +68,14 @@ function requireContext(): SessionContext {
 }
 
 // --- Loading / sanitizing (forward-only, D-16 §4) ---------------------
-
-function finiteNumber(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-/** Finite number or fallback (unknown/invalid fields ignored). */
-function numberOr(value: unknown, fallback: number): number {
-  return finiteNumber(value) ?? fallback;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Math.round(value)));
-}
-
-/** Rebuilds a valid SessionState from persisted JSON: only known
-    fields are read (unknown ones ignored), invalid values fall
-    back to defaults and everything is clamped to the rule limits. */
-function sanitizeLoaded(raw: unknown, character: Character, characterId: string): SessionState {
-  const defaults = defaultSessionState(character);
-  if (typeof raw !== 'object' || raw === null) return defaults;
-  const data = raw as Record<string, unknown>;
-  // Parse failure is caught by the caller; version ≠ 1 → defaults.
-  if (data.schemaVersion !== SESSION_SCHEMA_VERSION) return defaults;
-  // A session belongs to one character: mismatch with the URL id
-  // (Phase 10) → fresh defaults. The state's own characterId mirrors
-  // that id (D-16 §4 coherence with the storage namespace).
-  if (data.characterId !== characterId) return defaults;
-
-  const hp = (typeof data.hp === 'object' && data.hp !== null ? data.hp : {}) as Record<string, unknown>;
-  const hitDice = (typeof data.hitDice === 'object' && data.hitDice !== null ? data.hitDice : {}) as Record<string, unknown>;
-  const slots = (typeof data.spellSlotsUsed === 'object' && data.spellSlotsUsed !== null ? data.spellSlotsUsed : {}) as Record<string, unknown>;
-  const channel = (typeof data.channelDivinity === 'object' && data.channelDivinity !== null ? data.channelDivinity : {}) as Record<string, unknown>;
-  const deathSaves = (typeof data.deathSaves === 'object' && data.deathSaves !== null ? data.deathSaves : {}) as Record<string, unknown>;
-
-  const resourcesUsed: Record<string, number> = {};
-  if (typeof data.resourcesUsed === 'object' && data.resourcesUsed !== null) {
-    for (const [traitId, used] of Object.entries(data.resourcesUsed as Record<string, unknown>)) {
-      const value = finiteNumber(used);
-      if (value !== null) resourcesUsed[traitId] = value;
-    }
-  }
-
-  return {
-    schemaVersion: 1,
-    characterId,
-    hp: {
-      current: clamp(numberOr(hp.current, defaults.hp.current), 0, character.combat.maxHitPoints),
-      temp: clamp(numberOr(hp.temp, defaults.hp.temp), 0, TEMP_HP_MAX),
-    },
-    hitDice: { used: clamp(numberOr(hitDice.used, 0), 0, character.combat.hitDice.total) },
-    spellSlotsUsed: {
-      1: clamp(numberOr(slots['1'], 0), 0, character.spells.slotsMax[1]),
-      2: clamp(numberOr(slots['2'], 0), 0, character.spells.slotsMax[2]),
-      3: clamp(numberOr(slots['3'], 0), 0, character.spells.slotsMax[3]),
-    },
-    channelDivinity: { used: clamp(numberOr(channel.used, 0), 0, CHANNEL_DIVINITY_MAX) },
-    inspiration: data.inspiration === true,
-    deathSaves: {
-      successes: clamp(numberOr(deathSaves.successes, 0), 0, DEATH_SAVE_MAX),
-      failures: clamp(numberOr(deathSaves.failures, 0), 0, DEATH_SAVE_MAX),
-    },
-    conditions: Array.isArray(data.conditions)
-      ? data.conditions.filter((condition): condition is string => typeof condition === 'string')
-      : [],
-    resourcesUsed,
-  };
-}
+// The pure logic lives in session-schema.ts (shared with the backend
+// Lambda). loadSession only owns the localStorage access.
 
 function loadSession(character: Character, characterId: string): SessionState {
   try {
     const stored = window.localStorage.getItem(sessionKey(characterId));
     if (!stored) return defaultSessionState(character);
-    return sanitizeLoaded(JSON.parse(stored), character, characterId);
+    return sanitizeSessionState(JSON.parse(stored), character, characterId);
   } catch {
     // Missing storage, quota error or broken JSON → defaults (spec C2).
     return defaultSessionState(character);
@@ -184,28 +92,10 @@ function writeSession(): void {
 }
 
 /** Clamps every rule-bounded counter of the state in place (C5):
-    HP 0..maxHP, temp HP 0..TEMP_HP_MAX, dice 0..total, slots 0..max,
-    channel 0..2, death saves 0..3. */
+    delegates to the PURE shared clamps (session-schema.ts) and
+    copies the result over the live state. */
 function clampToRules(state: SessionState, character: Character): void {
-  const combat = character.combat;
-  state.hp.current = clamp(state.hp.current, 0, combat.maxHitPoints);
-  state.hp.temp = clamp(state.hp.temp, 0, TEMP_HP_MAX);
-  state.hitDice.used = clamp(state.hitDice.used, 0, combat.hitDice.total);
-  for (const level of [1, 2, 3] as const satisfies readonly SpellLevel[]) {
-    state.spellSlotsUsed[level] = clamp(state.spellSlotsUsed[level], 0, character.spells.slotsMax[level]);
-  }
-  state.channelDivinity.used = clamp(state.channelDivinity.used, 0, CHANNEL_DIVINITY_MAX);
-  state.deathSaves.successes = clamp(state.deathSaves.successes, 0, DEATH_SAVE_MAX);
-  state.deathSaves.failures = clamp(state.deathSaves.failures, 0, DEATH_SAVE_MAX);
-  // Activable traits (amendment D-38 of D-16): each used counter is
-  // capped by the trait's authored `uses` (when the trait still
-  // exists in the character; unknown keys are left untouched).
-  for (const [traitId, used] of Object.entries(state.resourcesUsed)) {
-    const max = character.traits.find(trait => trait.id === traitId)?.uses;
-    if (max !== undefined) {
-      state.resourcesUsed[traitId] = clamp(used, 0, max);
-    }
-  }
+  Object.assign(state, clampSessionToRules(state, character));
 }
 
 // --- Partial re-render (C3: never the whole #sheet) -------------------

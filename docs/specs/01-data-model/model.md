@@ -168,3 +168,15 @@ Segunda enmienda (con OK del usuario, propose·validate): `Trait` acepta **`uses
 ## 8. Traducciones de catálogo
 
 Catálogos estáticos (18 skills, condiciones, atributos) viven en config con `id` inglés + `label` español. Los datos de personaja (nombres) van en español en sus campos `name`/descripciones (es la UI del jugador).
+
+
+## Amendment 4 · 2026-11-22 · Persistencia de sesión remota (Fase 15, D-54/D-55)
+
+La entidad `sessionState` (§4) sigue siendo la única mutable y localStorage su fuente inmediata. Añadido el **contrato de persistencia remota** (I1 enmendada: backend mínimo de sesión; I2: todo en Free Tier):
+
+- **Tabla DynamoDB** `fichass-sessions-<repo>`: PK `characterId`; atributos `state` (sessionState, `schemaVersion: 1`), `version` (entero, concurrencia optimista), `updatedAt` (ISO 8601). Un ítem por personaje, ~1 KB.
+- **API** (Lambda + Function URL, CORS al origin del site, sin auth en v1 — endpoint abierto endurecido):
+  - `GET /session?characterId=<id>` → `200 {state, version, updatedAt}` · `404 {error:"not_found"}`.
+  - `PATCH /session` body `{characterId, state, baseVersion}` → `200 {version, updatedAt}` · `409 {error:"version_conflict", state, version, updatedAt}` si `baseVersion` no coincide con la remota · `400 {error:"validation_failed", detail}` fuera de contrato (schemaVersion ≠ 1, characterId mismatch, id fuera del manifest, cuerpo > 16 KB).
+  - La Lambda valida el estado con la **misma lógica pura que el cliente** (`src/session-schema.ts`, única fuente de las reglas §4) y el `character` autoriado lo obtiene del propio site.
+- **Semántica**: local-first con debounce y cola de reintentos en el cliente; carga inicial: el estado remoto válido manda; el **Reset es un PATCH** (defaults, versión +1). Un recurso compartido de rasgo conserva UN contador en el rasgo dueño de la reserva.

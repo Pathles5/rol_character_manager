@@ -1,22 +1,24 @@
 # ============================================================================
-# FichaSS — CI/CD (Fase 09, D-12). Quality gate + sync S3 vía OIDC.
+# FichaSS — CI/CD (Fase 09, D-12). Quality gate + infra + sync S3 vía OIDC.
 # ============================================================================
 #
-# DECISIÓN (validada con el usuario, 2026-11-19) — supera a la spec original:
-#   Este workflow NO hace `sam build`/`sam deploy`. El stack (bucket + OIDC +
-#   rol) se despliega ONE-TIME y manualmente por el usuario con sus credenciales
-#   (`sam deploy --guided`, ver infra/README.md). Aquí solo:
-#     quality-gate (lint → test → build)  →  aws s3 sync dist/ → S3.
-#   El rol OIDC tiene SOLO permisos S3 (mínimo privilegio). Sin claves
-#   longevas: autenticación por role-to-assume (OIDC), nada de
-#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY en secrets.
+# DECISIÓN (Fase 09, D-39/D-40 — SUPERADA PARCIALMENTE por D-54/D-55, Fase 15):
+#   Fase 09: el workflow NO tocaba infra (sync-only, despliegues locales
+#   one-time). Fase 15 (criterio del usuario, 2026-11-22): TODA la infra se
+#   gestiona desde la pipeline — el job `infra` hace `sam build` +
+#   `sam deploy` del stack (changeset-update; el quirk changeset-CREATE roto
+#   de la cuenta quedó remediado por el bootstrap one-time de Fase 09) y en
+#   local NO se despliega nunca. El rol OIDC amplió su policy con lo mínimo
+#   para desplegar, acotado al prefijo fichass-* (I2: permisos, no recursos).
+#   El site sigue: quality-gate (lint → test → build) → sync S3, y el job
+#   deploy publica además la URL de la API de sesión (session-url.json).
 #
 # COSTE €0 (constitución I2 / D-11):
 #   - Minutos de Actions: dentro de la cuota gratuita (repo público = gratis;
 #     runners ubuntu-latest ×1 en workflow corto). Nada de runners self-hosted
 #     ni matrices grandes.
-#   - S3: dentro de Free Tier / cuota siempre-gratis para un proyecto de un
-#     jugador. Alerta de facturación $0 obligatoria (infra/README.md, paso 4).
+#   - S3/Lambda/DynamoDB: Free Tier / always-free para un proyecto de un
+#     jugador. Alerta de facturación 3€/10€ activada (spec 09).
 #
 # NOTA sobre `check.ps1` (compuerta documental del harness):
 #   `npm run check` es un script PowerShell del harness LOCAL y el gate de fase
@@ -82,9 +84,72 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # ------------------------------------------------------------------- infra
+  # Fase 15 (D-54/D-55): Toda la infra se despliega desde la pipeline.
+  # sam build (con --base-dir . para resolver el CodeUri `backend/dist`
+  # desde la raíz del repo) + sam deploy del stack existente.
+  infra:
+    if: github.ref == 'refs/heads/master'
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # imprescindible para OIDC (aws-actions + STS)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # El bundle de la Lambda es determinista y va ANTES de sam build:
+      # esbuild single-file ESM con el SDK inlinado (sin SAM esbuild
+      # metadata; el CodeUri apunta a backend/dist ya construido).
+      - name: Bundle the session Lambda (esbuild)
+        run: npm run build:backend
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Configure AWS credentials (OIDC, sin claves longevas)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Read artifact bucket from SSM (D-40)
+        run: |
+          BUCKET=$(aws ssm get-parameter --name /fichass/bucket-name --query Parameter.Value --output text)
+          echo "AWS_S3_BUCKET=$BUCKET" >> "$GITHUB_ENV"
+
+      - name: Sam build
+        run: >
+          sam build
+          --template infra/template.yaml
+          --base-dir .
+          --build-dir .aws-sam/build
+
+      - name: Sam deploy (stack update desde la pipeline)
+        run: >
+          sam deploy
+          --stack-name fichass-infra
+          --template .aws-sam/build/template.yaml
+          --s3-bucket $AWS_S3_BUCKET
+          --s3-prefix sam-artifacts
+          --capabilities CAPABILITY_IAM
+          --no-confirm-changeset
+          --no-fail-on-empty-changeset
+
   # ----------------------------------------------------------------- deploy
   deploy:
-    needs: quality-gate
+    needs: [quality-gate, infra]
     # Solo despliega en la rama protegida (workflow_dispatch desde otra rama
     # compilaría pero NO tocaría el bucket).
     if: github.ref == 'refs/heads/master'
@@ -120,6 +185,24 @@ jobs:
           BUCKET=$(aws ssm get-parameter --name /fichass/bucket-name --query Parameter.Value --output text)
           echo "AWS_S3_BUCKET=$BUCKET" >> "$GITHUB_ENV"
           echo "Deploy target bucket: $BUCKET"
+
+      # ---------------------------------------------------------------
+      # Fase 15 (D-55): publica la URL de la API de sesión como
+      # session-url.json en la raíz del site (cache-control revalidate,
+      # igual que el index). El cliente de sync (Fase 15b) la lee al
+      # arrancar; si el fichero no existe o falla la lectura, la capa
+      # de sync queda deshabilitada grácilmente.
+      # ---------------------------------------------------------------
+      - name: Publish session API URL (Fase 15) into dist
+        run: |
+          URL=$(aws cloudformation describe-stacks --stack-name fichass-infra \
+            --query "Stacks[0].Outputs[?OutputKey=='SessionUrl'].OutputValue" --output text)
+          if [ -n "$URL" ] && [ "$URL" != "None" ]; then
+            printf '{"url":"%s"}\n' "$URL" > dist/session-url.json
+            echo "Session API URL published: $URL"
+          else
+            echo "No SessionUrl output yet — sync layer stays disabled"
+          fi
 
       # ---------------------------------------------------------------
       # Estrategia Cache-Control:

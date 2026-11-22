@@ -17,9 +17,15 @@
 # 3. El trust acepta DOS subs (StringEquals con lista = OR): la rama
 #    protegida (jobs sin environment) y el environment "dev" del job deploy.
 #
-# DECISIÓN D-39: el workflow NO despliega stacks (sync-only). Este stack se
-# crea/actualiza UNA VEZ con las credenciales del usuario. El rol tiene SOLO
-# permisos S3 + lectura SSM (D-40).
+# DECISIÓN D-39 (Fase 09, SUPERADA en Fase 15 por D-54/D-55): el workflow
+# NO despliega stacks. DESDE FASE 15 el criterio del usuario es que TODA la
+# infra se gestiona desde la pipeline: el job `infra` del workflow hace
+# `sam build` + `sam deploy` de ESTE template (changeset-update sobre el
+# stack ya creado; el quirk del changeset-CREATE roto de la cuenta quedó
+# remediado por el bootstrap one-time de Fase 09). El rol OIDC tiene los
+# permisos S3+SSM de sync (D-40) MÁS lo mínimo para desplegar
+# CloudFormation/Lambda/DynamoDB/SSM acotado al prefijo `fichass-*`.
+# En local NUNCA se despliega infra (solo lectura/verificación).
 #
 # COSTE €0 (I2/D-11): S3 Free Tier, IAM gratis, CFN gratis, sin CloudFront.
 # Tags: project: FichaSS · cost-policy: free-tier-only (S3/SSM; IAM no soporta).
@@ -37,9 +43,11 @@ Parameters:
     AllowedPattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
   GitHubOrg:
     Type: String
+    Default: Pathles5
     Description: GitHub repository owner (org or user).
   GitHubRepo:
     Type: String
+    Default: rol_character_manager
     Description: GitHub repository name.
   GitHubBranch:
     Type: String
@@ -47,7 +55,8 @@ Parameters:
     Description: Branch allowed to deploy (only this branch triggers the sync).
   ExistingOidcProviderArn:
     Type: String
-    Description: ARN of the GitHub OIDC provider that must ALREADY exist (arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com).
+    Default: arn:aws:iam::159177056493:oidc-provider/token.actions.githubusercontent.com
+    Description: ARN of the GitHub OIDC provider that must ALREADY exist (defaults to this account's provider; committed here because the account id is already public in infra/role-policy.json).
 
 Resources:
 
@@ -107,6 +116,110 @@ Resources:
         cost-policy: free-tier-only
 
   # --------------------------------------------------------------------------
+  # SESSION PERSISTENCE (Fase 15, D-54/D-55): DynamoDB + Lambda + Function URL.
+  # Free Tier: DynamoDB on-demand (I2 lo permite expresamente), Lambda
+  # 1M req/mes always-free, Function URL gratis. SIN API Gateway (su free
+  # tier es de 12 meses → riesgo I2). CORS fijado al origin del site.
+  # --------------------------------------------------------------------------
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub fichass-sessions-${GitHubRepo}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: characterId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: characterId
+          KeyType: HASH
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+
+  SessionFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub fichass-session-${GitHubRepo}
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: fichass-session-runtime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadWriteOwnTableOnly
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt SessionsTable.Arn
+              # Basic execution logging (CloudWatch Logs free tier).
+              - Sid: LambdaLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
+
+  SessionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub fichass-session-${GitHubRepo}
+      Runtime: nodejs22.x
+      Architectures:
+        - arm64
+      Handler: index.handler
+      # Pre-bundled by `npm run build:backend` (esbuild, single-file ESM
+      # with the AWS SDK inlined) — NO SAM esbuild metadata: the bundle
+      # is deterministic and built by the workflow before `sam build`.
+      CodeUri: backend/dist
+      MemorySize: 256
+      Timeout: 10
+      Role: !GetAtt SessionFunctionRole.Arn
+      Tags:
+        - Key: project
+          Value: FichaSS
+        - Key: cost-policy
+          Value: free-tier-only
+      Environment:
+        Variables:
+          SESSIONS_TABLE: !Ref SessionsTable
+          MANIFEST_URL: !Sub http://${SiteBucket}.s3-website-${AWS::Region}.amazonaws.com/characters-manifest.json
+          SITE_URL: !Sub http://${SiteBucket}.s3-website-${AWS::Region}.amazonaws.com
+
+  SessionFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt SessionFunction.Arn
+      AuthType: NONE
+      Cors:
+        # Pinned to the site origin (hardened-open endpoint, D-55).
+        AllowOrigins:
+          - !GetAtt SiteBucket.WebsiteURL
+        AllowMethods:
+          - GET
+          - PATCH
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 86400
+
+  # --------------------------------------------------------------------------
   # Role assumed by GitHub Actions via web identity (no long-lived keys).
   # Trust pinned to: aud=sts.amazonaws.com and TWO allowed subs (branch ref
   # for jobs without an environment; environment sub because the deploy job
@@ -153,9 +266,17 @@ Resources:
                   - !Sub repo:${GitHubOrg}/${GitHubRepo}:environment:dev
                   - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:environment:dev
       # Inline policies (NOT ManagedPolicy: early validation rejects it in
-      # this template — see header). Least privilege for `aws s3 sync
-      # --delete` (D-39: the workflow NEVER deploys stacks → no
-      # cloudformation:*, no sam:*, no IAM:PassRole) + SSM read (D-40).
+      # this template — see header). Least privilege:
+      #   - S3 sync + SSM read (D-40) — Fase 09.
+      #   - FROM Fase 15 (D-54/D-55): deploy-the-stack-from-the-pipeline
+      #     permissions (CloudFormation changesets on this stack, Lambda
+      #     CRUD on fichass-* functions incl. URL config, DynamoDB CRUD on
+      #     fichass-* tables, IAM role management + PassRole on fichass-*
+      #     roles, SSM put on /fichass/*) — all scoped by the `fichass`
+      #     prefix; NOT a single paid resource (I2).
+      #   - CreateStack is deliberately NOT granted: the stack exists
+      #     (bootstrap Fase 09) and the account's changeset-CREATE is
+      #     broken anyway; re-creating from CI would need a manual case.
       Policies:
         - PolicyName: fichass-deploy
           PolicyDocument:
@@ -178,6 +299,82 @@ Resources:
                 Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
+              - Sid: PublishDeploymentSettingsToSsm
+                Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
+              - Sid: DeployChangesetsOnThisStack
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListChangeSets
+                  - cloudformation:ListStackResources
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-infra/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-infra/*
+              - Sid: TemplateInspection
+                Effect: Allow
+                Action:
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ValidateTemplate
+                Resource: '*'
+              - Sid: ManageLambdaFunctions
+                Effect: Allow
+                Action:
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:TagResource
+                  - lambda:UntagResource
+                  - lambda:ListTags
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:GetPolicy
+                  - lambda:GetFunctionUrlConfig
+                  - lambda:UpdateFunctionUrlConfig
+                  - lambda:CreateEventInvokeConfig
+                Resource: !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:fichass-*
+              - Sid: ManageDynamoTables
+                Effect: Allow
+                Action:
+                  - dynamodb:CreateTable
+                  - dynamodb:DeleteTable
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateTable
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/fichass-*
+              - Sid: ManageFichassRoles
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:UpdateRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:PutRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:ListRolePolicies
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/fichass-*
+              - Sid: PassFichassRolesOnly
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/fichass-*
 
 Outputs:
   WebsiteURL:
@@ -189,3 +386,6 @@ Outputs:
   OidcRoleArn:
     Description: Role ARN (for the AWS_OIDC_ROLE_ARN secret).
     Value: !GetAtt GitHubActionsRole.Arn
+  SessionUrl:
+    Description: Lambda Function URL of the session persistence API (Fase 15).
+    Value: !GetAtt SessionFunctionUrl.FunctionUrl
