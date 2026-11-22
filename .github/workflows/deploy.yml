@@ -143,7 +143,7 @@ jobs:
           --template .aws-sam/build/template.yaml
           --s3-bucket $AWS_S3_BUCKET
           --s3-prefix sam-artifacts
-          --capabilities CAPABILITY_IAM
+          --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
           --no-confirm-changeset
           --no-fail-on-empty-changeset
 
