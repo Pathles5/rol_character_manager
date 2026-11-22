@@ -68,6 +68,8 @@
         "lambda:AddPermission",
         "lambda:RemovePermission",
         "lambda:GetPolicy",
+        "lambda:CreateFunctionUrlConfig",
+        "lambda:DeleteFunctionUrlConfig",
         "lambda:GetFunctionUrlConfig",
         "lambda:UpdateFunctionUrlConfig",
         "lambda:CreateEventInvokeConfig"
