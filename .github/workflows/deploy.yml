@@ -153,38 +153,47 @@ jobs:
       # documentada de la Fase 09). Flujo: create-change-set →
       # wait change-set-create-complete → execute-change-set → wait
       # stack-create/update-complete.
-      - name: Create changeset (fichass-session)
-        # ChangeSetType CREATE cuando el stack aún no existe (el default
-        # UPDATE exige stack existente: ESTE era el quirk "rotó" de la
-        # Fase 09 — "Stack does not exist" engañoso).
+      - name: Deploy changeset (create o execute el pendiente)
+        # Caso especial del stub REVIEW_IN_PROGRESS: si un changeset CREATE
+        # quedó pendiente (AVAILABLE) de una ejecución anterior — el waiter
+        # de sam se rindió, saga de la Fase 09 — hay que EJECUTARLO: CFN
+        # rechaza crear un changeset UPDATE sobre un stub pendiente con el
+        # error engañoso "Stack does not exist".
         run: |
-          TYPE=UPDATE
-          if ! aws cloudformation describe-stacks --stack-name fichass-session > /dev/null 2>&1; then
-            TYPE=CREATE
-            echo "El stack no existe: changeset CREATE"
+          REGION=${{ secrets.AWS_REGION }}
+          STACK=fichass-session
+          PENDING=$(aws cloudformation list-change-sets --stack-name $STACK \
+            --query "Summaries[?ExecutionStatus=='AVAILABLE' && Status=='CREATE_COMPLETE'].ChangeSetId" \
+            --output text --region $REGION | head -n 1)
+          if [ -n "$PENDING" ]; then
+            echo "Changeset pendiente detectado, se ejecuta: $PENDING"
+            CHGSET="$PENDING"
+          else
+            TYPE=UPDATE
+            if ! aws cloudformation describe-stacks --stack-name $STACK > /dev/null 2>&1; then
+              TYPE=CREATE
+              echo "El stack no existe: changeset CREATE"
+            fi
+            CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+            aws cloudformation create-change-set \
+              --stack-name $STACK \
+              --change-set-name "$CHGSET" \
+              --change-set-type $TYPE \
+              --template-body file://.aws-sam/packaged.yaml \
+              --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+              --region $REGION
+            echo "Esperando al changeset $CHGSET (timeout generoso)..."
+            aws cloudformation wait change-set-create-complete \
+              --stack-name $STACK \
+              --change-set-name "$CHGSET" \
+              --waiter-attempts 40 \
+              --region $REGION
           fi
-          aws cloudformation create-change-set \
-            --stack-name fichass-session \
-            --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }} \
-            --change-set-type $TYPE \
-            --template-body file://.aws-sam/packaged.yaml \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ secrets.AWS_REGION }}
-
-      - name: Wait for changeset (timeout generoso)
-        run: >
-          aws cloudformation wait change-set-create-complete
-          --stack-name fichass-session
-          --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }}
-          --waiter-attempts 40
-          --region ${{ secrets.AWS_REGION }}
-
-      - name: Execute changeset
-        run: >
-          aws cloudformation execute-change-set
-          --stack-name fichass-session
-          --change-set-name samdeploy-${{ github.run_id }}-${{ github.run_attempt }}
-          --region ${{ secrets.AWS_REGION }}
+          echo "Ejecutando el changeset..."
+          aws cloudformation execute-change-set \
+            --stack-name $STACK \
+            --change-set-name "$CHGSET" \
+            --region $REGION
 
       - name: Wait for the stack to settle
         run: |
