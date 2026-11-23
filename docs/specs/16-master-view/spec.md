@@ -97,3 +97,10 @@ ficha del jugador.
 - **Petición**: el layout del master (grupos, orden de contenedores, minimizados) debe persistir en la BD de sesión (DynamoDB vía la Lambda), "como los daños y demás", no solo en localStorage.
 - **Cambio de contrato**: NUEVO registro reservado `characterId = "master-layout"` en la MISMA tabla de sesiones: `GET /session?characterId=master-layout` → `{layout, version}` y `PATCH /session {characterId, layout, baseVersion}` con el mismo optimistic locking (409 + re-base: la última escritura gana entre masters, es estado de UI absoluto). NO es un personaje: el backend ramifica en ese id y nunca aplica el contrato SessionState. Sanitizador compartido `sanitizeMasterLayout` en src/session-schema.ts (única fuente, límites: ≤20 grupos, ≤50 miembros, nombres ≤60 chars).
 - **Qué NO cambia**: el contrato de sesiones de jugador (D-55) queda intacto byte a byte; localStorage pasa a ser caché/offline y siembra el registro remoto la primera vez; cero infra nueva (misma tabla, misma Lambda, despliegue por pipeline).
+
+### Amendment 2 — Alcance editable completo (2026-11-23, QA del usuario; cierra la desviación D3 del revisor)
+
+- **Petición del usuario**: "todo lo que es editable para el jugador y aparece en la vista del master también será editable para el master".
+- **Alcance real entregado** (frente a las Decisiones 1 y "Fuera de alcance" originales, que limitaban a PG/temp/inspiración/slots): ADEMÁS, editables por el master con el MISMO mecanismo de deltas (C9): dados de golpe (±1), Channel Divinity (±1, casters), **salvaciones de muerte** (dots 3+3 clicables, como la ficha del jugador) y **condiciones** (chips del catálogo 2024), más **recursos de rasgos** (±1 por rasgo con `uses`). Muerte saves y condiciones se muestran replicando la UI de la ficha.
+- **Riesgo aceptado**: la inspiración es un toggle absoluto — su re-aplicación tras un 409 puede pisar un toggle concurrente del jugador en ESE campo (semántica inherente al toggle; el resto de contadores son deltas y no pueden pisar).
+- El backend no cambia: sigue validando y clampeando con `sanitizeSessionState` + `clampSessionToRules` (misma fuente de límites).

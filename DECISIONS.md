@@ -452,3 +452,11 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** cero infra nueva; un único mecanismo de persistencia; el endpoint ya está endurecido (validación, cuerpo pequeño, CORS).
 - **Riesgo:** el layout lo puede escribir cualquiera con la URL (igual que las sesiones, D-55, aceptado); sin realtime el segundo master no ve cambios del primero hasta refresh.
 - **supersedes:** la parte de "persistencia en localStorage del master" de la decisión original de la Fase 16 (el minimizar/grupos ahora viven remoto-con-caché).
+
+## D-60 · 2026-11-23 · Alcance editable del master: paridad total con el jugador *(registro retroactivo — validado por el usuario en QA antes de implementar; la spec original quedó corta y el revisor lo señaló)*
+
+- **Contexto:** la spec inicial de la Fase 16 dejaba muerte saves y condiciones en solo-lectura; el usuario pidió paridad total ("todo lo editable del jugador editable para el master").
+- **Decisión:** el master edita con deltas relativos (C9/D-58) TODOS los contadores visibles de la fila: PG ±1/±10, temp ±1, dados golpe ±1, slots ±1, CD ±1 (casters), muerte saves (dots), condiciones (chips), recursos de rasgos ±1. La inspiración se aplica como toggle absoluto (riesgo de pisar un toggle simultáneo del jugador aceptado).
+- **Motivo:** una sola mecánica (deltas + clamp por documento + reintento 409) para todos los contadores; misma fuente de límites (session-schema).
+- **Riesgo:** ver "Riesgo aceptado" de la Amendment 2; sin realtime, la vista del jugador puede estar hasta 15 s atrás.
+- **supersedes:** la Decisión 1 original de la spec 16 (solo lectura de muerte saves/condiciones) y el bullet correspondiente de "Fuera de alcance".
