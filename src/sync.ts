@@ -28,6 +28,11 @@ export interface SyncCallbacks {
       applies it via session.applyRemoteState (which sanitizes with
       the character and re-renders). */
   onRemoteState(state: unknown): void;
+  /** A 409 conflict: the API returned the remote state while there
+      were unconfirmed local changes. The sync PAUSES (no automatic
+      retries) until the caller resolves via resolveLoadRemote() or
+      resolveOverwriteLocal() (Fase 15c: explicit user choice). */
+  onConflict?(conflict: { remoteState: unknown; remoteVersion: number; localState: SessionState }): void;
 }
 
 const DEBOUNCE_MS = 1500;
@@ -49,6 +54,10 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 /** Latest local snapshot not yet confirmed by the server. */
 let pendingState: SessionState | null = null;
 let inFlight = false;
+/** Open conflict (Fase 15c): while set, the sync is PAUSED — no
+    debounced flushes (they would 409 again). The view resolves it
+    via resolveLoadRemote / resolveOverwriteLocal. */
+let openConflict: { remoteState: unknown; remoteVersion: number } | null = null;
 
 function setStatus(next: SyncStatus): void {
   if (status === next) return;
@@ -114,13 +123,16 @@ function schedule(): void {
 }
 
 /** Called by the view for EVERY local mutation (onSessionChange).
-    Debounces and schedules the batched PATCH. */
+    Debounces and schedules the batched PATCH. While a conflict is
+    open the sync is PAUSED: the snapshot is kept (the resolution
+    uses the latest one) but nothing is sent. */
 export function notifyLocalChange(state: SessionState): void {
   if (status === 'disabled' || !characterId) return;
   // A snapshot of another character (stale view during navigation)
   // is dropped — its older changes were already flushed.
   if (state.characterId !== characterId) return;
   pendingState = state;
+  if (openConflict) return; // paused: resolution first
   setStatus('pending');
   if (retryTimer !== null) {
     clearTimeout(retryTimer);
@@ -152,14 +164,17 @@ async function flush(): Promise<void> {
       if (pendingState === snapshot) pendingState = null;
       setStatus('synced');
     } else if (response.status === 409) {
-      // Conflict (D-55): REMOTE WINS in 15b — apply the remote state
-      // the API returned; the fine-grained toast is Phase 15c.
+      // Conflict (Fase 15c): PAUSE and let the user choose — the
+      // silent remote-wins of 15b is replaced by an explicit toast.
       const body = (await response.json()) as { state: unknown; version?: number };
       if (body.state) {
-        versions[id] = body.version ?? versions[id] ?? 0;
-        if (pendingState === snapshot) pendingState = null;
-        setStatus('synced');
-        callbacks?.onRemoteState(body.state);
+        openConflict = { remoteState: body.state, remoteVersion: body.version ?? 0 };
+        setStatus('error'); // red dot, steady: attention required
+        callbacks?.onConflict?.({
+          remoteState: openConflict.remoteState,
+          remoteVersion: openConflict.remoteVersion,
+          localState: pendingState ?? snapshot,
+        });
       } else {
         setStatus('error');
         scheduleRetry();
@@ -174,7 +189,8 @@ async function flush(): Promise<void> {
     inFlight = false;
   }
   // Changes that arrived while the PATCH was in flight → next batch.
-  if (pendingState && debounceTimer === null) schedule();
+  // While a CONFLICT is open the sync is paused: nothing reschedules.
+  if (pendingState && !openConflict && debounceTimer === null) schedule();
 }
 
 function scheduleRetry(): void {
@@ -194,6 +210,61 @@ export function setSnapshotProvider(provider: () => SessionState | null): void {
 }
 function getSessionSnapshot(): SessionState | null {
   return snapshotProvider ? snapshotProvider() : null;
+}
+
+/** Conflict resolution (Fase 15c): apply the REMOTE state (the
+    local unconfirmed changes are discarded). */
+export function resolveLoadRemote(): void {
+  if (!openConflict || !characterId) return;
+  const id = characterId;
+  versions[id] = openConflict.remoteVersion;
+  const remote = openConflict.remoteState;
+  pendingState = null;
+  openConflict = null;
+  setStatus('synced');
+  callbacks?.onRemoteState(remote);
+}
+
+/** Conflict resolution (Fase 15c): overwrite with the LOCAL state —
+    PATCHed using the remote version as base (the local edits win).
+    Uses the LATEST snapshot (edits made while the toast was open
+    are included). A new 409 reopens the conflict. */
+export async function resolveOverwriteLocal(): Promise<void> {
+  if (!openConflict || !characterId) return;
+  const id = characterId;
+  const base = openConflict.remoteVersion;
+  const state = snapshotProvider?.() ?? pendingState;
+  openConflict = null;
+  if (!state) {
+    resolveLoadRemote();
+    return;
+  }
+  const url = await discoverUrl();
+  if (!url) {
+    setStatus('disabled');
+    return;
+  }
+  setStatus('pending');
+  try {
+    const response = await fetchImpl(`${url}/session`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: id, state, baseVersion: base }),
+    });
+    if (response.status === 200) {
+      const body = (await response.json()) as { version: number };
+      versions[id] = body.version;
+      pendingState = null;
+      setStatus('synced');
+    } else {
+      // A new conflict (someone wrote again) or a server error: the
+      // flow re-enters through the same paths.
+      throw new Error(`HTTP ${response.status}`);
+    }
+  } catch {
+    setStatus('error');
+    scheduleRetry();
+  }
 }
 
 /** Test helper: clears all module state (timers, caches, versions). */

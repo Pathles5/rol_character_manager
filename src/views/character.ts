@@ -34,7 +34,7 @@ import {
   type StepperAction,
   type StepperTarget,
 } from '../session';
-import { initSync, notifyLocalChange, setSnapshotProvider, type SyncStatus } from '../sync';
+import { initSync, notifyLocalChange, resolveLoadRemote, resolveOverwriteLocal, setSnapshotProvider, type SyncStatus } from '../sync';
 import type { Character } from '../types';
 import { validateCharacter } from '../validate';
 
@@ -310,6 +310,15 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     </div>
   </section>
   <!-- Phase 11 (D-44): dice roll dialog. Content mounted per roll. -->
+  <div class="backdrop" id="conflict-backdrop" hidden></div>
+  <section class="card confirm-dialog" id="conflict-toast" role="dialog" aria-modal="true" aria-labelledby="conflict-title" hidden>
+    <h2 class="confirm-title" id="conflict-title">Conflicto de sincronización</h2>
+    <p class="confirm-text">Otro dispositivo actualizó esta ficha mientras la editabas. Elige qué estado quieres conservar:</p>
+    <div class="confirm-actions">
+      <button type="button" class="chip" id="conflict-load-remote">Cargar remoto</button>
+      <button type="button" class="chip confirm-danger" id="conflict-overwrite">Sobrescribir el mío</button>
+    </div>
+  </section>
   <div class="backdrop" id="roll-backdrop" hidden></div>
   <section class="card roll-dialog" id="roll-dialog" role="dialog" aria-modal="true" aria-labelledby="roll-title" hidden>
     <h2 class="confirm-title" id="roll-title">Tirada</h2>
@@ -359,6 +368,41 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   const setStatus = (s: SyncStatus): void => {
     if (syncDot) syncDot.dataset.syncStatus = s;
   };
+  // Conflict toast (Fase 15c): same a11y pattern as the Reset
+  // confirmation (trapTab, Esc, backdrop) — Esc/backdrop default to
+  // the SAFE choice (load remote).
+  const conflictToast = root.querySelector<HTMLElement>('#conflict-toast');
+  const conflictBackdrop = root.querySelector<HTMLElement>('#conflict-backdrop');
+  const closeConflict = (): void => {
+    if (conflictToast) conflictToast.hidden = true;
+    if (conflictBackdrop) conflictBackdrop.hidden = true;
+    document.removeEventListener('keydown', onConflictKey);
+    resolveLoadRemote(); // the safe default
+    setStatus('synced');
+  };
+  const openConflictToast = (): void => {
+    if (!conflictToast || !conflictBackdrop) return;
+    conflictToast.hidden = false;
+    conflictBackdrop.hidden = false;
+    document.addEventListener('keydown', onConflictKey);
+    conflictToast.querySelector<HTMLButtonElement>('#conflict-load-remote')?.focus();
+  };
+  const onConflictKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      closeConflict();
+      return;
+    }
+    if (event.key !== 'Tab' || !conflictToast) return;
+    trapTab(event, conflictToast);
+  };
+  conflictToast?.querySelector<HTMLButtonElement>('#conflict-load-remote')?.addEventListener('click', closeConflict);
+  conflictBackdrop?.addEventListener('click', closeConflict);
+  conflictToast?.querySelector<HTMLButtonElement>('#conflict-overwrite')?.addEventListener('click', () => {
+    if (conflictToast) conflictToast.hidden = true;
+    if (conflictBackdrop) conflictBackdrop.hidden = true;
+    document.removeEventListener('keydown', onConflictKey);
+    void resolveOverwriteLocal();
+  });
   initSync(id, {
     onStatus: setStatus,
     onRemoteState: raw => {
@@ -366,6 +410,10 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       // is the only one that may receive a remote state.
       if (stale()) return;
       applyRemoteState(raw);
+    },
+    onConflict: () => {
+      if (stale() || !conflictToast || !conflictBackdrop) return;
+      openConflictToast();
     },
   });
 

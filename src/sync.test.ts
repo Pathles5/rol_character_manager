@@ -8,6 +8,8 @@ import {
   initSync,
   notifyLocalChange,
   resetSyncStateForTests,
+  resolveLoadRemote,
+  resolveOverwriteLocal,
   setSyncFetch,
   type SyncStatus,
 } from './sync';
@@ -201,21 +203,88 @@ describe('failures and conflicts', () => {
     expect(st.last()).toBe('synced');
     expect(calls.filter(c => (c.init?.method ?? 'GET') === 'PATCH').length).toBe(2);
   });
+});
 
-  it('a 409 conflict applies the REMOTE state (remote wins in 15b)', async () => {
+describe('conflicts (Fase 15c): pause + explicit resolution', () => {
+  it('a 409 PAUSES the sync and reports the conflict (no silent apply)', async () => {
     const remote = snapshot('elira', { hp: { current: 12, temp: 2 } });
-    const { fetch } = makeFetch([
+    const { fetch, calls } = makeFetch([
       ...urlRoutes(),
       { match: '/session?characterId=elira', respond: () => ({ status: 200, body: { state: remote, version: 7 } }) },
       { match: '/session', respond: () => ({ status: 409, body: { error: 'version_conflict', state: remote, version: 7 } }) },
     ]);
     setSyncFetch(fetch);
     const st = statusTracker();
-    const rt = remoteTracker();
-    await initSync('elira', { onStatus: st.onStatus, onRemoteState: rt.onRemoteState });
+    const conflicts: Array<{ remoteState: unknown; remoteVersion: number }> = [];
+    await initSync('elira', {
+      onStatus: st.onStatus,
+      onRemoteState: () => {},
+      onConflict: c => conflicts.push(c),
+    });
     notifyLocalChange(snapshot('elira', { hp: { current: 5, temp: 0 } }));
     await vi.advanceTimersByTimeAsync(1500);
+    expect(conflicts.length).toBe(1);
+    expect(conflicts[0].remoteVersion).toBe(7);
+    expect(st.last()).toBe('error'); // red dot, steady: attention
+    // PAUSED: further local changes do NOT trigger flushes.
+    const before = calls.filter(c => (c.init?.method ?? 'GET') === 'PATCH').length;
+    notifyLocalChange(snapshot('elira', { hp: { current: 3, temp: 0 } }));
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(calls.filter(c => (c.init?.method ?? 'GET') === 'PATCH').length).toBe(before);
+  });
+
+  it('resolveLoadRemote applies the remote state and marks synced', async () => {
+    const remote = snapshot('elira', { hp: { current: 12, temp: 2 } });
+    const { fetch } = makeFetch([
+      ...urlRoutes(),
+      { match: '/session?characterId=elira', respond: () => ({ status: 200, body: { state: remote, version: 7 } }) },
+      { match: '/session', respond: () => ({ status: 409, body: { state: remote, version: 7 } }) },
+    ]);
+    setSyncFetch(fetch);
+    const st = statusTracker();
+    const rt = remoteTracker();
+    await initSync('elira', {
+      onStatus: st.onStatus,
+      onRemoteState: rt.onRemoteState,
+      onConflict: () => {},
+    });
+    notifyLocalChange(snapshot('elira'));
+    await vi.advanceTimersByTimeAsync(1500);
+    resolveLoadRemote();
     expect(st.last()).toBe('synced');
-    expect(rt.last()).toEqual(remote); // the remote state was applied
+    expect(rt.last()).toEqual(remote);
+  });
+
+  it('resolveOverwriteLocal PATCHes the LATEST local state with the remote base', async () => {
+    const remote = snapshot('elira', { hp: { current: 12, temp: 2 } });
+    const { fetch, calls } = makeFetch([
+      ...urlRoutes(),
+      { match: '/session?characterId=elira', respond: () => ({ status: 200, body: { state: remote, version: 7 } }) },
+      { match: '/session', respond: (_url, init) => {
+        const body = JSON.parse(String(init?.body));
+        // The remote moved on (version 8): PATCHes with an older base
+        // conflict; with the remote base (8) they succeed.
+        return body.baseVersion < 8
+          ? { status: 409, body: { state: remote, version: 8 } }
+          : { status: 200, body: { version: body.baseVersion + 1 } };
+      } },
+    ]);
+    setSyncFetch(fetch);
+    const st = statusTracker();
+    await initSync('elira', {
+      onStatus: st.onStatus,
+      onRemoteState: () => {},
+      onConflict: () => {},
+    });
+    notifyLocalChange(snapshot('elira', { hp: { current: 5, temp: 0 } }));
+    await vi.advanceTimersByTimeAsync(1500);
+    // Edits made while the conflict toast is open are INCLUDED.
+    notifyLocalChange(snapshot('elira', { hp: { current: 2, temp: 0 } }));
+    await resolveOverwriteLocal();
+    expect(st.last()).toBe('synced');
+    const patches = calls.filter(c => (c.init?.method ?? 'GET') === 'PATCH');
+    const last = JSON.parse(String(patches[patches.length - 1].init?.body));
+    expect(last.baseVersion).toBe(8); // the remote version as base
+    expect(last.state.hp.current).toBe(2); // the LATEST local state
   });
 });
