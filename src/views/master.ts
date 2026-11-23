@@ -130,7 +130,7 @@ export async function masterView(root: HTMLElement): Promise<void> {
   /** Group <select> change: move the row to the chosen container
       (the accessible alternative to drag & drop, C7). */
   const onChange = (event: Event): void => {
-    const select = (event.target as HTMLElement).closest<HTMLElement>('.m-group-select');
+    const select = (event.target as HTMLElement).closest<HTMLSelectElement>('.m-group-select');
     const rowEl = select?.closest<HTMLElement>('.master-row');
     const id = rowEl?.dataset.char;
     if (!select || !id) return;
