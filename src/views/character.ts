@@ -23,20 +23,28 @@ import { escapeHtml } from '../lib/manifest';
 import { renderSheet } from '../render/sheet';
 import {
   applyStepper,
+  applyRemoteState,
+  getSession,
   initSession,
   isStepperAction,
   isStepperTarget,
+  onSessionChange,
   resetSession,
   toggleCondition,
   type StepperAction,
   type StepperTarget,
 } from '../session';
+import { initSync, notifyLocalChange, setSnapshotProvider, type SyncStatus } from '../sync';
 import type { Character } from '../types';
 import { validateCharacter } from '../validate';
 
 /** Detaches the document-level keydown handler of the PREVIOUS
     character view (the only listener that outlives its DOM). */
 let detachDetailKeydown: (() => void) | null = null;
+
+/** The sync listener is GLOBAL (registered once): notifyLocalChange
+    filters snapshots of other characters by characterId. */
+let syncWired = false;
 
 const LOADING_HTML = `
   <header class="appbar">
@@ -279,6 +287,7 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <nav class="mode-tabs" aria-label="Modos de vista">
         ${modeButtonsHtml}
       </nav>
+      <span id="sync-status" class="sync-dot" data-sync-status="disabled" role="status" aria-label="Estado de sincronización de la sesión" title="Sincronización"></span>
     </div>
   </header>
 
@@ -330,6 +339,35 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   // refs) is never touched for a route that already lost the mount.
   if (stale()) return;
   initSession(character, derived, id);
+
+  // Sync layer (Fase 15b, D-55): local-first persistence to the
+  // session API. The listener is registered ONCE (global); the
+  // snapshot provider feeds retries; initSync GETs the remote
+  // state and applies it (remote wins on load).
+  setSnapshotProvider(() => {
+    try {
+      return getSession();
+    } catch {
+      return null;
+    }
+  });
+  if (!syncWired) {
+    onSessionChange(state => notifyLocalChange(state));
+    syncWired = true;
+  }
+  const syncDot = root.querySelector<HTMLElement>('#sync-status');
+  const setStatus = (s: SyncStatus): void => {
+    if (syncDot) syncDot.dataset.syncStatus = s;
+  };
+  initSync(id, {
+    onStatus: setStatus,
+    onRemoteState: raw => {
+      // Stale navigation: the session context of the CURRENT view
+      // is the only one that may receive a remote state.
+      if (stale()) return;
+      applyRemoteState(raw);
+    },
+  });
 
   // Mode module state survives navigation (filters.ts keeps one
   // currentMode): normalize the freshly rendered DOM to the

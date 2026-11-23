@@ -864,6 +864,49 @@ main {
   margin: 4px auto 0;
 }
 
+/* Sync indicator (Fase 15b, D-55): one small dot in the appbar.
+   disabled = invisible; synced = dim; pending = accent pulse;
+   error = danger. */
+.sync-dot {
+  flex: none;
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  margin-left: var(--space-2);
+}
+
+.sync-dot[data-sync-status='synced'] {
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.sync-dot[data-sync-status='pending'] {
+  background: var(--text-dim);
+  animation: sync-pulse 1.2s ease-in-out infinite;
+}
+
+.sync-dot[data-sync-status='error'] {
+  background: var(--danger);
+}
+
+.sync-dot[data-sync-status='disabled'] {
+  visibility: hidden;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-dot[data-sync-status='pending'] {
+    animation: none;
+  }
+}
+
 /* Reset confirmation dialog (user request 2026-11-20): centered card
    over the shared backdrop — same tokens as the spell detail sheet. */
 .confirm-dialog {

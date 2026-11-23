@@ -188,6 +188,40 @@ export function update(patch?: SessionPatch): void {
   for (const id of ids) refreshBlock(id);
 }
 
+// --- Sync hooks (Fase 15b, D-55) --------------------------------------
+
+type SessionListener = (state: SessionState) => void;
+const listeners: SessionListener[] = [];
+
+/** Registers a listener fired after EVERY local mutation (patch,
+    stepper, condition toggle, reset). Used by the sync layer
+    (Fase 15b) to schedule remote persistence. */
+export function onSessionChange(listener: SessionListener): void {
+  listeners.push(listener);
+}
+
+function fireListeners(): void {
+  if (!context) return;
+  const snapshot = context.state;
+  for (const listener of listeners) listener(snapshot);
+}
+
+/** Applies a REMOTE session state (from the session API, Fase 15b):
+    validates it against the contract (schemaVersion + characterId
+    must match — a mismatch is REJECTED, never silently wiped) and
+    swaps it in as the current state, persisting and re-rendering
+    every session card. Does NOT fire the local-change listeners
+    (the remote application must not echo a PATCH back). */
+export function applyRemoteState(raw: unknown): SessionState | null {
+  if (!context) return null;
+  const data = raw as Record<string, unknown> | null;
+  if (!data || data.schemaVersion !== 1 || data.characterId !== context.characterId) return null;
+  context.state = sanitizeSessionState(raw, context.character, context.characterId);
+  writeSession();
+  update();
+  return context.state;
+}
+
 // --- Public API -------------------------------------------------------
 
 /** Bootstraps the session: loads persisted counters and syncs them
@@ -233,6 +267,7 @@ export function patchSession(patch: SessionPatch): SessionState {
   clampToRules(state, character);
   writeSession();
   update(patch);
+  fireListeners();
   return state;
 }
 
@@ -253,6 +288,7 @@ export function resetSession(): SessionState {
     context.state = { ...defaultSessionState(character), characterId };
   }
   update();
+  fireListeners();
   return requireContext().state;
 }
 
