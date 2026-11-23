@@ -174,7 +174,7 @@ async function handlePatch(rawBody: string): Promise<LambdaResponse> {
   const character = await getCharacter(characterId);
   const state = sanitizeSessionState(body.state, character, characterId);
 
-  const current = await doc.send(new GetItemCommand({ TableName: TABLE_NAME, Key: { characterId } }));
+  const current = await doc.send(new GetCommand({ TableName: TABLE_NAME, Key: { characterId } }));
   const item = current.Item as SessionItem | undefined;
   if (item && item.version !== baseVersion) {
     return json(409, {
