@@ -18,5 +18,5 @@
 ## 15c — Conflicto y pulido
 
 - [x] T-10 Toast de conflicto 409 (dos botones: cargar remoto / sobrescribir el mío; Esc y backdrop = cargar remoto, patrón a11y del Reset con trapTab) + sync PAUSADO durante el conflicto (los changesets pendientes obsoletos se borran, nunca se ejecutan) — 12 tests del sync, 120/120.
-- [ ] T-11 QA manual móvil/escritorio (dos dispositivos + Reset + offline + conflicto) (C10) — **pendiente del usuario (partida real)**.
+- [x] T-11 QA manual móvil/escritorio (dos dispositivos + Reset + offline + conflicto) (C10) — **APROBADO por el usuario (2026-11-23)**: sync funcionando en producción (valores fluyendo hacia DynamoDB, dot con estados correctos; decisión estética: dot synced en azul acento) + QA adicional: 4 personajes reales ingestado y validados por el usuario viendo DynamoDB.
 - [ ] T-12 Revisor fresh-eyes de la fase (C11) + docs finales + tag (C12).
