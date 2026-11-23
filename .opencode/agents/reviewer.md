@@ -1,6 +1,6 @@
 ---
 description: Fresh-eyes reviewer checking FichaSS phase deliverables against the spec acceptance criteria; read-only plus granted gating commands
-model: opencode-go/qwen4-max-free
+model: opencode-go/qwen4-max
 mode: subagent
 permissions:
   - action: edit
