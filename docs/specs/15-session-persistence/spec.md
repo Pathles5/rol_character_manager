@@ -133,3 +133,13 @@ hoy no cambia.
 - **Fix local de vitest** (solo entorno, no producto): jsdom 26 delega el
   storage en internos de Node que no son resolubles en el worker → fallback
   en memoria en `src/test-setup.ts` (CI Node 20 no afectado).
+
+## Deviations (Fase 15c — 2026-11-23, revisor D-57)
+
+- **Rate limiting prometido, no implementado** (fila 4 de Decisiones de esta
+  spec prometía "rate básico"): ni throttle en el handler ni
+  `ReservedConcurrentExecutions`. Riesgo ACEPTADO (mismo espíritu que el
+  endpoint abierto de D-55): CORS pinneado a los 2 origins del site,
+  whitelist de ids del manifest, dato de sesión de bajo valor y alertas
+  3€/10€. Si la URL se filtra y hay abuso, la tabla es recreable y el coste
+  queda acotado por las alertas.

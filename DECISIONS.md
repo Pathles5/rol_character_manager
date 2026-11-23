@@ -331,6 +331,19 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Verificación final (C1–C5 en producción)**: round-trip real — GET de id sin sesión → 404; PATCH válido → 200 `{version:1}`; GET → estado escrito; PATCH con versión obsoleta → 409; cuerpo inválido → 400; id fuera del manifest → 400; CORS preflight desde el origin del site → cabeceras correctas, desde un origin extraño → SIN `Access-Control-Allow-Origin`. 109/109 tests (fix local: fallback de storage en memoria para jsdom26+Node26 en vitest — CI Node 20 no afectado).
 - **Riesgo:** el flujo de despliegue es complejo pero autodiagnosticable (logs del changeset + build tag en el init de la Lambda: `fichass-session init [fase15a-r21c]`); el endpoint abierto endurecido asume riesgo de abuso bajo (dato de sesión, alertas 3€/10€); el hosting sigue huérfano estable (documentado en `infra/template.yaml`).
 
+## D-57 · 2026-11-23 · Cierre de la Fase 15: doble review aplicado + tag v0.2.0
+
+- **Contexto:** cierre formal con dos reviews: (1) el revisor fresh-eyes formal de la fase (PASS with remarks por sub-fase; 1 major de 15b + 8 minors) y (2) la primera revisión del **reviewer con el modelo nuevo `qwen4-max`**, que en su prueba de fuego encontró 3 bugs reales adicionales en `src/sync.ts`.
+- **Hallazgos y fixes aplicados (todos):**
+  - **major (15b):** navegar fuera del toast de conflicto (atrás del móvil, cambio de hash) dejaba `openConflict` seteado → el siguiente personaje quedaba silenciosamente sin sincronizar (dot verde mentiroso). **Fix:** `initSync` limpia conflicto/pendientes/timers al arrancar.
+  - **Debounce era throttle** (ventana fija desde el primer cambio, contradecía D-55): **fix** → trailing debounce real (el timer se reinicia en cada notify).
+  - **`flush()` no respetaba la pausa de conflicto** (un timer armado antes del 409 podía disparar durante la pausa): **fix** → guarda `openConflict` en flush.
+  - **`resolveOverwriteLocal` sin guarda `inFlight`** (carrera de versiones): **fix** → inFlight durante la sobrescritura.
+  - Minors: 409-sin-estado rebasa a versión 0 (no bucle ciego) · flush usa el characterId del SNAPSHOT (carrera de navegación A→B) · foco I5 devuelto al dot (tabindex -1) tras el toast · aria-label dinámica del dot (los lectores oyen las transiciones) · guardas de sesión con tests nuevos (rechazo de mismatch/versión, sin eco) · cache de descubrimiento documentada · comentarios desfasados corregidos.
+  - **Rate limiting:** deviation registrada en la spec (riesgo aceptado, espíritu D-55) en vez de implementarlo.
+- **Verificación:** 125/125 tests · lint/build/check en verde · pipeline success.
+- **Riesgo:** el BUILD_TAG de la Lambda queda como práctica permanente (única defensa contra despliegues "verdes vacíos" de esta cuenta); la sincronización no cubre la ventana ≤1,5 s de navegación inmediata tras una edición (el cambio queda en localStorage y se sube con la siguiente sesión de ediciones).
+
 ## D-46 · 2026-11-20 · `damage` en conjuros y tirada de acertar (enmienda 3 de D-16)
 
 - **Contexto:** peticiones del usuario tras estrenar los dados: falta el **d20 para acertar** y dados también en **los conjuros** que tiran daño o curación.
