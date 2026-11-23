@@ -10,10 +10,10 @@
 
 ## 15b — Capa de sincronización en el cliente
 
-- [ ] T-06 `src/sync.ts`: observación de cambios de sesión, debounce ~1,5 s, cola con reintentos, indicador de estado.
-- [ ] T-07 Carga en `character.ts`: GET remoto en paralelo con localStorage; remoto válido manda; local = respaldo.
-- [ ] T-08 Indicador pequeño en la appbar (sincronizado / pendiente / error) — sin tocar la ficha.
-- [ ] T-09 Tests del módulo de sync + compuertas + QA multi-dispositivo (C6–C9).
+- [x] T-06 `src/sync.ts`: observación de cambios de sesión, debounce ~1,5 s, cola con reintentos, indicador de estado.
+- [x] T-07 Carga en `character.ts`: GET remoto en paralelo con localStorage; remoto válido manda; local = respaldo.
+- [x] T-08 Indicador pequeño en la appbar (sincronizado / pendiente / error) — sin tocar la ficha.
+- [x] T-09 Tests del módulo de sync (9 nuevos, 118/118) + compuertas ✓ + **QA multi-dispositivo: verificación del remote-wins en producción EN CURSO (PATCH de prueba hp=28 hecho desde la API; revisión visual del usuario pendiente)**.
 
 ## 15c — Conflicto y pulido
 
