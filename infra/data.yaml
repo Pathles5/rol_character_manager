@@ -1,0 +1,51 @@
+# ============================================================================
+# FichaSS — DATA stack (Fase 15a, decisión del usuario 2026-11-23) — CI
+# ============================================================================
+#
+# Stack SEPARADO para lo stateful (la tabla de sesión): se crea UNA vez y
+# casi nunca se toca → sobrevive a cualquier recreación del stack de
+# cómputo (fichass-session, infra/session.yaml), cuyo self-heal de borrado/
+# recreación dejaba huérfana la tabla por Retain y bloqueaba la recreación
+# con el nombre ocupado (la saga de huérfanos de Fase 09/15).
+#
+# SIN cross-stack references: el nombre de la tabla es determinista
+# (fichass-sessions-<repo>) y el stack de cómputo construye el ARN con !Sub.
+#
+# Gestionado por CI (job `infra` del workflow, scripts/deploy-stack.sh).
+# COSTE €0 (I2/D-11): DynamoDB on-demand dentro de Free Tier (I1 enmendada).
+# ============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: FichaSS - session data (DynamoDB table, Retain) — own stack so it survives compute-stack recreation.
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: rol_character_manager
+    Description: GitHub repository name (resource-name suffix).
+
+Resources:
+
+  # PK characterId; state + optimistic version + updatedAt
+  # (Amendment 4 del modelo, D-55). SIN Tags (evitar dynamodb:TagResource).
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub fichass-sessions-${GitHubRepo}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: characterId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: characterId
+          KeyType: HASH
+
+Outputs:
+  SessionsTableName:
+    Description: Session table name (verification/tooling).
+    Value: !Ref SessionsTable
+  SessionsTableArn:
+    Description: Session table ARN (verification/tooling).
+    Value: !GetAtt SessionsTable.Arn

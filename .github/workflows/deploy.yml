@@ -147,12 +147,88 @@ jobs:
           --s3-prefix sam-artifacts
           --output-template-file .aws-sam/packaged.yaml
 
-      # Deploy explícito vía CloudFormation (no `sam deploy`): los waiters
-      # de la CLI aceptan --waiter-attempts (la cuenta es LENTA creando
-      # changesets — el waiter de sam se rinde antes de tiempo, saga
-      # documentada de la Fase 09). Flujo: create-change-set →
-      # wait change-set-create-complete → execute-change-set → wait
-      # stack-create/update-complete.
+      # ---------------------------------------------------------------
+      # FASE 15a (decisión del usuario 2026-11-23): la TABLA DE SESIÓN
+      # vive en su PROPIO stack de datos (fichass-data) — se crea UNA vez
+      # y sobrevive a la recreación del stack de cómputo (el self-heal de
+      # fichass-session ya no la deja huérfana ni choca con su nombre).
+      # Sin cross-stack references: nombre determinista + ARN !Sub.
+      # ---------------------------------------------------------------
+      - name: Deploy data stack (fichass-data)
+        run: |
+          REGION=${{ secrets.AWS_REGION }}
+          STACK=fichass-data
+          TEMPLATE=infra/data.yaml
+          STATUS=$(aws cloudformation describe-stacks --stack-name $STACK \
+            --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+          echo "[$STACK] estado: $STATUS"
+
+          case "$STATUS" in
+            MISSING|ROLLBACK_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
+              if [ "$STATUS" != "MISSING" ]; then
+                echo "Shell roto: self-heal"
+                aws cloudformation delete-stack --stack-name $STACK --region $REGION
+                GONE=""
+                for i in $(seq 1 60); do
+                  S=$(aws cloudformation describe-stacks --stack-name $STACK \
+                    --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo GONE)
+                  echo "[$i] borrando: $S"
+                  if [ "$S" = "GONE" ]; then GONE=yes; break; fi
+                  sleep 10
+                done
+                [ -n "$GONE" ] || { echo "El shell no se borró a tiempo"; exit 1; }
+              fi
+              echo "Creación DIRECTA (create-stack, sin changeset)"
+              aws cloudformation create-stack \
+                --stack-name $STACK \
+                --template-body file://$TEMPLATE \
+                --region $REGION
+              ;;
+            CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+              CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+              aws cloudformation create-change-set \
+                --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --change-set-type UPDATE \
+                --template-body file://$TEMPLATE \
+                --region $REGION
+              echo "Esperando al changeset (sondeo manual)..."
+              CS=""
+              for i in $(seq 1 60); do
+                CS=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                echo "[$i] changeset: $CS"
+                case "$CS" in
+                  CREATE_COMPLETE) break ;;
+                  FAILED) echo "Changeset FAILED"; exit 1 ;;
+                esac
+                sleep 10
+              done
+              [ "$CS" = "CREATE_COMPLETE" ] || { echo "Timeout en el changeset"; exit 1; }
+              aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              ;;
+            *) echo "Estado inesperado: $STATUS"; exit 1 ;;
+          esac
+
+          # Asentar el stack (sondeo manual, timeout generoso)
+          for i in $(seq 1 90); do
+            S=$(aws cloudformation describe-stacks --stack-name $STACK \
+              --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+            echo "[$i] [$STACK]: $S"
+            case "$S" in
+              CREATE_COMPLETE|UPDATE_COMPLETE) echo "asentado"; break ;;
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED)
+                echo "terminal: $S"; exit 1 ;;
+            esac
+            [ "$i" = "90" ] && { echo "timeout"; exit 1; }
+            sleep 10
+          done
+
+      # ---------------------------------------------------------------
+      # Stack de CÓMPUTO de sesión (desechable): Lambda + Function URL.
+      # La tabla vive en fichass-data (paso anterior) — este stack puede
+      # borrarse y recrearse sin tocarla.
+      # ---------------------------------------------------------------
       - name: Deploy (create / self-heal / update)
         # Tres caminos, con la saga de esta cuenta documentada:
         #   1. Stack ausente o shell roto (REVIEW_IN_PROGRESS / ROLLBACK /
