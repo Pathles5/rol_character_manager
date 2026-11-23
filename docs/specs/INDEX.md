@@ -32,3 +32,4 @@ Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para 
 
 - **Fase 11 (activada): tiradas con dados animados** - ver fila en la tabla principal con su spec (`docs/specs/11-dice-roller/`).
 - **Dados custom rápidos**: desplegable con lista de dados (1d20, 2d6, 1d4, 1d100...) para tiradas rápidas fuera de ataques/conjuros - petición del usuario (2026-11-20, durante la ingesta de Patx Vane). Encaja con el diálogo de dados de la Fase 11.
+- **Upgrade del runtime Lambda a Node.js 26**: cuando AWS publique `nodejs26.x`, subir `Runtime` en `infra/session.yaml` y el `--target` de `npm run build:backend` (package.json) en el mismo cambio - petición del usuario (2026-11-23, Fase 15a). El bundle CJS de esbuild se ajusta a `--target=node26` sin más cambios.
