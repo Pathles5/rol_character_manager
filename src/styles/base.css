@@ -1269,3 +1269,80 @@ main#app {
   color: var(--accent);
   background: var(--accent-soft);
 }
+
+/* Groups (C4): containers with header + member rows. */
+.master-group {
+  padding: var(--space-3);
+}
+
+.master-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.m-group-name {
+  font-weight: 600;
+  font-size: var(--text-title);
+}
+
+.m-group-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+/* Drop affordance while dragging a row over a container. */
+.master-group.drop-ok {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+.master-row.dragging {
+  opacity: .45;
+}
+
+.master-group-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.m-group-empty {
+  margin: 0;
+}
+
+/* Row head tools: minimize chevron, group select and reordering. */
+.m-min {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  flex: none;
+}
+
+.m-tools {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.m-group-select {
+  max-width: 110px;
+  font-size: var(--text-dense);
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 3px 4px;
+}
+
+.m-tools + .m-status {
+  margin-left: 0;
+}
+
+/* Minimized row: only the head line. */
+.master-row.minimized .master-row-head {
+  margin-bottom: 0;
+}
