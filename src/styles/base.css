@@ -879,8 +879,8 @@ main {
 }
 
 .sync-dot[data-sync-status='synced'] {
-  background: var(--accent);
-  opacity: 0.55;
+  background: var(--ok);
+  opacity: 0.75;
 }
 
 .sync-dot[data-sync-status='pending'] {
