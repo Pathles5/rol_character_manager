@@ -1247,19 +1247,20 @@ main#app {
 /* Death-save dots, replicated from the player's sheet (same
    .dot/.dots/.dot-row vocabulary of the rest block). */
 .m-deathbox {
-  align-items: flex-start;
+  align-items: center;
 }
 
 .m-deathrows {
   display: grid;
-  gap: 0;
+  grid-template-columns: auto auto;
+  gap: 2px var(--space-2);
+  align-items: center;
 }
 
-/* Tighter than the sheet's .dot-row (no sheet padding/space-between):
-   the master line stays one row high per kind. */
+/* Both rows share ONE grid: labels in column 1, dots in column 2 —
+   Éxitos/Fracasos aligned horizontally AND vertically. */
 .m-deathrows .dot-row {
-  justify-content: flex-start;
-  padding: 1px 0;
+  display: contents;
 }
 
 .m-step {
