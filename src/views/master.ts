@@ -42,6 +42,9 @@ import { escapeHtml } from '../lib/manifest';
 
 let onRowsCb: ((rows: Record<string, MasterRow>) => void) | null = null;
 let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+/** Row ids with the conditions box EXPANDED (transient UI state —
+    the header line already shows the active ones when collapsed). */
+const condBoxes = new Set<string>();
 
 export async function masterView(root: HTMLElement): Promise<void> {
   stopPolling();
@@ -119,6 +122,12 @@ export async function masterView(root: HTMLElement): Promise<void> {
       case 'resource': op = { resource: { traitId: value, delta } }; break;
       case 'retry': retryCharacter(id); return;
       case 'minimize': toggleMinimized(id); return;
+      case 'cond-box': {
+        if (condBoxes.has(id)) condBoxes.delete(id);
+        else condBoxes.add(id);
+        onRowsCb?.(getRows());
+        return;
+      }
       case 'order': moveRelative(id, delta); return;
       case 'group-order': moveContainerRelative(value, delta); return;
       case 'group-rename': renameGroup(value); return;
@@ -507,8 +516,15 @@ function rowHtml(row: MasterRow): string {
       </span>
       ${resourcesHtml(row, doc)}
     </div>
-    <div class="m-cond-chips" aria-label="Condiciones activas">
-      ${CONDITION_CATALOG.map(c => conditionChip(row.characterId, c, state.conditions.includes(c))).join('')}
+    <div class="m-cond-box">
+      <button type="button" class="m-cond-toggle" data-act="cond-box" data-focus-key="${row.characterId}:condbox" aria-expanded="${condBoxes.has(row.characterId)}" aria-label="Estados alterados de ${name}">
+        <span aria-hidden="true">${condBoxes.has(row.characterId) ? '▾' : '▸'}</span>
+        Estados alterados (${state.conditions.length})
+        ${state.conditions.length ? `<span class="m-cond-active">${escapeHtml(state.conditions.join(', '))}</span>` : '<span class="dim dense">ninguno</span>'}
+      </button>
+      <div class="m-cond-chips" aria-label="Condiciones activas"${condBoxes.has(row.characterId) ? '' : ' hidden'}>
+        ${CONDITION_CATALOG.map(c => conditionChip(row.characterId, c, state.conditions.includes(c))).join('')}
+      </div>
     </div>`;
 
   return `

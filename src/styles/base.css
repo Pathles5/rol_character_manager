@@ -1264,11 +1264,47 @@ main#app {
   line-height: 1;
 }
 
+/* Conditions box (QA): collapsible per row — header shows the
+   active ones at a glance, chips for editing inside. */
+.m-cond-box {
+  margin-top: var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.m-cond-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-dense);
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-cond-toggle:hover {
+  color: var(--accent);
+}
+
+.m-cond-toggle[aria-expanded='true'] {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.m-cond-active {
+  color: var(--accent);
+}
+
 .m-cond-chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-  margin-top: var(--space-2);
+  margin: 0;
+  padding: var(--space-2);
 }
 
 .m-cond {
