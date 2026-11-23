@@ -34,3 +34,20 @@ Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para 
 
 - **Dados custom rápidos**: desplegable con lista de dados (1d20, 2d6, 1d4, 1d100...) para tiradas rápidas fuera de ataques/conjuros - petición del usuario (2026-11-20, durante la ingesta de Patx Vane). Encaja con el diálogo de dados de la Fase 11.
 - **Upgrade del runtime Lambda a Node.js 26**: cuando AWS publique `nodejs26.x`, subir `Runtime` en `infra/session.yaml` y el `--target` de `npm run build:backend` (package.json) en el mismo cambio - petición del usuario (2026-11-23, Fase 15a). El bundle CJS de esbuild se ajusta a `--target=node26` sin más cambios.
+
+## Handoff de sesión (2026-11-23, cierre Fase 16)
+
+Estado al cerrar: **Fases 00–16 `approved`**; último tag **v0.3.0** (commit `60c02fc`); pipeline `deploy` SUCCESS (sitio + Lambda, run 45221115405); working tree limpio y pushed. La API de sesión y su tabla DynamoDB están en producción y verificadas (round-trip C1–C5 de Fase 15 + QA de Fase 16).
+
+Siguiente paso natural: **dados custom rápidos** (primera fase futura del backlog) o lo que pida el usuario; arrancar por spec nueva (`docs/specs/17-...`) siguiendo §1 de AGENTS.md.
+
+Deuda menor pendiente: idiomas de Uldrak/Nissa por confirmar con el usuario (viven en `questions` de sus JSON en `public/characters/`).
+
+Notas operativas del entorno (no obvias desde el repo):
+
+- **Modelos de subagentes YA configurados** en `.opencode/agents/*.md`: qwen4-max (orchestrator/implementer/reviewer), mimo-v2.6-flash (explorer/documenter/devops). Los `-free` de la UI de modelos NO resuelven en runtime ("Model unavailable") — no usarlos.
+- `npm ci` local puede fallar con EPERM si un proceso node retiene `esbuild.exe`: matar procesos node y reintentar.
+- AWS CLI: `& 'C:\Users\34670\AppData\Local\Programs\Amazon\AWSCLIV2\aws.exe'` (PATH obsoleto); gh: `& 'C:\Program Files\GitHub CLI\gh.exe'` (quoting obligatorio por espacios); SAM: usar `sam.cmd`, no `.exe`.
+- Quirks CloudFormation ya resueltos (no re-abrir): changesets CREATE rotos → creación por `create-stack` directo (self-heal del workflow); los changesets pendientes se BORRAN, nunca se ejecutan; changeset vacío = no-op ("No updates are to be performed" es correcto).
+- Lambda runtime `nodejs22.x` con SDK v3 EXTERNO (bundle esbuild sin SDK); comandos `GetCommand`/`PutCommand`; `BUILD_TAG` en el init como anti-regresión (último: `fase16-r22`).
+- El fixture de tests vive en `tests/fixtures/character-demo.json` (los demos están fuera de `public/`); `src/test-setup.ts` es imprescindible para vitest bajo Node 26 (fallback de storage en memoria) — no borrar.
