@@ -90,7 +90,6 @@ export async function masterView(root: HTMLElement): Promise<void> {
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-act]');
     if (!target) return;
     const rowEl = target.closest<HTMLElement>('.master-row');
-    const groupEl = target.closest<HTMLElement>('.master-group');
     const id = rowEl?.dataset.char ?? '';
     const act = target.dataset.act;
     const delta = Number(target.dataset.delta ?? 0);
