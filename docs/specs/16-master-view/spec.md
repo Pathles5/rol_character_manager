@@ -89,3 +89,11 @@ ficha del jugador.
   las gestiona el jugador).
 - Realtime push (SSE/WebSocket), iniciativo/orden de turno, fotos de
   retrato, multi-mesa.
+
+## Amendments
+
+### Amendment 1 — Layout del master en la BD de sesión (2026-11-23, QA del usuario)
+
+- **Petición**: el layout del master (grupos, orden de contenedores, minimizados) debe persistir en la BD de sesión (DynamoDB vía la Lambda), "como los daños y demás", no solo en localStorage.
+- **Cambio de contrato**: NUEVO registro reservado `characterId = "master-layout"` en la MISMA tabla de sesiones: `GET /session?characterId=master-layout` → `{layout, version}` y `PATCH /session {characterId, layout, baseVersion}` con el mismo optimistic locking (409 + re-base: la última escritura gana entre masters, es estado de UI absoluto). NO es un personaje: el backend ramifica en ese id y nunca aplica el contrato SessionState. Sanitizador compartido `sanitizeMasterLayout` en src/session-schema.ts (única fuente, límites: ≤20 grupos, ≤50 miembros, nombres ≤60 chars).
+- **Qué NO cambia**: el contrato de sesiones de jugador (D-55) queda intacto byte a byte; localStorage pasa a ser caché/offline y siembra el registro remoto la primera vez; cero infra nueva (misma tabla, misma Lambda, despliegue por pipeline).

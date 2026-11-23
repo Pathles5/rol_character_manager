@@ -28,7 +28,7 @@ Convenciones:
 - **`README.md` en la raíz**: guía para levantar la app (requisitos, comandos, despliegue, estructura y punteros a la documentación). Referenciado desde aquí y desde las specs de entrega (Fase 08); mantenerlo al día con los scripts del `package.json`.
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
-| 16 | Vista del Master (panel de grupo) | implement | **Implementación COMPLETA** (diseño validado por el usuario): edición con deltas relativos y reintento 409, muerte saves editables, condiciones editables, grupos drag & drop con alternativa de botones, minimizar, layout en localStorage, indicador hace-Xs, tests 137/137 y compuertas en verde; desplegado en producción vía pipeline hasta `92de2ac`. **Queda T-07: QA del usuario + revisor fresh-eyes + tag (v0.3.0)** |
+| 16 | Vista del Master (panel de grupo) | implement | **Implementación COMPLETA** (diseño validado por el usuario): edición con deltas relativos y reintento 409, muerte saves editables, condiciones editables, grupos drag & drop con alternativa de botones, minimizar, layout en localStorage, indicador hace-Xs, tests 137/137 y compuertas en verde; desplegado en producción vía pipeline hasta `92de2ac`. Enmienda 1 (D-59): layout del master persistido en la BD de sesión (id reservado master-layout) con caché local; contadores repartidos por la línea. **Queda T-07: QA del usuario + revisor fresh-eyes + tag (v0.3.0)** |
 
 Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 

@@ -436,3 +436,19 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Elección:** la clave queda huérfana en localStorage (inofensiva: nadie la lee); no se barre activamente. El guard D-16 §4 (characterId vs id de URL, ahora comparado en `sanitizeLoaded`) impide que una sesión de otro personaje contamine la nueva.
 - **Motivo:** simplicidad; el storage de un navegador es del jugador.
 - **Riesgo:** acumulación trivial de claves si se rota mucho el elenco (KB por personaje); una limpieza en Reset global podría añadirse en el futuro si se pide.
+
+## D-58 · 2026-11-23 · Store multi-personaje del master (`master-data.ts`): deltas relativos + clamp por documento + poll que no pisa
+
+- **Registro retroactivo:** decisión tomada en la implementación de la Fase 16; sin ella, D-59 quedaba huérfana.
+- **Contexto:** la vista del master edita contadores de personajes cuya sesión puede cambiar a la vez (el jugador juega mientras el master edita).
+- **Decisión:** las ediciones del master son DELTAS RELATIVOS (±N) aplicados al estado optimista y, ante 409, re-GET del estado remoto fresco + re-aplicación de los mismos deltas + re-PATCH (hasta 3 intentos, luego error con reintento manual por fila). El clamp usa el documento AUTORADO de cada personaje (`public/characters/<id>.json`) cargado en el init — `session-schema` sigue siendo la única fuente de límites. El poll de 15 s salta las filas con deltas pendientes.
+- **Motivo:** un delta re-aplicado sobre estado fresco nunca pisa un cambio concurrente del jugador; un valor absoluto sí lo pisaría.
+- **Riesgo:** sin realtime el master ve el estado del jugador con hasta 15 s de retraso (aceptado en la spec de la Fase 16).
+
+## D-59 · 2026-11-23 · Layout del master persistido en la tabla de sesiones (id reservado `master-layout`)
+
+- **Contexto:** QA Fase 16; el usuario pide que los grupos sobrevivan dispositivos "como los daños y demás".
+- **Decisión:** reutilizar la API de sesiones con un characterId reservado NO-personaje (`master-layout`), payload `layout` sanitizado con contrato compartido (sanitizeMasterLayout), mismo optimistic locking; localStorage queda como caché/offline/primera-siembra. Entre masters concurrentes sobre el layout: última escritura gana (estado de UI absoluto, sin semántica de deltas).
+- **Motivo:** cero infra nueva; un único mecanismo de persistencia; el endpoint ya está endurecido (validación, cuerpo pequeño, CORS).
+- **Riesgo:** el layout lo puede escribir cualquiera con la URL (igual que las sesiones, D-55, aceptado); sin realtime el segundo master no ve cambios del primero hasta refresh.
+- **supersedes:** la parte de "persistencia en localStorage del master" de la decisión original de la Fase 16 (el minimizar/grupos ahora viven remoto-con-caché).
