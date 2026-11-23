@@ -1,5 +1,0 @@
-Resources:
-  SiteBucket:
-    Type: AWS::S3::Bucket
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain

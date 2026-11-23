@@ -39,7 +39,10 @@ En `--guided` responde:
 | Parameter ExistingOidcProviderArn | ARN del provider de GitHub **ya existente en tu cuenta** (obligatorio: `arn:aws:iam::<cuenta>:oidc-provider/token.actions.githubusercontent.com`; si tu cuenta no lo tiene, créalo primero — ver abajo) |
 | Confirm changes before deploy | `Y` |
 | Allow SAM CLI to create IAM roles | `Y` |
-| Save arguments to samconfig.toml | `Y` |
+
+> El `samconfig.toml` que generó ese bootstrap se retiró del repo (los
+> despliegues van desde CI); la tabla se mantiene como registro histórico
+> del arranque de la Fase 09.
 
 > ⚠️ El template **requiere** que el OIDC provider de GitHub exista en la cuenta
 > (no lo crea). Si no lo tienes:
