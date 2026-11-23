@@ -82,9 +82,11 @@ Resources:
       Architectures:
         - arm64
       Handler: index.handler
-      # Pre-bundled by `npm run build:backend` (esbuild, single-file ESM
-      # with the AWS SDK inlined) — NO SAM esbuild metadata: the bundle
-      # is deterministic and built by the workflow before `sam build`.
+      # Pre-bundled by `npm run build:backend` (esbuild, single-file CJS
+      # with the AWS SDK inlined — CJS because the SDK's dynamic
+      # require("node:https") breaks in an ESM bundle; Fase 15a).
+      # NO SAM esbuild metadata: the bundle is deterministic and built
+      # by the workflow before `sam build`.
       CodeUri: backend/dist
       MemorySize: 256
       Timeout: 10
