@@ -277,6 +277,13 @@ export function getRows(): Record<string, MasterRow> {
   return { ...rows };
 }
 
+/** Manual retry of a failed row: re-attempts the PATCH with the
+    current optimistic state (a 409 triggers the fresh re-apply
+    path inside flushRow). */
+export function retryCharacter(id: string): void {
+  void flushRow(id);
+}
+
 export function getCharacterDoc(id: string): Character | undefined {
   return docs[id];
 }
