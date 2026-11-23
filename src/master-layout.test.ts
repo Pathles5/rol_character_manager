@@ -7,10 +7,24 @@ import { describe, expect, it } from 'vitest';
 import { normalizeLayout } from './master-layout';
 
 describe('normalizeLayout', () => {
-  it('returns an empty layout for junk input', () => {
-    expect(normalizeLayout(undefined)).toEqual({ groups: [], ungrouped: [], minimized: [] });
-    expect(normalizeLayout(42)).toEqual({ groups: [], ungrouped: [], minimized: [] });
-    expect(normalizeLayout({ groups: 'nope' })).toEqual({ groups: [], ungrouped: [], minimized: [] });
+  it('returns an empty layout for junk input (with "Sin grupo" first)', () => {
+    expect(normalizeLayout(undefined)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+    expect(normalizeLayout(42)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+    expect(normalizeLayout({ groups: 'nope' })).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+  });
+
+  it('honours the container order and appends missing ids', () => {
+    const layout = normalizeLayout({
+      groups: [
+        { id: 'g1', name: 'Uno', members: ['a'] },
+        { id: 'g2', name: 'Dos', members: ['b'] },
+      ],
+      ungrouped: ['c'],
+      minimized: [],
+      containerOrder: ['g1', '', 'g2'],
+    });
+    expect(layout.containerOrder).toEqual(['g1', '', 'g2']);
+    expect(normalizeLayout({ groups: [{ id: 'g1', name: 'Uno', members: [] }], ungrouped: [], minimized: [] }).containerOrder).toEqual(['', 'g1']);
   });
 
   it('keeps a character exactly once: first occurrence wins (groups before ungrouped)', () => {

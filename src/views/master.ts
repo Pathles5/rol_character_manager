@@ -23,6 +23,7 @@
    ============================================================ */
 
 import type { SpellLevel } from '../types';
+import { DEATH_SAVE_MAX } from '../session-schema';
 import {
   editCharacter,
   getCharacterDoc,
@@ -40,7 +41,7 @@ import { CONDITION_CATALOG } from '../render/blocks';
 import { escapeHtml } from '../lib/manifest';
 
 let onRowsCb: ((rows: Record<string, MasterRow>) => void) | null = null;
-let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [] };
+let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
 
 export async function masterView(root: HTMLElement): Promise<void> {
   stopPolling();
@@ -119,8 +120,20 @@ export async function masterView(root: HTMLElement): Promise<void> {
       case 'retry': retryCharacter(id); return;
       case 'minimize': toggleMinimized(id); return;
       case 'order': moveRelative(id, delta); return;
+      case 'group-order': moveContainerRelative(value, delta); return;
       case 'group-rename': renameGroup(value); return;
       case 'group-delete': deleteGroup(value); return;
+      case 'death-set': {
+        const row = getRows()[id];
+        if (!row?.state) return;
+        const kind = value === 'success' ? 'successes' : 'failures';
+        const current = row.state.deathSaves[kind];
+        const applied = Number(target.dataset.set ?? current);
+        const d: { successes?: number; failures?: number } = {};
+        d[kind] = applied - current;
+        op = d.successes || d.failures ? { deathSaves: d } : null;
+        break;
+      }
       default: return;
     }
     if (op && id) editCharacter(id, op);
@@ -136,14 +149,28 @@ export async function masterView(root: HTMLElement): Promise<void> {
     moveCharacter(id, select.value || null, Number.MAX_SAFE_INTEGER);
   };
 
-  // --- Drag & drop (C4): rows are draggable; groups and rows are
-  // drop targets. dropTarget is recomputed on every dragover.
+  // --- Drag & drop (C4): rows AND group heads are draggable; groups
+  // are drop targets. dropTarget/dropGroupTarget are recomputed on
+  // every dragover.
   let dragId: string | null = null;
+  let dragGroupId: string | null = null;
+  let draggingGroup = false;
   let dropTarget: { group: string | null; index: number } | null = null;
+  let dropGroupTarget: string | null = null;
 
   const onDragStart = (event: DragEvent): void => {
+    const head = (event.target as HTMLElement).closest<HTMLElement>('.master-group-head');
+    if (head) {
+      draggingGroup = true;
+      dragGroupId = head.closest<HTMLElement>('.master-group')?.dataset.group ?? null;
+      head.classList.add('dragging');
+      event.dataTransfer?.setData('text/plain', `group:${dragGroupId ?? ''}`);
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      return;
+    }
     const row = (event.target as HTMLElement).closest<HTMLElement>('.master-row');
     if (!row) return;
+    draggingGroup = false;
     dragId = row.dataset.char ?? null;
     row.classList.add('dragging');
     event.dataTransfer?.setData('text/plain', dragId ?? '');
@@ -152,24 +179,47 @@ export async function masterView(root: HTMLElement): Promise<void> {
 
   const onDragEnd = (): void => {
     dragId = null;
+    dragGroupId = null;
+    draggingGroup = false;
     dropTarget = null;
+    dropGroupTarget = null;
     rowsEl?.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
     rowsEl?.querySelectorAll('.drop-ok').forEach(el => el.classList.remove('drop-ok'));
   };
 
   const onDragOver = (event: DragEvent): void => {
     const group = (event.target as HTMLElement).closest<HTMLElement>('.master-group');
-    if (!group || !dragId) return;
+    if (!group) return;
+    const groupId = group.dataset.group || null;
+    if (draggingGroup) {
+      if (dragGroupId === null || dragGroupId === groupId) return; // onto itself / none
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+      rowsEl?.querySelectorAll('.drop-ok').forEach(el => el.classList.remove('drop-ok'));
+      group.classList.add('drop-ok');
+      dropGroupTarget = groupId;
+      return;
+    }
+    if (!dragId) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     rowsEl?.querySelectorAll('.drop-ok').forEach(el => el.classList.remove('drop-ok'));
     group.classList.add('drop-ok');
-    dropTarget = { group: group.dataset.group || null, index: dropIndex(group, event.clientY) };
+    dropTarget = { group: groupId, index: dropIndex(group, event.clientY) };
   };
 
   const onDrop = (event: DragEvent): void => {
     const group = (event.target as HTMLElement).closest<HTMLElement>('.master-group');
-    if (!group || !dragId || !dropTarget) return;
+    if (!group) return;
+    if (draggingGroup) {
+      if (dragGroupId !== null && dropGroupTarget !== null) {
+        event.preventDefault();
+        moveGroupBefore(dragGroupId, dropGroupTarget);
+      }
+      onDragEnd();
+      return;
+    }
+    if (!dragId || !dropTarget) return;
     event.preventDefault();
     moveCharacter(dragId, dropTarget.group, dropTarget.index);
     onDragEnd();
@@ -272,6 +322,32 @@ function moveRelative(id: string, delta: number): void {
   onRowsCb?.(getRows());
 }
 
+/** ▲/▼ on a group head: move the CONTAINER one slot in the display
+    order (works for "Sin grupo" too). */
+function moveContainerRelative(groupId: string, delta: number): void {
+  const order = layout.containerOrder;
+  const index = order.indexOf(groupId);
+  const target = index + delta;
+  if (index === -1 || target < 0 || target >= order.length) return;
+  order.splice(index, 1);
+  order.splice(target, 0, groupId);
+  saveLayout(layout);
+  onRowsCb?.(getRows());
+}
+
+/** Drops a dragged group head onto another container: the dragged
+    container takes the target's position (target shifts down). */
+function moveGroupBefore(dragGroupId: string, targetGroupId: string | null): void {
+  if (dragGroupId === targetGroupId) return;
+  const order = layout.containerOrder;
+  const from = order.indexOf(dragGroupId);
+  if (from === -1 || !order.includes(targetGroupId ?? '')) return;
+  order.splice(from, 1);
+  order.splice(order.indexOf(targetGroupId ?? ''), 0, dragGroupId);
+  saveLayout(layout);
+  onRowsCb?.(getRows());
+}
+
 function toggleMinimized(id: string): void {
   const index = layout.minimized.indexOf(id);
   if (index >= 0) layout.minimized.splice(index, 1);
@@ -326,13 +402,16 @@ function dropIndex(container: HTMLElement, clientY: number): number {
 
 // --- Rendering ---------------------------------------------------------
 
-/** The "Sin grupo" container first, then each group in order. */
+/** Containers in the master's display order ('' = "Sin grupo"). */
 function renderContainers(rows: Record<string, MasterRow>): string {
-  const ungroupedHtml = groupHtml(null, 'Sin grupo', layout.ungrouped, rows);
-  const groupsHtml = layout.groups
-    .map(g => groupHtml(g.id, escapeHtml(g.name), g.members, rows))
+  const byId = new Map(layout.groups.map(g => [g.id, g]));
+  return layout.containerOrder
+    .map(id => {
+      if (id === '') return groupHtml(null, 'Sin grupo', layout.ungrouped, rows);
+      const group = byId.get(id);
+      return group ? groupHtml(group.id, escapeHtml(group.name), group.members, rows) : '';
+    })
     .join('');
-  return ungroupedHtml + groupsHtml;
 }
 
 function groupHtml(
@@ -342,20 +421,25 @@ function groupHtml(
   rows: Record<string, MasterRow>,
 ): string {
   const count = members.length;
+  const id = groupId ?? '';
+  const label = escapeHtml(title);
+  const orderButtons = `
+      <button type="button" class="step m-group-btn" data-act="group-order" data-value="${id}" data-delta="-1" data-focus-key="order:${id}:-1" aria-label="Subir el grupo ${label}">▲</button>
+      <button type="button" class="step m-group-btn" data-act="group-order" data-value="${id}" data-delta="1" data-focus-key="order:${id}:1" aria-label="Bajar el grupo ${label}">▼</button>`;
   const tools = groupId
-    ? `
-      <button type="button" class="step m-group-btn" data-act="group-rename" data-value="${groupId}" aria-label="Renombrar grupo ${title}">✎</button>
-      <button type="button" class="step m-group-btn" data-act="group-delete" data-value="${groupId}" aria-label="Eliminar grupo ${title} (sus filas van a Sin grupo)">×</button>`
-    : '';
+    ? `${orderButtons}
+      <button type="button" class="step m-group-btn" data-act="group-rename" data-value="${groupId}" data-focus-key="rename:${groupId}" aria-label="Renombrar grupo ${label}">✎</button>
+      <button type="button" class="step m-group-btn" data-act="group-delete" data-value="${groupId}" data-focus-key="del:${groupId}" aria-label="Eliminar grupo ${label} (sus filas van a Sin grupo)">×</button>`
+    : orderButtons;
   const body = members.length
     ? members.map(id => rows[id] ? rowHtml(rows[id]) : '').join('')
     : `<p class="dim dense m-group-empty">Arrastra filas aquí</p>`;
   return `
-  <section class="card master-group" data-group="${groupId ?? ''}" aria-label="${title}">
-    <div class="master-group-head">
+  <section class="card master-group" data-group="${id}" aria-label="${title}">
+    <div class="master-group-head" draggable="true">
       <span class="m-group-name">${title}</span>
       <span class="dim dense">${count}</span>
-      ${tools}
+      <span class="m-tools">${tools}</span>
     </div>
     <div class="master-group-body">${body}</div>
   </section>`;
@@ -410,11 +494,12 @@ function rowHtml(row: MasterRow): string {
       </span>
       ${slotsHtml(row, doc)}
       ${cdHtml(row, doc)}
-      <span class="m-counter">
+      <span class="m-counter m-deathbox">
         <span class="m-label">Muerte</span>
-        <span class="m-value m-death"><span class="ok">✔ ${state.deathSaves.successes}</span> <span class="danger">✖ ${state.deathSaves.failures}</span></span>
-        ${steps(row.characterId, 'death-succ', [-1, 1], d => `Éxitos de muerte ${d > 0 ? '+' : ''}${d}`)}
-        ${steps(row.characterId, 'death-fail', [-1, 1], d => `Fracasos de muerte ${d > 0 ? '+' : ''}${d}`)}
+        <span class="m-deathrows">
+          <span class="dot-row"><span class="dense dim">Éxitos</span><span class="dots">${deathDots(row.characterId, 'success', state.deathSaves.successes)}</span></span>
+          <span class="dot-row"><span class="dense dim">Fracasos</span><span class="dots">${deathDots(row.characterId, 'failure', state.deathSaves.failures)}</span></span>
+        </span>
       </span>
       <span class="m-counter">
         <span class="m-label">Inspiración</span>
@@ -456,6 +541,28 @@ function groupSelect(id: string): string {
 function conditionChip(id: string, condition: string, on: boolean): string {
   const key = `${id}:condition:${condition}`;
   return `<button type="button" class="chip m-cond ${on ? 'active' : ''}" data-act="condition" data-value="${condition}" data-focus-key="${key}" aria-pressed="${on}">${escapeHtml(condition)}</button>`;
+}
+
+/** Death-save dots, EXACTLY as the player's sheet renders them
+    (blocks.ts): clicking a dot marks up to it; clicking the LAST
+    active dot unmarks it. The master applies the movement as a
+    relative delta (editCharacter). */
+function deathDots(id: string, kind: 'success' | 'failure', filled: number): string {
+  const onClass = kind === 'success' ? 'on-ok' : 'on-bad';
+  const noun = kind === 'success' ? 'éxito' : 'fracaso';
+  return Array.from({ length: DEATH_SAVE_MAX }, (_, index) => {
+    const count = index + 1;
+    const active = index < filled;
+    const value = active && count === filled ? filled - 1 : count;
+    const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const label = !active
+      ? `Marcar ${plural(count, noun)} de muerte`
+      : count === filled
+        ? `Desmarcar: quedan ${plural(filled - 1, noun)} de muerte`
+        : `Marcar hasta ${plural(count, noun)} de muerte`;
+    const key = `${id}:death:${kind}:${count}`;
+    return `<button type="button" class="dot${active ? ` ${onClass}` : ''}" data-act="death-set" data-value="${kind}" data-set="${value}" data-focus-key="${key}" aria-pressed="${active}" aria-label="${label}"></button>`;
+  }).join('');
 }
 
 /** Slot steppers: only levels the character actually has (max > 0). */

@@ -23,9 +23,13 @@ export interface MasterLayout {
   ungrouped: string[];
   /** Character ids rendered collapsed. */
   minimized: string[];
+  /** Display order of the CONTAINERS themselves: group ids, with ''
+      standing for "Sin grupo" (the master can place it anywhere).
+      Absent/unknown ids are handled by normalizeLayout. */
+  containerOrder: string[];
 }
 
-const KEY = 'fichass-master-layout-v1';
+const KEY = 'fichass-master-layout-v2';
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(v => typeof v === 'string');
@@ -62,15 +66,28 @@ export function normalizeLayout(raw: unknown): MasterLayout {
   }
   const ungrouped = isStringArray(data.ungrouped) ? keep(data.ungrouped) : [];
   const minimized = isStringArray(data.minimized) ? data.minimized.filter(id => seen.has(id)) : [];
-  return { groups, ungrouped, minimized };
+
+  // Container display order ('' = ungrouped): unknown ids and
+  // duplicates dropped; missing ids (including '') append so every
+  // group stays reachable even in legacy/partial payloads.
+  const validIds = new Set(['', ...groups.map(g => g.id)]);
+  const rawOrder = isStringArray(data.containerOrder) ? data.containerOrder : [];
+  const containerOrder: string[] = [];
+  for (const id of rawOrder) {
+    if (validIds.has(id) && !containerOrder.includes(id)) containerOrder.push(id);
+  }
+  for (const id of ['', ...groups.map(g => g.id)]) {
+    if (!containerOrder.includes(id)) containerOrder.push(id);
+  }
+  return { groups, ungrouped, minimized, containerOrder };
 }
 
 export function loadLayout(): MasterLayout {
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? normalizeLayout(JSON.parse(raw)) : { groups: [], ungrouped: [], minimized: [] };
+    return raw ? normalizeLayout(JSON.parse(raw)) : { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
   } catch {
-    return { groups: [], ungrouped: [], minimized: [] };
+    return { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
   }
 }
 

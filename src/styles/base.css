@@ -1241,8 +1241,20 @@ main#app {
   color: var(--text-dim);
 }
 
-.m-death .ok { color: var(--ok); }
-.m-death .danger { color: var(--danger); }
+/* Death-save dots, replicated from the player's sheet (same
+   .dot/.dots/.dot-row vocabulary of the rest block). */
+.m-deathbox {
+  align-items: flex-start;
+}
+
+.m-deathrows {
+  display: grid;
+  gap: 2px;
+}
+
+.m-deathrows .dot-row {
+  gap: var(--space-2);
+}
 
 .m-step {
   min-width: 30px;
@@ -1340,6 +1352,15 @@ main#app {
 
 .m-tools + .m-status {
   margin-left: 0;
+}
+
+/* Group head: drag handle for reordering containers (C4). */
+.master-group-head {
+  cursor: grab;
+}
+
+.master-group-head.dragging {
+  opacity: .45;
 }
 
 /* Minimized row: only the head line. */
