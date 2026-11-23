@@ -377,6 +377,7 @@ describe('sync hooks (Fase 15b/c, D-55) — guardas sin eco', () => {
   /** The listeners are module-global and accumulate across tests:
       assertions use DELTAS (calls since the marked point). */
   const mark = (): number => localCalls.length;
+  onSessionChange(state => localCalls.push(state));
 
   beforeEach(() => {
     initSession(demoCharacter, derived);

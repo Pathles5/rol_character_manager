@@ -1,14 +1,16 @@
 /* ============================================================
-   FichaSS — client sync layer (Fase 15b, D-55).
+   FichaSS — client sync layer (Fase 15b/c, D-55).
 
    LOCAL-FIRST: localStorage stays the immediate source (the UX of
    the sheet never changes). Local mutations (patchSession, reset…
-   via onSessionChange) are batched with a ~1.5 s debounce and sent
-   as ONE PATCH to the session API; failures schedule retries; a
-   409 conflict applies the REMOTE state (remote wins — the conflict
-   toast is Phase 15c). The initial load prefers the REMOTE state
-   when the API has one (local is the fallback if the network
-   fails).
+   via onSessionChange) are batched with a TRAILING debounce
+   (~1.5 s after the LAST change — review qwen4-max: it was a
+   fixed-window throttle before) and sent as ONE PATCH to the
+   session API; failures schedule retries; a 409 conflict PAUSES
+   the sync (flush refuses to run) until the user resolves the
+   toast explicitly (Fase 15c — no silent remote-wins). The
+   initial load prefers the REMOTE state when the API has one
+   (local is the fallback if the network fails).
 
    The API endpoint is discovered from /session-url.json (published
    by the pipeline next to the site); missing/unreachable → the
@@ -129,9 +131,11 @@ export async function initSync(id: string, callbacksIn: SyncCallbacks): Promise<
   }
 }
 
-/** Schedules the debounced flush (1.5 s after the LAST notify). */
+/** Re-arms the TRAILING debounce (~1.5 s after the last notify —
+    review qwen4-max: the old arm-if-unset was a throttle, not a
+    debounce). */
 function schedule(): void {
-  if (debounceTimer !== null) return;
+  if (debounceTimer !== null) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
     void flush();
@@ -139,9 +143,10 @@ function schedule(): void {
 }
 
 /** Called by the view for EVERY local mutation (onSessionChange).
-    Debounces and schedules the batched PATCH. While a conflict is
-    open the sync is PAUSED: the snapshot is kept (the resolution
-    uses the latest one) but nothing is sent. */
+    TRAILING debounce (resets the timer — fires 1.5 s after the
+    LAST change). While a conflict is open the sync is PAUSED: the
+    snapshot is kept (the resolution uses the latest one) but
+    nothing is sent. */
 export function notifyLocalChange(state: SessionState): void {
   if (status === 'disabled' || !characterId) return;
   // A snapshot of another character (stale view during navigation)
@@ -158,7 +163,10 @@ export function notifyLocalChange(state: SessionState): void {
 }
 
 async function flush(): Promise<void> {
-  if (inFlight || !pendingState || !characterId) return;
+  // (review qwen4-max): a debounce timer armed BEFORE the 409 must
+  // not fire during the pause — flush refuses while a conflict is
+  // open (the resolution re-schedules).
+  if (inFlight || openConflict || !pendingState || !characterId) return;
   inFlight = true;
   // (review minor, Fase 15c): the PATCH travels with the SNAPSHOT's
   // own characterId — a fast navigation A→B must not send A's
@@ -268,6 +276,7 @@ export async function resolveOverwriteLocal(): Promise<void> {
     return;
   }
   setStatus('pending');
+  inFlight = true; // (review qwen4-max): block concurrent flushes during the overwrite
   try {
     const response = await fetchImpl(`${url}/session`, {
       method: 'PATCH',
@@ -287,7 +296,11 @@ export async function resolveOverwriteLocal(): Promise<void> {
   } catch {
     setStatus('error');
     scheduleRetry();
+  } finally {
+    inFlight = false;
   }
+  // Edits made during the overwrite → next batch.
+  if (pendingState && !openConflict && debounceTimer === null) schedule();
 }
 
 /** Test helper: clears all module state (timers, caches, versions). */
