@@ -38,7 +38,7 @@ Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para 
 
 ## Handoff de sesión (2026-11-23, cierre Fases 17–18 · v0.4.0)
 
-Estado al cerrar: **Fases 00–18 approved; último tag v0.4.0** (commit pendiente de tag); pipeline `deploy` SUCCESS (sitio + Lambda, run 45221115405); working tree limpio y pushed. La API de sesión y su tabla DynamoDB están en producción y verificadas (round-trip C1–C5 de Fase 15 + QA de Fase 16).
+Estado al cerrar: **Fases 00–18 approved; último tag v0.4.0** (commit `c005667`); pipeline `deploy` SUCCESS (sitio + Lambda); working tree limpio y pushed. La API de sesión y su tabla DynamoDB están en producción y verificadas (round-trip C1–C5 de Fase 15 + QA de Fase 16).
 
 Fases 17–18 cerradas y aprobadas (tag v0.4.0). Siguiente pendiente del backlog: upgrade del runtime Lambda a nodejs26.x cuando AWS lo publique.
 
