@@ -30,6 +30,6 @@ Convenciones:
 
 Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 
-- **Fase 11 (activada): tiradas con dados animados** - ver fila en la tabla principal con su spec (`docs/specs/11-dice-roller/`).
+- **Fase 16 (SIGUIENTE - anotada primero a petición del usuario, 2026-11-23): Vista del Master** — nueva vista accesible desde la lista de personajes, con las estadísticas de TODOS los jugadores relevantes para el master (inspiración, PG, espacios/hechizos, condiciones...). El master podrá **arrastrar a los jugadores para formar grupos** y **minimizarlos** si no están en escena, facilitando la observación. Presentación en **filas (una fila por personaje con sus datos)** si es posible. Requiere sesión remota activa (Fase 15) — el master observa el estado sincronizado de todos.
 - **Dados custom rápidos**: desplegable con lista de dados (1d20, 2d6, 1d4, 1d100...) para tiradas rápidas fuera de ataques/conjuros - petición del usuario (2026-11-20, durante la ingesta de Patx Vane). Encaja con el diálogo de dados de la Fase 11.
 - **Upgrade del runtime Lambda a Node.js 26**: cuando AWS publique `nodejs26.x`, subir `Runtime` en `infra/session.yaml` y el `--target` de `npm run build:backend` (package.json) en el mismo cambio - petición del usuario (2026-11-23, Fase 15a). El bundle CJS de esbuild se ajusta a `--target=node26` sin más cambios.
