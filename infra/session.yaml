@@ -103,11 +103,14 @@ Resources:
       TargetFunctionArn: !GetAtt SessionFunction.Arn
       AuthType: NONE
       Cors:
-        # Pinned to the site origin (hardened-open endpoint, D-55).
+        # Pinned to BOTH site origins (hardened-open endpoint, D-55):
+        # the website endpoint (http, dash) and the REST endpoint
+        # (https, dot) — a player may reach the site through either.
         # OPTIONS is NOT allowed here (spec): the Function URL answers
         # the CORS preflight itself.
         AllowOrigins:
-          - !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com
+          - !Sub http://${SiteBucketName}.s3-website-${AWS::Region}.amazonaws.com
+          - !Sub https://${SiteBucketName}.s3.${AWS::Region}.amazonaws.com
         AllowMethods:
           - GET
           - PATCH

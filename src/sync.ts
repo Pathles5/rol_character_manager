@@ -62,7 +62,7 @@ function discoverUrl(): Promise<string | null> {
   if (!urlCache) {
     urlCache = fetchImpl('session-url.json', { cache: 'no-store' })
       .then(response => (response.ok ? response.json() : null))
-      .then((body: { url?: string } | null) => body?.url ?? null)
+      .then((body: { url?: string } | null) => body?.url?.replace(/\/+$/, '') ?? null)
       .catch(() => null);
   }
   return urlCache;

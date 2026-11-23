@@ -416,6 +416,7 @@ jobs:
           URL=$(aws cloudformation describe-stacks --stack-name fichass-session \
             --query "Stacks[0].Outputs[?OutputKey=='SessionUrl'].OutputValue" --output text)
           if [ -n "$URL" ] && [ "$URL" != "None" ]; then
+            URL="${URL%/}"
             printf '{"url":"%s"}\n' "$URL" > dist/session-url.json
             echo "Session API URL published: $URL"
           else
