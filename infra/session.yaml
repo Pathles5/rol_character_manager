@@ -123,6 +123,17 @@ Resources:
           - content-type
         MaxAge: 86400
 
+  # AuthType NONE does NOT auto-grant invocation: the resource-based
+  # policy must be declared explicitly (FunctionUrlAuthType NONE
+  # scopes it to Function URL requests only, not the Invoke API).
+  SessionFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SessionFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
 Outputs:
   SessionUrl:
     Description: Lambda Function URL of the session persistence API (Fase 15).
