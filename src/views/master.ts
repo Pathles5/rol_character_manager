@@ -26,6 +26,7 @@ import type { SpellLevel } from '../types';
 import { DEATH_SAVE_MAX } from '../session-schema';
 import {
   editCharacter,
+  getApiUrl,
   getCharacterDoc,
   getRows,
   initMasterStore,
@@ -36,7 +37,7 @@ import {
   type DeltaOp,
   type MasterRow,
 } from '../master-data';
-import { loadLayout, newGroupId, saveLayout, type MasterGroup, type MasterLayout } from '../master-layout';
+import { fetchLayout, loadLayout, newGroupId, saveLayout, saveLayoutRemote, type MasterGroup, type MasterLayout } from '../master-layout';
 import { CONDITION_CATALOG } from '../render/blocks';
 import { escapeHtml } from '../lib/manifest';
 
@@ -49,7 +50,7 @@ const condBoxes = new Set<string>();
 export async function masterView(root: HTMLElement): Promise<void> {
   stopPolling();
   onRowsCb = null;
-  layout = loadMasterLayout();
+  layout = loadLayout(); // instant local cache; the REMOTE copy (D-59) arrives after init
   root.innerHTML = `
   <header class="appbar">
     <div class="appbar-home"><strong>FichaSS · Master</strong></div>
@@ -237,6 +238,7 @@ export async function masterView(root: HTMLElement): Promise<void> {
   onRowsCb = renderRows;
   try {
     await initMasterStore({ onRows: rows => onRowsCb?.(rows) });
+    layout = await loadLayoutHybrid();
     await refreshAll();
     startPolling();
     refreshBtn?.addEventListener('click', () => void refreshAll());
@@ -262,8 +264,32 @@ export async function masterView(root: HTMLElement): Promise<void> {
 
 // --- Layout helpers ----------------------------------------------------
 
-function loadMasterLayout(): MasterLayout {
-  return loadLayout();
+/** Loads the layout preferring the REMOTE copy (D-59); falls back
+    to the local cache offline, and seeds the remote record from
+    the cache the first time (404 → local layout saved remotely). */
+async function loadLayoutHybrid(): Promise<MasterLayout> {
+  const url = getApiUrl();
+  if (!url) return loadLayout();
+  try {
+    const remote = await fetchLayout(url);
+    if (remote) return remote;
+    const local = loadLayout();
+    await saveLayoutRemote(url, local);
+    return local;
+  } catch {
+    return loadLayout();
+  }
+}
+
+/** Every layout mutation persists BOTH: local cache (instant,
+    offline) and the session API (authoritative, D-59). Remote
+    failure is non-fatal — the local cache stays the fallback. */
+function persist(): void {
+  saveLayout(layout);
+  const url = getApiUrl();
+  if (url) {
+    saveLayoutRemote(url, layout).catch(() => {});
+  }
 }
 
 /** Makes sure every manifest character has a place in the layout
@@ -277,7 +303,7 @@ function absorbUnknownIds(ids: string[]): void {
       changed = true;
     }
   }
-  if (changed) saveLayout(layout);
+  if (changed) persist();
 }
 
 /** Which container holds a character (or null if nowhere). */
@@ -314,7 +340,7 @@ function moveCharacter(id: string, groupId: string | null, index: number): void 
     const target = Math.max(0, Math.min(index, targetList.length));
     targetList.splice(target, 0, id);
   }
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -327,7 +353,7 @@ function moveRelative(id: string, delta: number): void {
   if (index === -1 || target < 0 || target >= list.length) return;
   list.splice(index, 1);
   list.splice(target, 0, id);
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -340,7 +366,7 @@ function moveContainerRelative(groupId: string, delta: number): void {
   if (index === -1 || target < 0 || target >= order.length) return;
   order.splice(index, 1);
   order.splice(target, 0, groupId);
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -353,7 +379,7 @@ function moveGroupBefore(dragGroupId: string, targetGroupId: string | null): voi
   if (from === -1 || !order.includes(targetGroupId ?? '')) return;
   order.splice(from, 1);
   order.splice(order.indexOf(targetGroupId ?? ''), 0, dragGroupId);
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -361,7 +387,7 @@ function toggleMinimized(id: string): void {
   const index = layout.minimized.indexOf(id);
   if (index >= 0) layout.minimized.splice(index, 1);
   else layout.minimized.push(id);
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -369,7 +395,7 @@ function createGroup(): void {
   const name = window.prompt('Nombre del grupo', '')?.trim();
   if (!name) return;
   layout.groups.push({ id: newGroupId(), name, members: [] });
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -379,7 +405,7 @@ function renameGroup(groupId: string): void {
   const name = window.prompt('Nombre del grupo', group.name)?.trim();
   if (!name || name === group.name) return;
   group.name = name;
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 
@@ -389,7 +415,7 @@ function deleteGroup(groupId: string): void {
   if (index === -1) return;
   const [group] = layout.groups.splice(index, 1);
   layout.ungrouped.push(...group.members);
-  saveLayout(layout);
+  persist();
   onRowsCb?.(getRows());
 }
 

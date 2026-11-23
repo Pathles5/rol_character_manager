@@ -3,8 +3,13 @@
    Pure normalization + localStorage roundtrip (jsdom storage).
    ============================================================ */
 
-import { describe, expect, it } from 'vitest';
-import { normalizeLayout } from './master-layout';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchLayout, normalizeLayout, resetLayoutVersionForTests, saveLayoutRemote } from './master-layout';
+
+afterEach(() => {
+  resetLayoutVersionForTests();
+  vi.unstubAllGlobals();
+});
 
 describe('normalizeLayout', () => {
   it('returns an empty layout for junk input (with "Sin grupo" first)', () => {
@@ -60,5 +65,51 @@ describe('normalizeLayout', () => {
       minimized: ['a', 'ghost', 'b'],
     });
     expect(layout.minimized).toEqual(['a', 'b']);
+  });
+});
+
+describe('remote layout persistence (D-59)', () => {
+  it('fetchLayout: null on 404, sanitized layout on 200', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })));
+    await expect(fetchLayout('https://api')).resolves.toBeNull();
+
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(JSON.stringify({ layout: { groups: [{ id: 'g1', name: 'Combate', members: ['x'] }], ungrouped: ['y'], minimized: ['x'], containerOrder: ['', 'g1'] }, version: 7 }), { status: 200 }),
+    ));
+    const layout = await fetchLayout('https://api');
+    expect(layout).toEqual({
+      groups: [{ id: 'g1', name: 'Combate', members: ['x'] }],
+      ungrouped: ['y'],
+      minimized: ['x'],
+      containerOrder: ['', 'g1'],
+    });
+  });
+
+  it('saveLayoutRemote: 200 stores and updates the version', async () => {
+    const fetchMock = vi.fn(async (_url: string | URL, init?: RequestInit) =>
+      String(init?.method) === 'PATCH'
+        ? new Response(JSON.stringify({ version: 3 }), { status: 200 })
+        : new Response(JSON.stringify({ layout: null, version: 2 }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const ok = await saveLayoutRemote('https://api', { groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+    expect(ok).toBe(true);
+    const patch = JSON.parse(String(fetchMock.mock.calls[0][1]?.body)) as { characterId: string };
+    expect(patch.characterId).toBe('master-layout');
+  });
+
+  it('saveLayoutRemote: 409 re-bases the version and saves once more', async () => {
+    let patches = 0;
+    const fetchMock = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+      if (String(init?.method) === 'PATCH') {
+        patches++;
+        return patches === 1 ? new Response(null, { status: 409 }) : new Response(JSON.stringify({ version: 5 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ layout: null, version: 4 }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const ok = await saveLayoutRemote('https://api', { groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+    expect(ok).toBe(true);
+    expect(patches).toBe(2);
   });
 });

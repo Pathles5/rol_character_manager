@@ -152,3 +152,85 @@ export function clampSessionToRules(state: SessionState, character: Character): 
   }
   return clamped;
 }
+
+// --- Master layout (Fase 16 amendment D-59) ----------------------------
+
+/** Reserved characterId for the MASTER's layout record: groups,
+    container order and minimized rows live in the SAME sessions
+    table with the same optimistic locking (user request, QA
+    2026-11-23). It is NOT a character — the backend branches on
+    this id and never applies the SessionState contract to it. */
+export const MASTER_LAYOUT_ID = 'master-layout';
+
+export interface MasterLayoutData {
+  groups: { id: string; name: string; members: string[] }[];
+  /** Character ids without a group (order matters). */
+  ungrouped: string[];
+  /** Character ids rendered collapsed. */
+  minimized: string[];
+  /** Display order of the containers themselves ('' = "Sin grupo"). */
+  containerOrder: string[];
+}
+
+const LAYOUT_MAX_GROUPS = 20;
+const LAYOUT_MAX_MEMBERS = 50;
+const LAYOUT_MAX_NAME = 60;
+const LAYOUT_MAX_ID = 64;
+const LAYOUT_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
+
+function boundedStrings(value: unknown, max: number): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const entry of value) {
+    if (typeof entry === 'string' && entry.length > 0 && entry.length <= LAYOUT_MAX_ID && LAYOUT_ID_RE.test(entry)) {
+      out.push(entry);
+      if (out.length >= max) break;
+    }
+  }
+  return out;
+}
+
+/** Validates a master layout payload (backend + browser loader,
+    same pure contract): bounded sizes, string ids, membership
+    deduped first-occurrence-wins across containers, container
+    order completed with missing ids. Returns null when the shape
+    is beyond repair (not an object). */
+export function sanitizeMasterLayout(raw: unknown): MasterLayoutData | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const data = raw as Record<string, unknown>;
+  if (!Array.isArray(data.groups)) return null;
+  const seen = new Set<string>();
+  const groups: MasterLayoutData['groups'] = [];
+  for (const rawGroup of data.groups.slice(0, LAYOUT_MAX_GROUPS)) {
+    if (typeof rawGroup !== 'object' || rawGroup === null) continue;
+    const group = rawGroup as Record<string, unknown>;
+    const id = typeof group.id === 'string' && group.id.length <= LAYOUT_MAX_ID && LAYOUT_ID_RE.test(group.id) ? group.id : '';
+    const name = typeof group.name === 'string' ? group.name.trim().slice(0, LAYOUT_MAX_NAME) : '';
+    if (!id || !name) continue;
+    const members = boundedStrings(group.members, LAYOUT_MAX_MEMBERS).filter(member => {
+      if (seen.has(member)) return false;
+      seen.add(member);
+      return true;
+    });
+    groups.push({ id, name, members });
+  }
+  const ungrouped = boundedStrings(data.ungrouped, LAYOUT_MAX_MEMBERS).filter(member => {
+    if (seen.has(member)) return false;
+    seen.add(member);
+    return true;
+  });
+  const known = new Set(['', ...groups.map(g => g.id)]);
+  const rawOrder = Array.isArray(data.containerOrder) ? data.containerOrder : [];
+  const containerOrder: string[] = [];
+  for (const id of rawOrder) {
+    // '' ("Sin grupo") is a valid container marker here; group ids
+    // keep the bounded id rules.
+    if (typeof id === 'string' && id.length <= LAYOUT_MAX_ID && known.has(id) && !containerOrder.includes(id)) {
+      containerOrder.push(id);
+    }
+  }
+  for (const id of ['', ...groups.map(g => g.id)]) {
+    if (!containerOrder.includes(id)) containerOrder.push(id);
+  }
+  return { groups, ungrouped, minimized: boundedStrings(data.minimized, LAYOUT_MAX_MEMBERS).filter(id => seen.has(id)), containerOrder };
+}

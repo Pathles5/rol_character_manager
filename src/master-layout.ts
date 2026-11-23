@@ -1,15 +1,19 @@
 /* ============================================================
-   FichaSS — master layout (Fase 16, D-58).
+   FichaSS — master layout (Fase 16, D-58; remote since D-59).
 
-   Pure UI state of the MASTER view, persisted in the master's
-   localStorage (spec 16 decision 4): group composition and
-   row order, plus which rows are minimized. Changing device →
-   re-configure in seconds; zero backend.
+   UI state of the MASTER view: group composition and row order,
+   plus which rows are minimized. PERSISTED IN THE SESSIONS TABLE
+   under the reserved MASTER_LAYOUT_ID (user request, QA
+   2026-11-23 — same API, same optimistic locking as sessions):
+   the master's layout survives devices. localStorage stays as
+   cache and offline fallback (seeded to remote on first save).
 
-   Invariants: every character id appears AT MOST ONCE across
-   `ungrouped` + all `groups[].members`; `minimized` is a subset
-   of known ids. loadLayout sanitizes hostile/legacy payloads.
+   Invariants (sanitizeMasterLayout, shared contract): every
+   character id appears AT MOST ONCE across `ungrouped` + all
+   `groups[].members`; `minimized` is a subset of known ids.
    ============================================================ */
+
+import { MASTER_LAYOUT_ID, sanitizeMasterLayout, type MasterLayoutData } from './session-schema';
 
 export interface MasterGroup {
   id: string;
@@ -17,69 +21,13 @@ export interface MasterGroup {
   members: string[];
 }
 
-export interface MasterLayout {
-  groups: MasterGroup[];
-  /** Character ids without a group (order matters). */
-  ungrouped: string[];
-  /** Character ids rendered collapsed. */
-  minimized: string[];
-  /** Display order of the CONTAINERS themselves: group ids, with ''
-      standing for "Sin grupo" (the master can place it anywhere).
-      Absent/unknown ids are handled by normalizeLayout. */
-  containerOrder: string[];
-}
+export type MasterLayout = MasterLayoutData;
 
 const KEY = 'fichass-master-layout-v2';
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(v => typeof v === 'string');
-}
-
-/** Normalizes a raw layout: drops junk, dedupes membership (first
-    occurrence wins) and removes empty groups. */
+/** Legacy/local normalization: pure sanitize with empty fallback. */
 export function normalizeLayout(raw: unknown): MasterLayout {
-  const data = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
-  const seen = new Set<string>();
-  const keep = (ids: string[]): string[] => {
-    const result: string[] = [];
-    for (const id of ids) {
-      if (!seen.has(id)) {
-        seen.add(id);
-        result.push(id);
-      }
-    }
-    return result;
-  };
-
-  const groups: MasterGroup[] = [];
-  if (Array.isArray(data.groups)) {
-    for (const rawGroup of data.groups) {
-      const group = (typeof rawGroup === 'object' && rawGroup !== null ? rawGroup : {}) as Record<string, unknown>;
-      const name = typeof group.name === 'string' ? group.name.trim() : '';
-      const id = typeof group.id === 'string' ? group.id : '';
-      if (!name || !id) continue;
-      const members = Array.isArray(group.members)
-        ? keep(group.members.filter((m): m is string => typeof m === 'string'))
-        : [];
-      groups.push({ id, name, members });
-    }
-  }
-  const ungrouped = isStringArray(data.ungrouped) ? keep(data.ungrouped) : [];
-  const minimized = isStringArray(data.minimized) ? data.minimized.filter(id => seen.has(id)) : [];
-
-  // Container display order ('' = ungrouped): unknown ids and
-  // duplicates dropped; missing ids (including '') append so every
-  // group stays reachable even in legacy/partial payloads.
-  const validIds = new Set(['', ...groups.map(g => g.id)]);
-  const rawOrder = isStringArray(data.containerOrder) ? data.containerOrder : [];
-  const containerOrder: string[] = [];
-  for (const id of rawOrder) {
-    if (validIds.has(id) && !containerOrder.includes(id)) containerOrder.push(id);
-  }
-  for (const id of ['', ...groups.map(g => g.id)]) {
-    if (!containerOrder.includes(id)) containerOrder.push(id);
-  }
-  return { groups, ungrouped, minimized, containerOrder };
+  return sanitizeMasterLayout(raw) ?? { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
 }
 
 export function loadLayout(): MasterLayout {
@@ -102,4 +50,61 @@ export function saveLayout(layout: MasterLayout): void {
 /** Fresh group id (no crypto dependency needed). */
 export function newGroupId(): string {
   return `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// --- Remote persistence (D-59): the layout lives in the sessions
+// table under MASTER_LAYOUT_ID; localStorage is the cache/fallback.
+
+let layoutVersion = 0;
+
+/** Loads the layout from the session API. Returns null on 404
+    (nothing stored yet) and THROWS on network/API failure (the
+    caller falls back to the local cache). */
+export async function fetchLayout(apiUrl: string): Promise<MasterLayout | null> {
+  const response = await fetch(`${apiUrl}/session?characterId=${MASTER_LAYOUT_ID}`, { cache: 'no-store' });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`layout GET → HTTP ${response.status}`);
+  const body = (await response.json()) as { layout?: unknown; version?: number };
+  layoutVersion = typeof body.version === 'number' && Number.isInteger(body.version) ? body.version : 0;
+  return sanitizeMasterLayout(body.layout);
+}
+
+/** Persists the layout to the session API (optimistic version).
+    On 409 the fresh version is taken and the SAME layout is saved
+    once more — layout is absolute UI state, so between two masters
+    the last write wins (sessions themselves never clobber: D-55).
+    Returns false on failure (the caller keeps the local cache). */
+export async function saveLayoutRemote(apiUrl: string, layout: MasterLayout): Promise<boolean> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const response = await fetch(`${apiUrl}/session`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: MASTER_LAYOUT_ID, layout, baseVersion: layoutVersion }),
+    });
+    if (response.status === 200) {
+      const body = (await response.json()) as { version: number };
+      layoutVersion = body.version;
+      return true;
+    }
+    if (response.status === 409 && attempt === 1) {
+      const fresh = await fetch(`${apiUrl}/session?characterId=${MASTER_LAYOUT_ID}`, { cache: 'no-store' });
+      if (fresh.status === 200) {
+        const body = (await fresh.json()) as { version: number };
+        layoutVersion = body.version;
+        continue;
+      }
+      if (fresh.status === 404) {
+        layoutVersion = 0;
+        continue;
+      }
+      return false;
+    }
+    return false;
+  }
+  return false;
+}
+
+/** Test helper: clears the remote version state. */
+export function resetLayoutVersionForTests(): void {
+  layoutVersion = 0;
 }

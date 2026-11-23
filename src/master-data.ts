@@ -288,6 +288,12 @@ export function getCharacterDoc(id: string): Character | undefined {
   return docs[id];
 }
 
+/** The discovered session API URL (null before init / on failure) —
+    shared with the master-layout remote persistence (D-59). */
+export function getApiUrl(): string | null {
+  return apiUrl;
+}
+
 /** Test helper: clears all module state. */
 export function resetMasterStoreForTests(): void {
   stopPolling();

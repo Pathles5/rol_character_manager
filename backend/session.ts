@@ -26,16 +26,21 @@ import libDynamo from '@aws-sdk/lib-dynamodb';
 const { DynamoDBClient } = ddbClient;
 const { DynamoDBDocumentClient, GetCommand, PutCommand } = libDynamo;
 import type { Character } from '../src/types';
-import { sanitizeSessionState, SESSION_SCHEMA_VERSION } from '../src/session-schema';
+import {
+  MASTER_LAYOUT_ID,
+  sanitizeMasterLayout,
+  sanitizeSessionState,
+  SESSION_SCHEMA_VERSION,
+} from '../src/session-schema';
 
 const TABLE_NAME = process.env.SESSIONS_TABLE ?? '';
 const MANIFEST_URL = process.env.MANIFEST_URL ?? '';
 const SITE_URL = process.env.SITE_URL ?? '';
 const MAX_BODY_BYTES = 16384;
-// Build tag (Fase 15a, r21c): forces a real code change per revision —
+// Build tag (Fase 16, r22): forces a real code change per revision —
 // if a deploy produces "No updates" while this tag is stale, the
 // pipeline didn't ship what we think it did.
-const BUILD_TAG = 'fase15a-r21c';
+const BUILD_TAG = 'fase16-r22';
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Cold-start marker: proves which build is actually running.
@@ -43,7 +48,10 @@ console.log(`fichass-session init [${BUILD_TAG}]`);
 
 interface SessionItem {
   characterId: string;
-  state: unknown;
+  state?: unknown;
+  /** Master layout payload — present ONLY in the reserved
+      MASTER_LAYOUT_ID record (Fase 16, D-59); never a SessionState. */
+  layout?: unknown;
   version: number;
   updatedAt: string;
 }
@@ -117,6 +125,14 @@ async function handleGet(query: Record<string, string>): Promise<LambdaResponse>
   if (!CHARACTER_ID_RE.test(characterId)) {
     return json(400, { error: 'validation_failed', detail: 'invalid characterId' });
   }
+  // Master layout record (D-59): NOT a character — no manifest
+  // check, no SessionState contract; same table and versioning.
+  if (characterId === MASTER_LAYOUT_ID) {
+    const result = await doc.send(new GetCommand({ TableName: TABLE_NAME, Key: { characterId } }));
+    const item = result.Item as SessionItem | undefined;
+    if (!item) return json(404, { error: 'not_found' });
+    return json(200, { layout: item.layout, version: item.version, updatedAt: item.updatedAt });
+  }
   const ids = await allowedCharacterIds();
   if (!ids.has(characterId)) {
     return json(400, { error: 'validation_failed', detail: 'unknown characterId' });
@@ -130,6 +146,8 @@ async function handleGet(query: Record<string, string>): Promise<LambdaResponse>
 interface PatchBody {
   characterId?: unknown;
   state?: unknown;
+  /** Master layout payload (reserved id only, D-59). */
+  layout?: unknown;
   baseVersion?: unknown;
 }
 
@@ -153,6 +171,15 @@ async function handlePatch(rawBody: string): Promise<LambdaResponse> {
       : null;
   if (baseVersion === null) {
     return json(400, { error: 'validation_failed', detail: 'baseVersion must be an integer ≥ 0' });
+  }
+  // Master layout branch (D-59): same optimistic locking, different
+  // payload contract (layout instead of state) and no character.
+  if (characterId === MASTER_LAYOUT_ID) {
+    const layout = sanitizeMasterLayout(body.layout);
+    if (!layout) {
+      return json(400, { error: 'validation_failed', detail: 'invalid master layout' });
+    }
+    return await putLayoutVersioned(characterId, layout, baseVersion);
   }
   const ids = await allowedCharacterIds();
   if (!ids.has(characterId)) {
@@ -206,6 +233,42 @@ async function handlePatch(rawBody: string): Promise<LambdaResponse> {
   } catch (error: unknown) {
     if (isConditionalFailure(error)) {
       return json(409, { error: 'version_conflict', state: null, version: 0, updatedAt: null });
+    }
+    throw error;
+  }
+  return json(200, { version: nextVersion, updatedAt });
+}
+
+/** Master layout put (D-59): identical optimistic-concurrency
+    pattern to the session put, storing `layout` instead of `state`.
+    409 bodies carry no state (the client re-GETs). */
+async function putLayoutVersioned(
+  characterId: string,
+  layout: ReturnType<typeof sanitizeMasterLayout>,
+  baseVersion: number,
+): Promise<LambdaResponse> {
+  const current = await doc.send(new GetCommand({ TableName: TABLE_NAME, Key: { characterId } }));
+  const item = current.Item as SessionItem | undefined;
+  if (item && item.version !== baseVersion) {
+    return json(409, { error: 'version_conflict', layout: item.layout, version: item.version, updatedAt: item.updatedAt });
+  }
+  if (!item && baseVersion !== 0) {
+    return json(409, { error: 'version_conflict', layout: null, version: 0, updatedAt: null });
+  }
+  const updatedAt = new Date().toISOString();
+  const nextVersion = baseVersion + 1;
+  try {
+    await doc.send(new PutCommand({
+      TableName: TABLE_NAME,
+      Item: { characterId, layout, version: nextVersion, updatedAt },
+      ConditionExpression: item
+        ? 'version = :baseVersion'
+        : 'attribute_not_exists(characterId)',
+      ExpressionAttributeValues: item ? { ':baseVersion': baseVersion } : undefined,
+    }));
+  } catch (error: unknown) {
+    if (isConditionalFailure(error)) {
+      return json(409, { error: 'version_conflict', layout: null, version: 0, updatedAt: null });
     }
     throw error;
   }
