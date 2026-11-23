@@ -454,13 +454,14 @@ function groupHtml(
   </section>`;
 }
 
-/** One stepper pair (−delta / +delta) for a counter. `value`
-    disambiguates the act when needed (spell level, trait id). */
+/** One stepper pair for a counter. ±1 buttons collapse to −/+;
+    other deltas keep their number (−10/+10). */
 function steps(id: string, act: string, deltas: number[], label: (d: number) => string, value = ''): string {
   return deltas
     .map(d => {
       const key = `${id}:${act}:${value}:${d}`;
-      return `<button type="button" class="step m-step" data-act="${act}" data-delta="${d}"${value ? ` data-value="${value}"` : ''} data-focus-key="${key}" aria-label="${label(d)}">${d > 0 ? `+${d}` : d}</button>`;
+      const text = Math.abs(d) === 1 ? (d > 0 ? '+' : '−') : `${d > 0 ? '+' : '−'}${Math.abs(d)}`;
+      return `<button type="button" class="step m-step" data-act="${act}" data-delta="${d}"${value ? ` data-value="${value}"` : ''} data-focus-key="${key}" aria-label="${label(d)}">${text}</button>`;
     })
     .join('');
 }
