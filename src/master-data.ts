@@ -19,9 +19,8 @@
    - fetch is injectable for tests (setMasterFetch).
    ============================================================ */
 
-import type { SessionState, SessionPatch } from './session-schema';
+import type { Character, SessionState, SpellLevel } from './types';
 import { clampSessionToRules } from './session-schema';
-import type { Character, SpellLevel } from './types';
 
 export type RowStatus = 'fresh' | 'pending' | 'error';
 
