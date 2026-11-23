@@ -185,6 +185,15 @@ jobs:
                 --region $REGION
               ;;
             CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+              # Borrar changesets pendientes obsoletos (nunca ejecutarlos).
+              STALE=$(aws cloudformation list-change-sets --stack-name $STACK \
+                --query "Summaries[?ExecutionStatus!='EXECUTED'].ChangeSetId" \
+                --output text --region $REGION)
+              for cs in $STALE; do
+                echo "Borrando changeset obsoleto: $cs"
+                aws cloudformation delete-change-set --stack-name $STACK \
+                  --change-set-name "$cs" --region $REGION || true
+              done
               CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
               aws cloudformation create-change-set \
                 --stack-name $STACK \
@@ -282,48 +291,50 @@ jobs:
                 --region $REGION
               ;;
             CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
-              PENDING=$(aws cloudformation list-change-sets --stack-name $STACK \
-                --query "Summaries[?ExecutionStatus=='AVAILABLE' && Status=='CREATE_COMPLETE'].ChangeSetId" \
-                --output text --region $REGION | head -n 1)
-              if [ -n "$PENDING" ]; then
-                echo "Changeset pendiente detectado, se ejecuta: $PENDING"
-                CHGSET="$PENDING"
-              else
-                CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
-                aws cloudformation create-change-set \
-                  --stack-name $STACK \
+              # Los changesets PENDIENTES de corridas interrumpidas pueden
+              # contener plantilla/código ANTIGUOS: nunca se ejecutan, se
+              # borran y se crea uno fresco con el build actual.
+              STALE=$(aws cloudformation list-change-sets --stack-name $STACK \
+                --query "Summaries[?ExecutionStatus!='EXECUTED'].ChangeSetId" \
+                --output text --region $REGION)
+              for cs in $STALE; do
+                echo "Borrando changeset obsoleto: $cs"
+                aws cloudformation delete-change-set --stack-name $STACK \
+                  --change-set-name "$cs" --region $REGION || true
+              done
+              CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+              aws cloudformation create-change-set \
+                --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --change-set-type UPDATE \
+                --template-body file://.aws-sam/packaged.yaml \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --region $REGION
+              echo "Esperando al changeset $CHGSET (sondeo manual)..."
+              CS=""
+              CSREASON=""
+              for i in $(seq 1 60); do
+                CS=$(aws cloudformation describe-change-set --stack-name $STACK \
                   --change-set-name "$CHGSET" \
-                  --change-set-type UPDATE \
-                  --template-body file://.aws-sam/packaged.yaml \
-                  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                  --region $REGION
-                echo "Esperando al changeset $CHGSET (sondeo manual)..."
-                CS=""
-                CSREASON=""
-                for i in $(seq 1 60); do
-                  CS=$(aws cloudformation describe-change-set --stack-name $STACK \
-                    --change-set-name "$CHGSET" \
-                    --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
-                  CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
-                    --change-set-name "$CHGSET" \
-                    --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
-                  echo "[$i] changeset: $CS"
-                  case "$CS" in
-                    CREATE_COMPLETE) break ;;
-                    FAILED) break ;;
-                  esac
-                  sleep 10
-                done
-                # Changeset vacío = el template/código no cambió → no-op
-                # válido (CFN usa DOS mensajes distintos según el tipo:
-                # "didn't contain changes" / "No updates are to be performed").
-                if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
-                  echo "Sin cambios que aplicar (no-op) — ok"
-                elif [ "$CS" != "CREATE_COMPLETE" ]; then
-                  echo "Changeset $CS: $CSREASON"; exit 1
-                fi
-              fi
-              if [ "$CS" = "CREATE_COMPLETE" ] || [ -n "$PENDING" ]; then
+                  --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" \
+                  --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
+                echo "[$i] changeset: $CS"
+                case "$CS" in
+                  CREATE_COMPLETE) break ;;
+                  FAILED) break ;;
+                esac
+                sleep 10
+              done
+              # Changeset vacío = el template/código no cambió → no-op
+              # válido (CFN usa DOS mensajes según el tipo: "didn't
+              # contain changes" / "No updates are to be performed").
+              if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
+                echo "Sin cambios que aplicar (no-op) — ok"
+              elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                echo "Changeset $CS: $CSREASON"; exit 1
+              else
                 echo "Ejecutando el changeset..."
                 aws cloudformation execute-change-set \
                   --stack-name $STACK \
