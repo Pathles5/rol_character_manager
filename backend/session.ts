@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    FichaSS — backend Lambda: session persistence (Fase 15, D-55).
 
    GET   /session?characterId=<id>  → 200 {state, version, updatedAt}
@@ -17,12 +17,14 @@
    to the site origin at the Function URL level (template).
    ============================================================ */
 
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  GetItemCommand,
-  PutItemCommand,
-} from '@aws-sdk/lib-dynamodb';
+// The AWS SDK (3.1175) defines its exports lazily AND restructured
+// lib-dynamodb: the document commands are GetCommand/PutCommand (NOT
+// GetItemCommand/PutItemCommand) — import the DEFAULT and destructure
+// (the lazy getters aren't visible to Node's named-export detection).
+import ddbClient from '@aws-sdk/client-dynamodb';
+import libDynamo from '@aws-sdk/lib-dynamodb';
+const { DynamoDBClient } = ddbClient;
+const { DynamoDBDocumentClient, GetCommand, PutCommand } = libDynamo;
 import type { Character } from '../src/types';
 import { sanitizeSessionState, SESSION_SCHEMA_VERSION } from '../src/session-schema';
 
@@ -113,7 +115,7 @@ async function handleGet(query: Record<string, string>): Promise<LambdaResponse>
   if (!ids.has(characterId)) {
     return json(400, { error: 'validation_failed', detail: 'unknown characterId' });
   }
-  const result = await doc.send(new GetItemCommand({ TableName: TABLE_NAME, Key: { characterId } }));
+  const result = await doc.send(new GetCommand({ TableName: TABLE_NAME, Key: { characterId } }));
   const item = result.Item as SessionItem | undefined;
   if (!item) return json(404, { error: 'not_found' });
   return json(200, { state: item.state, version: item.version, updatedAt: item.updatedAt });
@@ -185,7 +187,7 @@ async function handlePatch(rawBody: string): Promise<LambdaResponse> {
   const updatedAt = new Date().toISOString();
   const nextVersion = baseVersion + 1;
   try {
-    await doc.send(new PutItemCommand({
+    await doc.send(new PutCommand({
       TableName: TABLE_NAME,
       Item: { characterId, state, version: nextVersion, updatedAt },
       // Optimistic concurrency (D-55): either the first write ever

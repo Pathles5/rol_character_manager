@@ -1,0 +1,10 @@
+{
+  "name": "fichass-session-lambda",
+  "private": true,
+  "type": "module",
+  "description": "Runtime dependencies of the session Lambda (bundled as backend/dist + node_modules; the AWS SDK is NOT inlined by esbuild — its lazy exports break under esbuild interop, Fase 15a).",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1175.0",
+    "@aws-sdk/lib-dynamodb": "^3.1175.0"
+  }
+}

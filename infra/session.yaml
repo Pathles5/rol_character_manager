@@ -82,13 +82,11 @@ Resources:
       Architectures:
         - arm64
       Handler: index.handler
-      # Pre-bundled by `npm run build:backend` (esbuild, single-file ESM
-      # with the AWS SDK inlined). The banner injects createRequire so
-      # the SDK's CJS dist can require node builtins (an ESM bundle
-      # without it dies with "Dynamic require of node:https"; the CJS
-      # format instead breaks the SDK's lazy exports — both diagnosed
-      # in Fase 15a). NO SAM esbuild metadata: the bundle is
-      # deterministic and built by the workflow before `sam build`.
+      # Pre-bundled by `npm run build:backend` (esbuild single-file ESM,
+      # SDK EXTERNAL) + the SDK as real node_modules — the AWS-endorsed
+      # packaging: the SDK's lazy exports break under esbuild interop
+      # (both ESM-require and CJS variants, diagnosed in Fase 15a).
+      # NO SAM esbuild metadata: deterministic, built by the workflow.
       CodeUri: backend/dist
       MemorySize: 256
       Timeout: 10
