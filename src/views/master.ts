@@ -377,7 +377,9 @@ function statusBadge(row: MasterRow): string {
   if (row.status === 'error') {
     return `<button type="button" class="chip m-status error" data-act="retry" data-focus-key="${row.characterId}:retry" aria-label="Reintentar envío de ${escapeHtml(row.characterId)}">⚠ error · reintentar</button>`;
   }
-  return '';
+  // C6: "actualizado hace Xs" (repaints at least every poll cycle).
+  const ago = row.lastFetchedAt === null ? '' : ` · hace ${Math.max(0, Math.round((Date.now() - row.lastFetchedAt) / 1000))}s`;
+  return `<span class="m-status" role="status">sincronizado${ago}</span>`;
 }
 
 function rowHtml(row: MasterRow): string {
