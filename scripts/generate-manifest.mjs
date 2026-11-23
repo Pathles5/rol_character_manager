@@ -27,6 +27,11 @@ const manifestPath = fileURLToPath(new URL('../public/characters-manifest.json',
 /** Same id pattern the router accepts (src/router.ts). */
 const ID_PATTERN = /^[a-z0-9-]+$/;
 
+/** Reserved non-character record ids (Fase 16, D-59): the master
+    layout lives in the sessions table under this key — a character
+    could never reach its own session. */
+const RESERVED_IDS = new Set(['master-layout']);
+
 /** Reports one failing file and breaks the build (exit 1). */
 function fail(file, reason) {
   console.error(`[generate-manifest] ${file}: ${reason}`);
@@ -43,6 +48,9 @@ for (const file of files) {
   const id = basename(file, '.json');
   if (!ID_PATTERN.test(id)) {
     fail(file, `character id "${id}" must match ${ID_PATTERN} (file name = id)`);
+  }
+  if (RESERVED_IDS.has(id)) {
+    fail(file, `character id "${id}" is reserved for the master layout (D-59)`);
   }
 
   let data;

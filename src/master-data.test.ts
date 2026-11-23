@@ -15,6 +15,7 @@ import {
   initMasterStore,
   refreshAll,
   resetMasterStoreForTests,
+  retryCharacter,
   setMasterFetch,
   startPolling,
   stopPolling,
@@ -252,6 +253,93 @@ describe('409 retry — never clobbers the player (C9)', () => {
     expect(server.patches).toHaveLength(3); // exactly 3 attempts
     expect(getRows()['c1'].pendingOps).toHaveLength(1); // re-appliable
     expect(sessions['c1'].state.hp.current).toBe(20); // player state untouched
+  });
+
+  it('retryCharacter re-applies the pending deltas once the server recovers (C9 manual retry)', async () => {
+    const sessions = { c1: { state: snapshot('c1'), version: 2 } };
+    const server = makeImpl(sessions);
+    let failing = true;
+    setMasterFetch((async (url: string | URL, init?: RequestInit) => {
+      if (String(init?.method) === 'PATCH' && failing) return new Response(null, { status: 409 });
+      return await server.impl(url, init);
+    }) as unknown as typeof globalThis.fetch);
+    await initMasterStore({ onRows: () => {} });
+    await refreshAll();
+
+    editCharacter('c1', { hp: { current: -1 } });
+    await vi.waitFor(() => expect(getRows()['c1'].status).toBe('error'));
+
+    failing = false;
+    retryCharacter('c1');
+    await vi.waitFor(() => expect(getRows()['c1'].status).toBe('fresh'));
+    expect(sessions['c1'].state.hp.current).toBe(19);
+    expect(getRows()['c1'].pendingOps).toHaveLength(0);
+  });
+
+  it('queues rapid edits into ONE flush loop — no delta lost (review D1)', async () => {
+    const sessions = { c1: { state: snapshot('c1', { hp: { current: 20, temp: 0 } }), version: 1 } };
+    const server = makeImpl(sessions);
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>(resolve => { releaseFirst = resolve; });
+    let patches = 0;
+    setMasterFetch((async (url: string | URL, init?: RequestInit) => {
+      if (String(init?.method) === 'PATCH') {
+        patches++;
+        if (patches === 1) {
+          await firstGate; // hold the first PATCH in flight
+          // Apply it exactly like the authoritative server would.
+          const body = JSON.parse(String(init?.body)) as { state: SessionState; version: number };
+          sessions['c1'].state = body.state;
+          sessions['c1'].version = 2;
+          return new Response(JSON.stringify({ version: 2 }), { status: 200 });
+        }
+        return await server.impl(url, init);
+      }
+      return await server.impl(url, init);
+    }) as unknown as typeof globalThis.fetch);
+    await initMasterStore({ onRows: () => {} });
+    await refreshAll();
+
+    editCharacter('c1', { hp: { current: -1 } }); // PATCH #1 in flight (held)
+    editCharacter('c1', { hp: { current: -1 } }); // queued while #1 flies
+
+    releaseFirst();
+    await vi.waitFor(() => {
+      const row = getRows()['c1'];
+      expect(row.status).toBe('fresh');
+      expect(row.pendingOps).toHaveLength(0);
+    });
+    expect(patches).toBe(2); // coalesced loop, no duplicate flush
+    expect(sessions['c1'].state.hp.current).toBe(18); // −1 −1, NOTHING lost
+  });
+
+  it('discards a stale GET that raced a confirmed edit (review D2)', async () => {
+    const sessions = { c1: { state: snapshot('c1', { hp: { current: 20, temp: 0 } }), version: 1 } };
+    const server = makeImpl(sessions);
+    let releaseStale!: () => void;
+    const staleGate = new Promise<void>(resolve => { releaseStale = resolve; });
+    let gets = 0;
+    setMasterFetch((async (url: string | URL, init?: RequestInit) => {
+      if (String(url).includes('/session?characterId=')) {
+        gets++;
+        if (gets === 2) {
+          await staleGate; // this GET started BEFORE the edit and resolves AFTER its PATCH
+          return new Response(JSON.stringify({ state: snapshot('c1', { hp: { current: 20, temp: 0 } }), version: 1 }), { status: 200 });
+        }
+        return await server.impl(url, init);
+      }
+      return await server.impl(url, init);
+    }) as unknown as typeof globalThis.fetch);
+    await initMasterStore({ onRows: () => {} });
+    await refreshAll(); // GET #1 (fresh, v1)
+    editCharacter('c1', { hp: { current: -1 } }); // PATCH → hp 19, v2
+    await vi.waitFor(() => expect(getRows()['c1'].version).toBe(2));
+    void refreshAll(); // GET #2: held, stale snapshot
+    releaseStale();
+    await vi.waitFor(() => expect(gets).toBe(2));
+    // The stale snapshot (hp 20, v1) must NOT clobber the confirmed edit.
+    expect(getRows()['c1'].state?.hp.current).toBe(19);
+    expect(getRows()['c1'].version).toBe(2);
   });
 });
 

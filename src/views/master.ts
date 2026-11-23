@@ -18,8 +18,9 @@
    Groups & minimization (C4/C5/C7): characters live in named
    groups or "Sin grupo"; drag & drop to move/reorder, with a
    keyboard/button alternative (group <select> + ▲/▼). Group
-   composition, order and minimized rows persist in the master's
-   localStorage (master-layout.ts).
+   composition, order and minimized rows persist REMOTELY in the
+   sessions table (reserved id `master-layout`, D-59) with the
+   master's localStorage as cache/offline fallback.
    ============================================================ */
 
 import type { SpellLevel } from '../types';
@@ -51,6 +52,10 @@ export async function masterView(root: HTMLElement): Promise<void> {
   stopPolling();
   onRowsCb = null;
   layout = loadLayout(); // instant local cache; the REMOTE copy (D-59) arrives after init
+  // Stale-mount guard (same pattern as overview): async work that
+  // resolves after a newer navigation must not mount nor poll.
+  const hashAtStart = window.location.hash;
+  const stale = (): boolean => window.location.hash !== hashAtStart;
   root.innerHTML = `
   <header class="appbar">
     <div class="appbar-home"><strong>FichaSS · Master</strong></div>
@@ -238,8 +243,11 @@ export async function masterView(root: HTMLElement): Promise<void> {
   onRowsCb = renderRows;
   try {
     await initMasterStore({ onRows: rows => onRowsCb?.(rows) });
+    if (stale()) return;
     layout = await loadLayoutHybrid();
+    if (stale()) return;
     await refreshAll();
+    if (stale()) return;
     startPolling();
     refreshBtn?.addEventListener('click', () => void refreshAll());
     addGroupBtn?.addEventListener('click', () => createGroup());
@@ -498,8 +506,10 @@ function statusBadge(row: MasterRow): string {
     return `<button type="button" class="chip m-status error" data-act="retry" data-focus-key="${row.characterId}:retry" aria-label="Reintentar envío de ${escapeHtml(row.characterId)}">⚠ error · reintentar</button>`;
   }
   // C6: "actualizado hace Xs" (repaints at least every poll cycle).
+  // No role="status" here: the full re-render would re-announce
+  // every row to screen readers each poll (review minor).
   const ago = row.lastFetchedAt === null ? '' : ` · hace ${Math.max(0, Math.round((Date.now() - row.lastFetchedAt) / 1000))}s`;
-  return `<span class="m-status" role="status">sincronizado${ago}</span>`;
+  return `<span class="m-status">sincronizado${ago}</span>`;
 }
 
 function rowHtml(row: MasterRow): string {

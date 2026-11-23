@@ -150,19 +150,9 @@ async function refreshOne(id: string): Promise<void> {
     const response = await fetchImpl(`${apiUrl}/session?characterId=${encodeURIComponent(id)}`, {
       cache: 'no-store',
     });
-    if (response.status === 200) {
-      const body = (await response.json()) as { state: SessionState; version: number };
-      rows[id] = {
-        characterId: id,
-        state: body.state,
-        version: body.version,
-        pendingOps: [],
-        status: 'fresh',
-        noSession: false,
-        lastFetchedAt: Date.now(),
-      };
-      emit();
-    } else if (response.status === 404) {
+    if (response.status === 404) {
+      const pending = rows[id];
+      if (pending && (pending.status === 'pending' || pending.pendingOps.length > 0)) return;
       rows[id] = {
         characterId: id,
         state: null,
@@ -173,9 +163,31 @@ async function refreshOne(id: string): Promise<void> {
         lastFetchedAt: Date.now(),
       };
       emit();
-    } else {
-      markError(id);
+      return;
     }
+    if (response.status !== 200) {
+      markError(id);
+      return;
+    }
+    const body = (await response.json()) as { state: SessionState; version: number };
+    const current = rows[id];
+    // Review D2: responses that lost a race are DISCARDED, never
+    // clobber — either the row went pending while this GET flew
+    // (local truth beats the stale snapshot) or the GET started
+    // before one of OUR confirmed PATCHes (older version).
+    if (current && (current.status === 'pending' || current.pendingOps.length > 0 || body.version < current.version)) {
+      return;
+    }
+    rows[id] = {
+      characterId: id,
+      state: body.state,
+      version: body.version,
+      pendingOps: [],
+      status: 'fresh',
+      noSession: false,
+      lastFetchedAt: Date.now(),
+    };
+    emit();
   } catch {
     markError(id);
   }
@@ -209,50 +221,79 @@ export function editCharacter(id: string, op: DeltaOp): void {
   void flushRow(id);
 }
 
-async function flushRow(id: string, attempt = 1): Promise<void> {
-  const row = rows[id];
-  if (!row || !row.state || row.pendingOps.length === 0 || !apiUrl) return;
+/** One flush loop PER ROW (review D1): editCharacter never starts a
+    second concurrent flush — the running loop picks up ops queued
+    while its PATCH was in flight. On 200 only the ops INCLUDED in
+    the sent state are confirmed (slice by count, not clear); the
+    state sent always includes every op queued up to build time. */
+const flushing = new Set<string>();
+
+async function flushRow(id: string): Promise<void> {
+  if (flushing.has(id)) return;
+  flushing.add(id);
   try {
-    const response = await fetchImpl(`${apiUrl}/session`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        characterId: id,
-        state: row.state,
-        baseVersion: row.version,
-      }),
-    });
-    if (response.status === 200) {
-      const body = (await response.json()) as { version: number };
-      row.version = body.version;
-      row.pendingOps = [];
-      row.status = 'fresh';
-      row.lastFetchedAt = Date.now();
-      emit();
-    } else if (response.status === 409 && attempt < 3) {
-      // The player wrote concurrently: re-GET the FRESH remote state,
-      // re-apply OUR relative deltas on top, re-PATCH (spec 16 C9 —
-      // the master never clobbers a player change).
-      const fresh = await fetchImpl(`${apiUrl}/session?characterId=${encodeURIComponent(id)}`, {
-        cache: 'no-store',
-      });
-      if (fresh.ok) {
-        const body = (await fresh.json()) as { state: SessionState; version: number };
-        let merged = body.state;
-        const doc = docs[id];
-        for (const op of row.pendingOps) merged = applyDelta(merged, op, doc);
-        row.state = merged;
-        row.version = body.version;
-        emit();
-        await flushRow(id, attempt + 1);
+    let attempts = 0;
+    for (;;) {
+      const row = rows[id];
+      if (!row || !row.state || row.pendingOps.length === 0 || !apiUrl) return;
+      const sentCount = row.pendingOps.length;
+      let response: Response;
+      try {
+        response = await fetchImpl(`${apiUrl}/session`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            characterId: id,
+            state: row.state,
+            baseVersion: row.version,
+          }),
+        });
+      } catch {
+        markError(id);
+        return;
+      }
+      const current = rows[id];
+      if (response.status === 200) {
+        const body = (await response.json()) as { version: number };
+        if (current) {
+          current.version = body.version;
+          // Only the ops baked into the sent state are confirmed;
+          // ops queued while the PATCH flew stay pending.
+          current.pendingOps = current.pendingOps.slice(sentCount);
+          current.status = current.pendingOps.length > 0 ? 'pending' : 'fresh';
+          if (current.pendingOps.length === 0) current.lastFetchedAt = Date.now();
+          emit();
+        }
+        continue; // loop: more ops queued during the PATCH
+      }
+      attempts++;
+      if (response.status === 409 && attempts < 3) {
+        // The player wrote concurrently: re-GET the FRESH remote
+        // state, re-apply OUR relative deltas on top, re-PATCH
+        // (spec 16 C9 — the master never clobbers a player change).
+        const fresh = await fetchImpl(`${apiUrl}/session?characterId=${encodeURIComponent(id)}`, {
+          cache: 'no-store',
+        });
+        if (fresh.ok && current && current.pendingOps.length > 0) {
+          const body = (await fresh.json()) as { state: SessionState; version: number };
+          let merged = body.state;
+          const doc = docs[id];
+          for (const op of current.pendingOps) merged = applyDelta(merged, op, doc);
+          current.state = merged;
+          current.version = body.version;
+          emit();
+          continue;
+        }
+        markError(id);
         return;
       }
       markError(id);
-    } else {
-      markError(id);
+      return;
     }
   } catch {
     markError(id);
+  } finally {
+    flushing.delete(id);
   }
 }
 
@@ -301,5 +342,6 @@ export function resetMasterStoreForTests(): void {
   characterIds = [];
   rows = {};
   callbacks = null;
+  flushing.clear();
   for (const key of Object.keys(docs)) delete docs[key];
 }

@@ -73,35 +73,48 @@ export async function fetchLayout(apiUrl: string): Promise<MasterLayout | null> 
     On 409 the fresh version is taken and the SAME layout is saved
     once more — layout is absolute UI state, so between two masters
     the last write wins (sessions themselves never clobber: D-55).
-    Returns false on failure (the caller keeps the local cache). */
-export async function saveLayoutRemote(apiUrl: string, layout: MasterLayout): Promise<boolean> {
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const response = await fetch(`${apiUrl}/session`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ characterId: MASTER_LAYOUT_ID, layout, baseVersion: layoutVersion }),
-    });
-    if (response.status === 200) {
-      const body = (await response.json()) as { version: number };
-      layoutVersion = body.version;
-      return true;
-    }
-    if (response.status === 409 && attempt === 1) {
-      const fresh = await fetch(`${apiUrl}/session?characterId=${MASTER_LAYOUT_ID}`, { cache: 'no-store' });
-      if (fresh.status === 200) {
-        const body = (await fresh.json()) as { version: number };
-        layoutVersion = body.version;
-        continue;
-      }
-      if (fresh.status === 404) {
-        layoutVersion = 0;
-        continue;
+    Returns false on failure (the caller keeps the local cache).
+    Calls are SERIALIZED (review minor): two rapid persists would
+    otherwise race with the same base version and the older layout
+    could overwrite the newer one after a re-base. */
+let saveQueue: Promise<boolean> = Promise.resolve(false);
+
+export function saveLayoutRemote(apiUrl: string, layout: MasterLayout): Promise<boolean> {
+  const run = async (): Promise<boolean> => {
+    try {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const response = await fetch(`${apiUrl}/session`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ characterId: MASTER_LAYOUT_ID, layout, baseVersion: layoutVersion }),
+        });
+        if (response.status === 200) {
+          const body = (await response.json()) as { version: number };
+          layoutVersion = body.version;
+          return true;
+        }
+        if (response.status === 409 && attempt === 1) {
+          const fresh = await fetch(`${apiUrl}/session?characterId=${MASTER_LAYOUT_ID}`, { cache: 'no-store' });
+          if (fresh.status === 200) {
+            const body = (await fresh.json()) as { version: number };
+            layoutVersion = body.version;
+            continue;
+          }
+          if (fresh.status === 404) {
+            layoutVersion = 0;
+            continue;
+          }
+          return false;
+        }
+        return false;
       }
       return false;
+    } catch {
+      return false;
     }
-    return false;
-  }
-  return false;
+  };
+  saveQueue = saveQueue.then(run);
+  return saveQueue;
 }
 
 /** Test helper: clears the remote version state. */

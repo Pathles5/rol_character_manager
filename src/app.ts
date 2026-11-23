@@ -22,6 +22,7 @@ import { parseHash, type Route } from './router';
 import { overviewView } from './views/overview';
 import { characterView } from './views/character';
 import { masterView } from './views/master';
+import { stopPolling } from './master-data';
 
 /** Amiable not-found view (unknown hash paths): plain card with
     a way back, no crash and no partial content (D-35 spirit). */
@@ -41,6 +42,10 @@ function notFoundView(root: HTMLElement): void {
 
 /** Mounts one route: fresh container per mount (see header). */
 async function mountRoute(app: HTMLElement, route: Route): Promise<void> {
+  // Review D2: leaving #/master must stop its poll — the master
+  // store's interval is module-global and would otherwise keep
+  // fetching (and repainting detached DOM) for the whole session.
+  if (route.name !== 'master') stopPolling();
   const container = document.createElement('div');
   app.replaceChildren(container);
   window.scrollTo(0, 0);
