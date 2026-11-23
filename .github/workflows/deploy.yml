@@ -171,9 +171,13 @@ jobs:
           echo "Estado del stack: $STATUS"
 
           case "$STATUS" in
-            MISSING|ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
+            MISSING|ROLLBACK_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
               if [ "$STATUS" != "MISSING" ]; then
                 echo "Shell roto ($STATUS): self-heal, se borra para recrear"
+                # NOTA (D-55): sobre UPDATE_ROLLBACK_COMPLETE CFN no ejecuta
+                # changesets (haría falta continue-update-rollback y otro
+                # permiso) — borrar y crear directo es más simple; la tabla
+                # tiene Retain y sobrevive al borrado del stack.
                 aws cloudformation delete-stack --stack-name $STACK --region $REGION
                 GONE=""
                 for i in $(seq 1 60); do
@@ -245,7 +249,7 @@ jobs:
             case "$STATUS" in
               CREATE_COMPLETE|UPDATE_COMPLETE)
                 echo "Stack asentado en $STATUS"; exit 0 ;;
-              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_FAILED)
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED)
                 echo "Stack en estado terminal: $STATUS"; exit 1 ;;
             esac
             sleep 10
