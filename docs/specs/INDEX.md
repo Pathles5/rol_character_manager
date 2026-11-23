@@ -28,7 +28,7 @@ Convenciones:
 - **`README.md` en la raíz**: guía para levantar la app (requisitos, comandos, despliegue, estructura y punteros a la documentación). Referenciado desde aquí y desde las specs de entrega (Fase 08); mantenerlo al día con los scripts del `package.json`.
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
-| 16 | Vista del Master (panel de grupo) | spec | Especificada y VALIDADA por el usuario (2026-11-23): ruta `#/master` con fila por personaje (PG, temp, inspiración, espacios, condiciones, **muerte saves éxitos/fracasos**, sync) desde la API remota; **EDITABLE** (PG ±1/±10, temp ±1, inspiración, slots ±1) con deltas aplicados sobre estado remoto fresco + reintento 409 (hasta 3) — el master nunca pisa al jugador; grupos por drag & drop (alternativa teclado), minimización; persistencia en localStorage del master; polling 15 s + refresco manual (no pisa ediciones pendientes). **Pendiente: tareas numeradas + implementación** |
+| 16 | Vista del Master (panel de grupo) | implement | **Implementación COMPLETA** (diseño validado por el usuario): edición con deltas relativos y reintento 409, muerte saves editables, condiciones editables, grupos drag & drop con alternativa de botones, minimizar, layout en localStorage, indicador hace-Xs, tests 137/137 y compuertas en verde; desplegado en producción vía pipeline hasta `92de2ac`. **Queda T-07: QA del usuario + revisor fresh-eyes + tag (v0.3.0)** |
 
 Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 
