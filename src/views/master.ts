@@ -41,6 +41,7 @@ import {
 import { fetchLayout, loadLayout, newGroupId, saveLayout, saveLayoutRemote, type MasterGroup, type MasterLayout } from '../master-layout';
 import { CONDITION_CATALOG } from '../render/blocks';
 import { escapeHtml } from '../lib/manifest';
+import { dicePickerButtonHtml, dicePickerHtml, initDicePicker, rollDialogHtml } from './dice-picker';
 
 let onRowsCb: ((rows: Record<string, MasterRow>) => void) | null = null;
 let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
@@ -48,9 +49,15 @@ let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], container
     the header line already shows the active ones when collapsed). */
 const condBoxes = new Set<string>();
 
+/** Detaches the shared dice picker/roll dialog document listeners of
+    the PREVIOUS master view (Phase 17, D-61/D-63). */
+let detachMasterDice: (() => void) | null = null;
+
 export async function masterView(root: HTMLElement): Promise<void> {
   stopPolling();
   onRowsCb = null;
+  detachMasterDice?.();
+  detachMasterDice = null;
   layout = loadLayout(); // instant local cache; the REMOTE copy (D-59) arrives after init
   // Stale-mount guard (same pattern as overview): async work that
   // resolves after a newer navigation must not mount nor poll.
@@ -60,6 +67,8 @@ export async function masterView(root: HTMLElement): Promise<void> {
   <header class="appbar">
     <div class="appbar-home"><strong>FichaSS · Master</strong></div>
     <div class="appbar-main">
+      <!-- Phase 17 (D-61/D-63): quick dice picker trigger. -->
+      ${dicePickerButtonHtml()}
       <button type="button" class="chip" id="master-add-group">+ grupo</button>
       <button type="button" class="chip" id="master-refresh">Refrescar</button>
       <a class="chip" href="#/">← personajes</a>
@@ -70,7 +79,22 @@ export async function masterView(root: HTMLElement): Promise<void> {
       <span class="skeleton-line"></span>
       <span class="skeleton-line"></span>
     </div>
-  </main>`;
+  </main>
+  <!-- Phase 17 (D-61/D-62): shared roll dialog + quick dice picker
+       (dice-picker.ts), the same component the character sheet uses.
+       Pure table fun: the master session store is never touched. -->
+  ${rollDialogHtml()}
+  ${dicePickerHtml()}`;
+
+  // Quick dice (Phase 17): wired right after paint so the picker works
+  // even if the session store fails to load below. The controller's
+  // document listeners self-destruct on a stale mount (isConnected).
+  const dice = initDicePicker(root);
+  detachMasterDice = dice ? dice.destroy : null;
+  const diceTrigger = root.querySelector<HTMLButtonElement>('#dice-picker-btn');
+  diceTrigger?.addEventListener('click', () => {
+    if (dice && diceTrigger) dice.openPicker(diceTrigger);
+  });
 
   const rowsEl = root.querySelector<HTMLElement>('#master-rows');
   const refreshBtn = root.querySelector<HTMLButtonElement>('#master-refresh');

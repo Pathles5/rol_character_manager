@@ -460,3 +460,32 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Motivo:** una sola mecánica (deltas + clamp por documento + reintento 409) para todos los contadores; misma fuente de límites (session-schema).
 - **Riesgo:** ver "Riesgo aceptado" de la Amendment 2; sin realtime, la vista del jugador puede estar hasta 15 s atrás.
 - **supersedes:** la Decisión 1 original de la spec 16 (solo lectura de muerte saves/condiciones) y el bullet correspondiente de "Fuera de alcance".
+
+## D-61 · 2026-11-23 · Dados rápidos: gatillo en el appbar (ficha + master)
+
+- **Contexto:** Fase 17; petición del usuario (2026-11-20, durante la ingesta de Patx Vane) de tirar dados fuera de ataques/conjuros. Dónde vive el gatillo era decisión de producto.
+- **Opciones evaluadas:** appbar / botón flotante / chips en la ficha. Elección: **appbar** con OK del usuario (propose·validate).
+- **Elección:** botón de dado en `appbar-main` de la ficha de personaje Y de la vista master (elección del usuario en la misma pregunta), que abre un panel desplegable con el patrón backdrop/card del proyecto; la tirada reutiliza el diálogo de la Fase 11. Función de mesa pura: no toca `sessionState`.
+- **Motivo:** coherente con el vocabulario de diálogos existente; el flotante compite con el scroll de la ficha.
+- **Riesgo:** ninguno relevante; el picker comparte foco/accesibilidad con los diálogos existentes (I5).
+
+## D-62 · 2026-11-23 · Dados rápidos: constructor de fórmula (botones + input editable), no lista fija
+
+- **Contexto:** Fase 17; la propuesta inicial del orquestador era una lista fija de presets (1d4…1d100, 2d6).
+- **Elección (respuesta del usuario en propose·validate):** panel con un **botón por dado** (d4, d6, d8, d10, d12, d20, d100) que **alimenta un input de texto editable**: primera pulsación añade `1dX`, repetir sube el contador (`2d4`…), grupos ordenados por primera pulsación (d4 ×2 y d8 ×1 → `2d4 + 1d8`); el input acepta además escritura manual (`2d8 + 3d12`); botón **Lanzar** ejecuta la fórmula con la misma animación de la Fase 11, **un grupo animado por término** de la fórmula; fórmula inválida → error inline sin abrir el diálogo; vacía → sin efecto.
+- **Motivo:** más potencia con la misma UI; el usuario definió la interacción completa.
+- **Riesgo:** notación libre sin cota superior de dados (deuda heredada de `parseDamage`, D-44): una fórmula absurda tipo `999999999d6` puede congelar la pestaña — candidata a parche menor futuro, no bloqueante.
+
+## D-63 · 2026-11-23 · Alcance de la Fase 17: ficha + master
+
+- **Contexto:** Fase 17; si el desplegable vivía solo en la ficha del jugador o también en la vista master.
+- **Elección (usuario):** **ficha + master**. El master no tenía diálogo de tirada: se le añade el mismo diálogo con marcado/lógica compartidos (`src/views/dice-picker.ts`), sin duplicar; cableado antes del store de sesión para funcionar aunque falle.
+- **Motivo:** el master tira dados del grupo igual que el jugador; un solo componente evita divergencia.
+- **Riesgo:** ninguno; guardas de stale-mount respetadas en ambas vistas (el picker no sobrevive a una navegación).
+
+## D-64 · 2026-11-23 · Regla de percentil d10/d100 (adenda del usuario durante `implement`)
+
+- **Contexto:** Fase 17, Amendment 1 de la spec; el usuario recuerda la regla oficial de D&D 5e 2024: el d10 tiene caras 0–9 donde el 0 vale 10, y un d100 (percentil) son DOS d10 — decenas y unidades — donde el doble 0 es 100, no 0.
+- **Decisión:** internamente el roll sigue siendo 1..10; `dieFace` muestra la cara real (valor 10 → cara "0") y el total cuenta el valor. Un grupo `Nd100` se tira como N pares de d10 (decenas ×10 + unidades; doble 0 → **100**), mostrando los dos cuadrados etiquetados "decenas"/"unidades" con aria accesible. La notación que escribe el usuario sigue siendo `1d100` — es el roll/render quien la descompone. Aplica a todo grupo Nd10, incluida la ruta legacy (único cambio visual en tiradas antiguas: la cara 0–9 del d10/d100).
+- **Motivo:** fidelidad a las reglas de la mesa (el usuario es el validador).
+- **Riesgo:** el "¡fallo doble!" sigue reservado al `1d20` pelado de muerte (D-51 intacto); un d20 con valor 20 no sale de un d100 (testeado).

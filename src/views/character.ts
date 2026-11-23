@@ -16,7 +16,6 @@
    ============================================================ */
 
 import { BLOCK_CONFIG } from '../data/blockConfig';
-import { parseDamage, rollDice, rollFlavor } from '../dice';
 import { computeDerived } from '../derived';
 import { isModeId, setMode } from '../filters';
 import { escapeHtml } from '../lib/manifest';
@@ -37,10 +36,15 @@ import {
 import { initSync, notifyLocalChange, resolveLoadRemote, resolveOverwriteLocal, setSnapshotProvider, type SyncStatus } from '../sync';
 import type { Character } from '../types';
 import { validateCharacter } from '../validate';
+import { dicePickerButtonHtml, dicePickerHtml, initDicePicker, rollDialogHtml, trapTab } from './dice-picker';
 
 /** Detaches the document-level keydown handler of the PREVIOUS
     character view (the only listener that outlives its DOM). */
 let detachDetailKeydown: (() => void) | null = null;
+
+/** Detaches the shared dice picker/roll dialog document listeners of
+    the PREVIOUS character view (Phase 17, D-61). */
+let detachDicePicker: (() => void) | null = null;
 
 /** The sync listener is GLOBAL (registered once): notifyLocalChange
     filters snapshots of other characters by characterId. */
@@ -177,28 +181,6 @@ function handleDetailKeydown(event: KeyboardEvent): void {
   trapTab(event, detailSheet);
 }
 
-/** Generic Tab-cycle trap for a dialog (I5): used by the spell detail
-    sheet, the reset confirmation and the roll dialog. */
-function trapTab(event: KeyboardEvent, container: HTMLElement): void {
-  const focusable = container.querySelectorAll<HTMLElement>(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-  );
-  if (focusable.length === 0) {
-    event.preventDefault();
-    return;
-  }
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const active = document.activeElement;
-  if (event.shiftKey && (active === first || active === container)) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && active === last) {
-    event.preventDefault();
-    first.focus();
-  }
-}
-
 // --- Delegated card interactions (Phase 06) ---------------------------
 
 /** Handles one stepper button: action/target come from data
@@ -221,6 +203,8 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
   // body lock must go too.
   detachDetailKeydown?.();
   detachDetailKeydown = null;
+  detachDicePicker?.();
+  detachDicePicker = null;
   document.body.classList.remove('sheet-open');
 
   // Async navigation race (review major 2, Phase 10): this view's
@@ -287,6 +271,8 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <nav class="mode-tabs" aria-label="Modos de vista">
         ${modeButtonsHtml}
       </nav>
+      <!-- Phase 17 (D-61): quick dice picker trigger. -->
+      ${dicePickerButtonHtml()}
       <span id="sync-status" class="sync-dot" data-sync-status="disabled" role="status" tabindex="-1" aria-label="Estado de sincronización de la sesión" title="Sincronización"></span>
     </div>
   </header>
@@ -309,7 +295,7 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <button type="button" class="chip confirm-danger" id="reset-accept">Restablecer</button>
     </div>
   </section>
-  <!-- Phase 11 (D-44): dice roll dialog. Content mounted per roll. -->
+  <!-- Fase 15c: sync conflict toast (same a11y pattern as Reset). -->
   <div class="backdrop" id="conflict-backdrop" hidden></div>
   <section class="card confirm-dialog" id="conflict-toast" role="dialog" aria-modal="true" aria-labelledby="conflict-title" hidden>
     <h2 class="confirm-title" id="conflict-title">Conflicto de sincronización</h2>
@@ -319,16 +305,11 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <button type="button" class="chip confirm-danger" id="conflict-overwrite">Sobrescribir el mío</button>
     </div>
   </section>
-  <div class="backdrop" id="roll-backdrop" hidden></div>
-  <section class="card roll-dialog" id="roll-dialog" role="dialog" aria-modal="true" aria-labelledby="roll-title" hidden>
-    <h2 class="confirm-title" id="roll-title">Tirada</h2>
-    <div class="dice-row" id="roll-dice"></div>
-    <p class="roll-total" id="roll-total"></p>
-    <div class="confirm-actions">
-      <button type="button" class="chip" id="roll-close">Cerrar</button>
-      <button type="button" class="chip confirm-primary" id="roll-reroll">Tirar de nuevo</button>
-    </div>
-  </section>
+  <!-- Phase 11 (D-44) roll dialog + Phase 17 (D-61/D-62) quick dice
+       picker: shared markup/controller (dice-picker.ts), also used
+       by the master view. Content mounted per roll. -->
+  ${rollDialogHtml()}
+  ${dicePickerHtml()}
   <section class="sheet spell-sheet" id="detail-sheet" role="dialog" aria-modal="true" aria-label="Detalle de conjuro" hidden>
     <div class="handle" aria-hidden="true"></div>
     <button type="button" class="sheet-close" aria-label="Cerrar el detalle del conjuro">✕</button>
@@ -481,63 +462,21 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     closeReset();
   });
 
-  // Dice rolls (Phase 11, D-44): the dice button of each attack opens
-  // the roll dialog; content mounts per roll — the session is untouched.
-  const rollDialog = root.querySelector<HTMLElement>('#roll-dialog');
-  const rollBackdrop = root.querySelector<HTMLElement>('#roll-backdrop');
-  const rollTitle = root.querySelector<HTMLElement>('#roll-title');
-  const rollDiceRow = root.querySelector<HTMLElement>('#roll-dice');
-  const rollTotal = root.querySelector<HTMLElement>('#roll-total');
-  const closeRoll = (): void => {
-    if (rollDialog) rollDialog.hidden = true;
-    if (rollBackdrop) rollBackdrop.hidden = true;
-    document.removeEventListener('keydown', onRollKey);
-    rollOpener?.focus();
-    rollOpener = null;
-  };
-  const onRollKey = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      closeRoll();
-      return;
-    }
-    if (event.key !== 'Tab' || !rollDialog) return;
-    trapTab(event, rollDialog);
-  };
-  let rollOpener: HTMLButtonElement | null = null;
-  const renderRoll = (notation: string): void => {
-    const parsed = parseDamage(notation);
-    if (!parsed || !rollTitle || !rollDiceRow || !rollTotal) return;
-    const result = rollDice(parsed);
-    rollTitle.textContent = `Tirada · ${notation}`;
-    rollDiceRow.innerHTML = result.rolls
-      .map((value, index) => `<span class="die" style="animation-delay: ${index * 80}ms">${value}</span>`)
-      .join('');
-    // Roll flavor (Phase 13, D-51): natural 20 → crit cry; a bare
-    // death save (1d20) with natural 1 → double failure (2024).
-    const flavor = rollFlavor(notation, result.rolls);
-    const callout = flavor ? ` · ${flavor}` : '';
-    rollTotal.textContent = `${notation} → ${result.rolls.join(' + ')}${parsed.mod ? ` ${parsed.mod > 0 ? '+' : '−'} ${Math.abs(parsed.mod)}` : ''} = ${result.total}${callout}`;
-  };
-  const openRoll = (notation: string, opener: HTMLButtonElement): void => {
-    // Guard (review minor, Phase 11): never open the dialog for a
-    // notation that doesn't parse (would show stale/empty content).
-    if (!parseDamage(notation)) return;
-    rollOpener = opener;
-    if (rollDialog) rollDialog.dataset.notation = notation;
-    renderRoll(notation);
-    if (rollDialog) rollDialog.hidden = false;
-    if (rollBackdrop) rollBackdrop.hidden = false;
-    document.addEventListener('keydown', onRollKey);
-    root.querySelector<HTMLButtonElement>('#roll-close')?.focus();
-  };
+  // Dice rolls (Phase 11, D-44) + quick dice picker (Phase 17, D-61/
+  // D-62): ONE shared controller (dice-picker.ts) drives the roll
+  // dialog and the picker — the same component the master view uses.
+  // The sheet's dice buttons keep the legacy single-notation path
+  // (attacks/spells/initiative/saves/death intact); the appbar trigger
+  // opens the formula picker. The session is untouched (table fun).
+  const dice = initDicePicker(root);
+  detachDicePicker = dice ? dice.destroy : null;
+  const diceTrigger = root.querySelector<HTMLButtonElement>('#dice-picker-btn');
+  diceTrigger?.addEventListener('click', () => {
+    if (dice && diceTrigger) dice.openPicker(diceTrigger);
+  });
   root.querySelector<HTMLElement>('#sheet')?.addEventListener('click', event => {
     const btn = (event.target as Element | null)?.closest('.dice-btn');
-    if (btn instanceof HTMLButtonElement && btn.dataset.notation) openRoll(btn.dataset.notation, btn);
-  });
-  rollBackdrop?.addEventListener('click', closeRoll);
-  root.querySelector<HTMLButtonElement>('#roll-close')?.addEventListener('click', closeRoll);
-  root.querySelector<HTMLButtonElement>('#roll-reroll')?.addEventListener('click', () => {
-    if (rollDialog?.dataset.notation) renderRoll(rollDialog.dataset.notation);
+    if (btn instanceof HTMLButtonElement && btn.dataset.notation) dice?.openRoll(btn.dataset.notation, btn);
   });
 
   sheet?.addEventListener('click', event => {

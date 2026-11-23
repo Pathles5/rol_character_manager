@@ -991,6 +991,7 @@ main {
 
 .dice-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-3);
   margin: var(--space-3) 0;
@@ -1414,4 +1415,121 @@ main#app {
 /* Minimized row: only the head line. */
 .master-row.minimized .master-row-head {
   margin-bottom: 0;
+}
+
+/* ============================================================
+   Phase 17 additions — quick dice picker (D-61/D-62/D-63):
+   appbar trigger + centered formula builder + grouped roll
+   dialog (one animated cluster per NdX term, percentile pairs).
+   Tokens only; reuses the confirm-dialog/backdrop vocabulary.
+   No external resources (constitution I2).
+   ============================================================ */
+
+/* Appbar die trigger: same geometry as the sheet .dice-btn, without
+   its inline margin (the appbar gap handles spacing). */
+.appbar-dice {
+  margin-left: 0;
+}
+
+/* Die buttons row inside the picker (d4…d100 feed the input). */
+.dice-picker-dies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.dice-picker-die {
+  min-width: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-body);
+  line-height: 1.2;
+}
+
+.dice-picker-die:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Formula input + its small-caps label. */
+.dice-picker-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.dice-picker-input {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.dice-picker-input::placeholder {
+  color: var(--text-dim);
+}
+
+/* Keep the global :focus-visible outline (I5); add an accent border. */
+.dice-picker-input:focus {
+  border-color: var(--accent);
+}
+
+/* Inline formula error (D-62: no browser alert, no crash). */
+.dice-picker-error {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-dense);
+  color: var(--danger);
+}
+
+/* Grouped roll dialog: one labeled cluster per NdX term; the dice
+   inside a cluster tumble together (group-staggered delay). */
+.dice-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dice-group-label {
+  font-size: var(--text-dense);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-dim);
+}
+
+.dice-group-dies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Percentile (d100) pair: two squares labeled decenas / unidades. */
+.dice-pair {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.dice-pair-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.dice-pair-role {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-dim);
 }

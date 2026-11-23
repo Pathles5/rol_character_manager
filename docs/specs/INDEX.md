@@ -29,17 +29,17 @@ Convenciones:
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
 | 16 | Vista del Master (panel de grupo) | approved | **COMPLETA y APROBADA** (diseño validado por el usuario): edición con deltas relativos y reintento 409, muerte saves editables, condiciones editables, grupos drag & drop con alternativa de botones, minimizar, layout persistido en la BD de sesión, indicador hace-Xs, tests 144/144 y compuertas en verde; desplegado en producción vía pipeline. Enmienda 1 (D-59): layout del master persistido en la BD de sesión (id reservado master-layout) con caché local; Enmienda 2 (D-60): alcance editable completo (paridad con el jugador). Revisor fresh-eyes: corrección 1 aplicada (D1 flush serializado, D2 poll detenido, D3 enmiendas) + re-revisión PASS/GO; QA del usuario completado (8 tandas); límites conocidos anotados en la spec (sección Amendments). **tag v0.3.0** |
+| 17 | Dados custom rápidos | verified | Constructor de fórmula en el appbar de ficha y master (D-61/D-62/D-63): botones d4…d100 que alimentan un input editable, notación manual, Lanzar con un grupo animado por término; diálogo multi-grupo compartido (src/views/dice-picker.ts); regla de percentil d10/d100 con doble 0 → 100 (D-64, Amendment 1); tiradas legacy intactas; 166/166 tests; lint/build/check en verde; revisor PASS with remarks (majors resueltos: D-61–D-64 registradas, estado sincronizado; minors resueltos: test de presets, suite por orquestador); QA visual del usuario pendiente |
 
 Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 
-- **Dados custom rápidos**: desplegable con lista de dados (1d20, 2d6, 1d4, 1d100...) para tiradas rápidas fuera de ataques/conjuros - petición del usuario (2026-11-20, durante la ingesta de Patx Vane). Encaja con el diálogo de dados de la Fase 11.
 - **Upgrade del runtime Lambda a Node.js 26**: cuando AWS publique `nodejs26.x`, subir `Runtime` en `infra/session.yaml` y el `--target` de `npm run build:backend` (package.json) en el mismo cambio - petición del usuario (2026-11-23, Fase 15a). El bundle CJS de esbuild se ajusta a `--target=node26` sin más cambios.
 
-## Handoff de sesión (2026-11-23, cierre Fase 16)
+## Handoff de sesión (2026-11-23, cierre Fase 17)
 
-Estado al cerrar: **Fases 00–16 `approved`**; último tag **v0.3.0** (commit `60c02fc`); pipeline `deploy` SUCCESS (sitio + Lambda, run 45221115405); working tree limpio y pushed. La API de sesión y su tabla DynamoDB están en producción y verificadas (round-trip C1–C5 de Fase 15 + QA de Fase 16).
+Estado al cerrar: **Fases 00–16 approved + Fase 17 verified (QA pendiente); último tag v0.3.0** (commit `60c02fc`); pipeline `deploy` SUCCESS (sitio + Lambda, run 45221115405); working tree limpio y pushed. La API de sesión y su tabla DynamoDB están en producción y verificadas (round-trip C1–C5 de Fase 15 + QA de Fase 16).
 
-Siguiente paso natural: **dados custom rápidos** (primera fase futura del backlog) o lo que pida el usuario; arrancar por spec nueva (`docs/specs/17-...`) siguiendo §1 de AGENTS.md.
+Siguiente paso natural: **Fase 17 cerrando** (QA visual del usuario + posible tag); el siguiente pendiente del backlog es el **upgrade del runtime Lambda a `nodejs26.x`** cuando AWS lo publique.
 
 Deuda menor pendiente: idiomas de Uldrak/Nissa por confirmar con el usuario (viven en `questions` de sus JSON en `public/characters/`).
 
