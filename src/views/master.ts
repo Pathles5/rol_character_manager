@@ -21,6 +21,13 @@
    composition, order and minimized rows persist REMOTELY in the
    sessions table (reserved id `master-layout`, D-59) with the
    master's localStorage as cache/offline fallback.
+
+   Editable/read-only toggle (Fase 18, D-65/D-66/D-67): the appbar
+   chip "Editar" switches layout.editable (persisted like the rest
+   of the layout). OFF hides ONLY the stepper buttons produced by
+   steps() — values, death dots, inspiration, conditions and every
+   layout tool stay visible and interactive. Render-only: the
+   session store, pending deltas, flush and poll are untouched.
    ============================================================ */
 
 import type { SpellLevel } from '../types';
@@ -44,7 +51,7 @@ import { escapeHtml } from '../lib/manifest';
 import { dicePickerButtonHtml, dicePickerHtml, initDicePicker, rollDialogHtml } from './dice-picker';
 
 let onRowsCb: ((rows: Record<string, MasterRow>) => void) | null = null;
-let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+let layout: MasterLayout = { groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true };
 /** Row ids with the conditions box EXPANDED (transient UI state —
     the header line already shows the active ones when collapsed). */
 const condBoxes = new Set<string>();
@@ -69,6 +76,11 @@ export async function masterView(root: HTMLElement): Promise<void> {
     <div class="appbar-main">
       <!-- Phase 17 (D-61/D-63): quick dice picker trigger. -->
       ${dicePickerButtonHtml()}
+      <!-- Phase 18 (D-65/D-66): editable/read-only toggle. OFF hides
+           only the counter stepper buttons; persisted in master-layout.
+           Initial state from the local cache; the remote copy re-syncs
+           it after loadLayoutHybrid. -->
+      <button type="button" class="chip${layout.editable === false ? '' : ' active'}" id="master-editable" data-focus-key="master-editable" aria-pressed="${layout.editable !== false}" aria-label="Alternar modo editable de los contadores">Editar</button>
       <button type="button" class="chip" id="master-add-group">+ grupo</button>
       <button type="button" class="chip" id="master-refresh">Refrescar</button>
       <a class="chip" href="#/">← personajes</a>
@@ -99,6 +111,18 @@ export async function masterView(root: HTMLElement): Promise<void> {
   const rowsEl = root.querySelector<HTMLElement>('#master-rows');
   const refreshBtn = root.querySelector<HTMLButtonElement>('#master-refresh');
   const addGroupBtn = root.querySelector<HTMLButtonElement>('#master-add-group');
+  const editableBtn = root.querySelector<HTMLButtonElement>('#master-editable');
+
+  /** Keeps the toggle chip's pressed state in sync with layout.editable.
+      The appbar is OUTSIDE the rows repaint (renderRows only swaps
+      #master-rows), so the toggle keeps its DOM node and its focus
+      across mode switches and store emits (C7 pattern). */
+  const syncEditableToggle = (): void => {
+    if (!editableBtn) return;
+    const on = layout.editable !== false;
+    editableBtn.classList.toggle('active', on);
+    editableBtn.setAttribute('aria-pressed', String(on));
+  };
 
   /** Full re-render on every store emit; the focused control (if
       any) is restored by its data-focus-key so keyboard steering
@@ -271,11 +295,21 @@ export async function masterView(root: HTMLElement): Promise<void> {
     const loaded = await loadLayoutHybrid();
     if (stale()) return;
     layout = loaded; // assigned only when this mount is still current (review minor)
+    syncEditableToggle(); // the remote copy may differ from the local cache (D-66)
     await refreshAll();
     if (stale()) return;
     startPolling();
     refreshBtn?.addEventListener('click', () => void refreshAll());
     addGroupBtn?.addEventListener('click', () => createGroup());
+    editableBtn?.addEventListener('click', () => {
+      // Render-only mode switch (Fase 18, D-65/D-66): never touches the
+      // session store, pending deltas or the flush; the poll keeps going.
+      const editable = layout.editable !== false; // current mode (default ON)
+      layout.editable = !editable;
+      persist(); // same local + remote pattern as minimize/groups (D-59)
+      syncEditableToggle();
+      onRowsCb?.(getRows()); // existing full repaint; the toggle keeps focus
+    });
     rowsEl?.addEventListener('click', onClick);
     rowsEl?.addEventListener('change', onChange);
     rowsEl?.addEventListener('dragstart', onDragStart);
@@ -514,8 +548,11 @@ function groupHtml(
 }
 
 /** One stepper pair for a counter. ±1 buttons collapse to −/+;
-    other deltas keep their number (−10/+10). */
+    other deltas keep their number (−10/+10).
+    Read-only mode (Fase 18, D-65): the ONLY cut point — every stepper
+    (PG, temp, hit dice, slots, CD, resources) disappears, nothing else. */
 function steps(id: string, act: string, deltas: number[], label: (d: number) => string, value = ''): string {
+  if (layout.editable === false) return '';
   return deltas
     .map(d => {
       const key = `${id}:${act}:${value}:${d}`;

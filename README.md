@@ -5,6 +5,7 @@ App web estática (solo front) para que un jugador consulte las fichas de sus pe
 - N personajes servidos como JSON estáticos (`public/characters/*.json`); el nombre del archivo es el id.
 - Sin backend, sin recursos externos (fuentes auto-hospedadas), build 100 % estático subible a S3 sin CloudFront.
 - Dados custom rápidos: constructor de fórmula en el appbar de ficha y master (botones d4…d100 que alimentan un input editable + notación manual), animación por grupo y regla de percentil 5e 2024 (doble 0 → 100).
+- Toggle editable/solo-lectura en la master: oculta solo los steppers (+/−/±10), persistido entre dispositivos.
 - UI en español; código e identificadores en inglés.
 
 ## Requisitos

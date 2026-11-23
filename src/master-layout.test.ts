@@ -1,10 +1,11 @@
 /* ============================================================
-   FichaSS — master layout tests (Fase 16, spec C4/C5).
-   Pure normalization + localStorage roundtrip (jsdom storage).
+   FichaSS — master layout tests (Fase 16, spec C4/C5; Fase 18
+   editable flag, D-66). Pure normalization + local/remote
+   roundtrips of the layout contract.
    ============================================================ */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchLayout, normalizeLayout, resetLayoutVersionForTests, saveLayoutRemote } from './master-layout';
+import { fetchLayout, loadLayout, normalizeLayout, resetLayoutVersionForTests, saveLayout, saveLayoutRemote } from './master-layout';
 
 afterEach(() => {
   resetLayoutVersionForTests();
@@ -13,9 +14,9 @@ afterEach(() => {
 
 describe('normalizeLayout', () => {
   it('returns an empty layout for junk input (with "Sin grupo" first)', () => {
-    expect(normalizeLayout(undefined)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
-    expect(normalizeLayout(42)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
-    expect(normalizeLayout({ groups: 'nope' })).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
+    expect(normalizeLayout(undefined)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true });
+    expect(normalizeLayout(42)).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true });
+    expect(normalizeLayout({ groups: 'nope' })).toEqual({ groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true });
   });
 
   it('honours the container order and appends missing ids', () => {
@@ -82,6 +83,7 @@ describe('remote layout persistence (D-59)', () => {
       ungrouped: ['y'],
       minimized: ['x'],
       containerOrder: ['', 'g1'],
+      editable: true, // legacy remote payload without the flag → default ON
     });
   });
 
@@ -111,5 +113,51 @@ describe('remote layout persistence (D-59)', () => {
     const ok = await saveLayoutRemote('https://api', { groups: [], ungrouped: [], minimized: [], containerOrder: [''] });
     expect(ok).toBe(true);
     expect(patches).toBe(2);
+  });
+});
+
+describe('editable flag (Fase 18, D-66)', () => {
+  const base = { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+
+  it('defaults to true when absent or non-boolean (legacy layouts stay editable)', () => {
+    expect(normalizeLayout(base).editable).toBe(true);
+    expect(normalizeLayout({ ...base, editable: 'false' }).editable).toBe(true);
+    expect(normalizeLayout({ ...base, editable: 0 }).editable).toBe(true);
+    expect(normalizeLayout({ ...base, editable: null }).editable).toBe(true);
+  });
+
+  it('keeps explicit true and false', () => {
+    expect(normalizeLayout({ ...base, editable: true }).editable).toBe(true);
+    expect(normalizeLayout({ ...base, editable: false }).editable).toBe(false);
+  });
+
+  it('round-trips through the local cache (saveLayout → loadLayout)', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string): string | null => store.get(key) ?? null,
+        setItem: (key: string, value: string): void => { store.set(key, String(value)); },
+      },
+    });
+    saveLayout({ ...base, editable: false });
+    expect(loadLayout().editable).toBe(false);
+    saveLayout({ ...base, editable: true });
+    expect(loadLayout().editable).toBe(true);
+  });
+
+  it('round-trips through the session API (saveLayoutRemote → fetchLayout)', async () => {
+    let stored: unknown = null;
+    const fetchMock = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+      if (String(init?.method) === 'PATCH') {
+        stored = (JSON.parse(String(init?.body)) as { layout: unknown }).layout;
+        return new Response(JSON.stringify({ version: 1 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ layout: stored, version: 1 }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const ok = await saveLayoutRemote('https://api', { ...base, editable: false });
+    expect(ok).toBe(true);
+    const fetched = await fetchLayout('https://api');
+    expect(fetched?.editable).toBe(false);
   });
 });

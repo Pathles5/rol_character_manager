@@ -2,7 +2,8 @@
    FichaSS — master layout (Fase 16, D-58; remote since D-59).
 
    UI state of the MASTER view: group composition and row order,
-   plus which rows are minimized. PERSISTED IN THE SESSIONS TABLE
+   which rows are minimized, and the editable/read-only toggle
+   (Fase 18, D-66). PERSISTED IN THE SESSIONS TABLE
    under the reserved MASTER_LAYOUT_ID (user request, QA
    2026-11-23 — same API, same optimistic locking as sessions):
    the master's layout survives devices. localStorage stays as
@@ -25,17 +26,18 @@ export type MasterLayout = MasterLayoutData;
 
 const KEY = 'fichass-master-layout-v2';
 
-/** Legacy/local normalization: pure sanitize with empty fallback. */
+/** Legacy/local normalization: pure sanitize with empty fallback
+    (editable ON by default, Fase 18 D-66). */
 export function normalizeLayout(raw: unknown): MasterLayout {
-  return sanitizeMasterLayout(raw) ?? { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+  return sanitizeMasterLayout(raw) ?? { groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true };
 }
 
 export function loadLayout(): MasterLayout {
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? normalizeLayout(JSON.parse(raw)) : { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+    return raw ? normalizeLayout(JSON.parse(raw)) : { groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true };
   } catch {
-    return { groups: [], ungrouped: [], minimized: [], containerOrder: [''] };
+    return { groups: [], ungrouped: [], minimized: [], containerOrder: [''], editable: true };
   }
 }
 

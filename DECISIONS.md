@@ -489,3 +489,24 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Decisión:** internamente el roll sigue siendo 1..10; `dieFace` muestra la cara real (valor 10 → cara "0") y el total cuenta el valor. Un grupo `Nd100` se tira como N pares de d10 (decenas ×10 + unidades; doble 0 → **100**), mostrando los dos cuadrados etiquetados "decenas"/"unidades" con aria accesible. La notación que escribe el usuario sigue siendo `1d100` — es el roll/render quien la descompone. Aplica a todo grupo Nd10, incluida la ruta legacy (único cambio visual en tiradas antiguas: la cara 0–9 del d10/d100).
 - **Motivo:** fidelidad a las reglas de la mesa (el usuario es el validador).
 - **Riesgo:** el "¡fallo doble!" sigue reservado al `1d20` pelado de muerte (D-51 intacto); un d20 con valor 20 no sale de un d100 (testeado).
+
+## D-65 · 2026-11-23 · Toggle del master: en solo lectura solo desaparecen los steppers
+
+- **Contexto:** Fase 18; el usuario pide un toggle editable/solo-lectura en la vista master para una vista más limpia. La propuesta inicial del orquestador ocultaba también dots de muerte, inspiración y chips de condiciones.
+- **Elección (respuesta del usuario en propose·validate):** en solo lectura **solo desaparecen los botones "+", "−", "+10", "−10"** (steppers de `steps()`). Todo lo demás se deja: drag & drop, inspiración y dots ("que al final también tienen función visual"), condiciones, herramientas de layout, retry.
+- **Motivo:** los dots y la inspiración tienen función visual/lectura además de edición; el usuario quiere limpiar solo el ruido de los steppers.
+- **Riesgo:** ninguno; el corte es un único punto (`steps()` devuelve '' con `editable === false`), el handler delegado no consulta el modo.
+
+## D-66 · 2026-11-23 · Toggle del master persistido en master-layout, default editable ON
+
+- **Contexto:** Fase 18; dónde vive el estado del toggle y cuál es el default.
+- **Elección (usuario):** se persiste en el documento `master-layout` de la BD de sesión (mismo mecanismo D-59: `saveLayout` + `saveLayoutRemote`, remoto + caché local); **default editable ON**. Campo `editable?: boolean` en `MasterLayoutData`; el sanitizador devuelve `true` salvo `false` explícito (layouts antiguos intactos, backend sin cambios — usa el sanitizador compartido).
+- **Motivo:** cero infra nueva; coherente con grupos/minimizar; el comportamiento actual no cambia para nadie hasta que se desactive.
+- **Riesgo:** entre masters concurrentes gana la última escritura y sin realtime el segundo master no ve el cambio hasta recargar (heredado de D-59, aceptado). El toggle es solo UI: la API sigue aceptando escrituras en OFF (D-55).
+
+## D-67 · 2026-11-23 · Sin render especial de muerte/inspiración/condiciones en solo lectura
+
+- **Contexto:** Fase 18; la propuesta inicial planteaba dots estáticos, inspiración como texto y condiciones sin expansor en OFF.
+- **Elección:** el usuario remitió a su respuesta de D-65 ("ya respondí en la 1ª pregunta"): esos controles permanecen con su visual e interactividad actuales en ambos modos.
+- **Motivo:** consecuencia directa de D-65; menos código y menos divergencia entre modos.
+- **Riesgo:** ninguno.

@@ -170,6 +170,11 @@ export interface MasterLayoutData {
   minimized: string[];
   /** Display order of the containers themselves ('' = "Sin grupo"). */
   containerOrder: string[];
+  /** Master view mode (Fase 18, D-66): false hides ONLY the counter
+      stepper buttons (read-only projection for the table); every
+      other control stays interactive. Absent or non-boolean → true,
+      so legacy layouts keep the editable behaviour. */
+  editable?: boolean;
 }
 
 const LAYOUT_MAX_GROUPS = 20;
@@ -232,5 +237,13 @@ export function sanitizeMasterLayout(raw: unknown): MasterLayoutData | null {
   for (const id of ['', ...groups.map(g => g.id)]) {
     if (!containerOrder.includes(id)) containerOrder.push(id);
   }
-  return { groups, ungrouped, minimized: boundedStrings(data.minimized, LAYOUT_MAX_MEMBERS).filter(id => seen.has(id)), containerOrder };
+  return {
+    groups,
+    ungrouped,
+    minimized: boundedStrings(data.minimized, LAYOUT_MAX_MEMBERS).filter(id => seen.has(id)),
+    containerOrder,
+    // Fase 18 (D-66): only an explicit false enables read-only mode;
+    // absent or non-boolean values default to editable (legacy layouts).
+    editable: data.editable === false ? false : true,
+  };
 }
