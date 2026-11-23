@@ -18,6 +18,7 @@ export const CHARACTER_ID_PATTERN = /^[a-z0-9-]+$/;
 export type Route =
   | { name: 'overview' }
   | { name: 'character'; id: string }
+  | { name: 'master' }
   | { name: 'not-found' };
 
 /** Parses one location hash ('#', '' or '#/...' forms) into a
@@ -25,6 +26,7 @@ export type Route =
 export function parseHash(hash: string): Route {
   const path = hash.startsWith('#') ? hash.slice(1) : hash;
   if (path === '' || path === '/') return { name: 'overview' };
+  if (path === '/master') return { name: 'master' };
 
   const match = /^\/c\/([^/]+)$/.exec(path);
   if (match && CHARACTER_ID_PATTERN.test(match[1])) {

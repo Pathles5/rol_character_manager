@@ -21,6 +21,7 @@ import './assets/fonts/fonts.css';
 import { parseHash, type Route } from './router';
 import { overviewView } from './views/overview';
 import { characterView } from './views/character';
+import { masterView } from './views/master';
 
 /** Amiable not-found view (unknown hash paths): plain card with
     a way back, no crash and no partial content (D-35 spirit). */
@@ -48,6 +49,8 @@ async function mountRoute(app: HTMLElement, route: Route): Promise<void> {
     await overviewView(container);
   } else if (route.name === 'character') {
     await characterView(container, route.id);
+  } else if (route.name === 'master') {
+    await masterView(container);
   } else {
     notFoundView(container);
   }
