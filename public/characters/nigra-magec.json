@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Nigra Magec",
+    "race": "tiefling",
+    "class": "bardo",
+    "subclass": "Colegio del Saber",
+    "level": 4,
+    "background": "Charlatán",
+    "alignment": "Legal buena"
+  },
+  "abilities": {
+    "strength": 8,
+    "dexterity": 16,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 12,
+    "charisma": 18
+  },
+  "combat": {
+    "armorClass": 15,
+    "speed": 30,
+    "maxHitPoints": 36,
+    "hitDice": {
+      "die": "d8",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "dexterity",
+      "charisma"
+    ]
+  },
+  "skillProficiencies": [
+    "acrobatics",
+    "deception",
+    "intimidation",
+    "performance",
+    "sleight-of-hand",
+    "insight",
+    "persuasion",
+    "stealth"
+  ],
+  "skillExpertise": [
+    "persuasion",
+    "insight"
+  ],
+  "attacks": [
+    {
+      "id": "daga",
+      "name": "Daga",
+      "kind": "melee",
+      "bonus": 1,
+      "damage": "1d4-1",
+      "damageType": "perforante",
+      "note": "usada con Fuerza en la hoja · 6/18 m · alcance, arrojadiza, distancia, ligera, maestría: mellar, sutil"
+    },
+    {
+      "id": "ballesta-ligera",
+      "name": "Ballesta ligera",
+      "kind": "ranged",
+      "bonus": 5,
+      "damage": "1d8+3",
+      "damageType": "perforante",
+      "note": "24/96 m · a dos manos, alcance, distancia, maestría: ralentizar, munición, recarga"
+    }
+  ],
+  "traits": [
+    {
+      "id": "tiefling-vision-en-la-oscuridad",
+      "name": "Visión en la oscuridad",
+      "source": "Tiefling (Legado infernal)",
+      "description": "Tienes visión en la oscuridad hasta 18 metros."
+    },
+    {
+      "id": "tiefling-presencia-sobrenatural",
+      "name": "Presencia sobrenatural",
+      "source": "Tiefling (Legado infernal)",
+      "description": "Conoces el truco taumaturgia; al lanzarlo con este atributo usa tu aptitud mágica del Legado infernal."
+    },
+    {
+      "id": "tiefling-legado-infernal",
+      "name": "Legado infernal",
+      "source": "Tiefling (especie 2024)",
+      "description": "Resistencia al daño necrótico. Conoces el truco Toque helado; a nivel 3 aprendes Falsa vida y a nivel 5 Rayo debilitador."
+    },
+    {
+      "id": "bardo-aprendiz-de-mucho",
+      "name": "Aprendiz de mucho",
+      "source": "Bardo (nivel 4)",
+      "description": "Puedes sumar la mitad de tu bonificador de competencia a cualquier prueba que use una habilidad en la que NO seas competente (y que no use ya tu bonificador)."
+    },
+    {
+      "id": "bardo-inspiracion-bardica",
+      "name": "Inspiración bárdica",
+      "source": "Bardo (nivel 4)",
+      "description": "Acción adicional: das un dado de inspiración (1d6) a una criatura a 18 m o menos; cuando falle una prueba de d20 puede sumarlo. Usos: mod. de Carisma por descanso largo.",
+      "uses": 4
+    },
+    {
+      "id": "bardo-lanzamiento-de-conjuros",
+      "name": "Lanzamiento de conjuros",
+      "source": "Bardo (nivel 4)",
+      "description": "Conjuros con Carisma; para lanzarlos debes conocerlos y gastar un espacio igual o superior (salvo trucos). Lanzamiento ritual e instrumento como foco."
+    },
+    {
+      "id": "saber-magia-cautivadora",
+      "name": "Magia Cautivadora",
+      "source": "Colegio del Saber",
+      "description": "Siempre tienes preparados hechizar persona e imagen múltiple. Tras lanzar un conjuro de encantamiento o ilusionismo, puedes asustar o hechizar a una criatura a 18 m durante 1 minuto (TS SAB contra tu CD). 1 vez por descanso largo o gastando un uso de Inspiración bárdica."
+    },
+    {
+      "id": "saber-manto-de-inspiracion",
+      "name": "Manto de inspiración",
+      "source": "Colegio del Saber",
+      "description": "Acción adicional: gastas un uso de Inspiración bárdica y das PG temporales (el doble del dado tirado) a tantas criaturas a 18 m como tu mod. de Carisma; pueden usar su reacción para moverse sin provocar ataques de oportunidad."
+    },
+    {
+      "id": "dote-habilidoso",
+      "name": "Habilidoso",
+      "source": "Dote",
+      "description": "Ganas competencia en cualquier combinación de tres habilidades o herramientas que elijas."
+    }
+  ],
+  "spells": {
+    "castingAbility": "charisma",
+    "slotsMax": {
+      "1": 4,
+      "2": 3,
+      "3": 0
+    },
+    "cantrips": [
+      {
+        "id": "burla-danina",
+        "name": "Burla dañina",
+        "description": "TS SAB o 1d6 psíquico y desventaja en su siguiente ataque (sube 1d6 en niveles 5/11/17)",
+        "damage": "1d6"
+      },
+      {
+        "id": "mano-de-mago",
+        "name": "Mano de mago",
+        "description": "Mano espectral: manipula objetos, abre puertas; 9 m por uso, no ataca ni lleva más de 5 kg"
+      },
+      {
+        "id": "prestidigitacion",
+        "name": "Prestidigitación",
+        "description": "Efectos mágicos menores"
+      },
+      {
+        "id": "taumaturgia",
+        "name": "Taumaturgia",
+        "description": "Maravilla menor (del Legado infernal — Presencia sobrenatural)"
+      },
+      {
+        "id": "toque-helado",
+        "name": "Toque helado",
+        "description": "Ataque de conjuro cuerpo a cuerpo: 1d10 necrótico y el objetivo no se cura hasta tu próximo turno (sube 1d10 en niveles 5/11/17) — del Legado infernal",
+        "damage": "1d10"
+      }
+    ],
+    "prepared": [
+      {
+        "id": "falsa-vida",
+        "name": "Falsa vida",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "2d4+4 PG temporales (+5 por nivel superior) — aprendida por el Legado infernal (nivel 3)",
+        "damage": "2d4+4"
+      },
+      {
+        "id": "fuego-feerico",
+        "name": "Fuego feérico",
+        "level": 1,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "Luz feérica en un cubo de 6 m: TS DES o luz tenue, no pueden ser invisibles y los ataques contra ellos con ventaja"
+      },
+      {
+        "id": "hechizar-persona",
+        "name": "Hechizar persona",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "Humanoide: TS SAB (ventaja si lucha contra vosotros); hechizado hasta que termine o le hagáis daño — siempre preparada por Magia Cautivadora"
+      },
+      {
+        "id": "palabra-de-curacion",
+        "name": "Palabra de curación",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "2d4+4 PG a una criatura que veas (18 m); +2d4 por nivel superior",
+        "damage": "2d4+4"
+      },
+      {
+        "id": "risa-horrible",
+        "name": "Risa horrible",
+        "level": 1,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "TS SAB o derribada e incapacitada riendo; repite al final de turno o al recibir daño (ventaja si es por daño)"
+      },
+      {
+        "id": "susurros-discordantes",
+        "name": "Susurros discordantes",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "TS SAB o 3d6 psíquico y huye usando su reacción; si supera, mitad de daño",
+        "damage": "3d6"
+      },
+      {
+        "id": "calmar-emociones",
+        "name": "Calmar emociones",
+        "level": 2,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "Humanoides a 6 m: TS CAR; inmunidad a asustado/hechizado o indiferencia ante hostiles"
+      },
+      {
+        "id": "imagen-multiple",
+        "name": "Imagen múltiple",
+        "level": 2,
+        "source": "free",
+        "castTime": "acción",
+        "description": "3 duplicados que te imitan; al acertarte tiras 1d6 por duplicado, 3+ destruye uno — siempre preparada por Magia Cautivadora"
+      },
+      {
+        "id": "sordera-ceguera",
+        "name": "Sordera / Ceguera",
+        "level": 2,
+        "source": "free",
+        "castTime": "acción",
+        "description": "TS CON o cegada/ensordecida (a tu elección) 1 minuto; repite al final de sus turnos"
+      },
+      {
+        "id": "sugestion",
+        "name": "Sugestión",
+        "level": 2,
+        "source": "free",
+        "concentration": true,
+        "castTime": "acción",
+        "description": "TS SAB o sigue tu sugerencia razonable (8 h); termina si recibes daño"
+      }
+    ]
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "cuero tachonado (CA 12)"
+      },
+      {
+        "name": "útiles para falsificar"
+      }
+    ],
+    "inventory": [
+      {
+        "name": "disfraz"
+      },
+      {
+        "name": "ropas de calidad"
+      },
+      {
+        "name": "cuaderno de investigación"
+      },
+      {
+        "name": "tinta y pluma"
+      },
+      {
+        "name": "bolsa de monedas"
+      }
+    ],
+    "coins": {
+      "gp": 15,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [
+      "ligeras"
+    ],
+    "weapons": [
+      "armas sencillas"
+    ],
+    "tools": [
+      "instrumentos musicales"
+    ],
+    "languages": [
+      "común",
+      "infernal",
+      "élfico"
+    ]
+  },
+  "role": {
+    "summary": "Discípula de la enigmática Maelis Vaedra, formada en el arte del gesto velado: música, observación y sutileza para revelar verdades ocultas. Acusada del robo de Amanecer Velado —el abanico ceremonial que su mentora dejó tras su misteriosa desaparición—, viaja para descubrir la verdad y limpiar su nombre. Curiosa, perspicaz e elegantemente irónica: observa, analiza y habla con precisión; no busca humillar sino comprender. Reservada y enigmática, protege a quienes considera valiosos y empieza a ver en el grupo un lugar al que regresar.",
+    "tableNotes": [],
+    "questions": []
+  },
+  "allies": []
+}

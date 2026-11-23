@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Uldrak Puño Rojo",
+    "race": "orco",
+    "class": "bárbaro",
+    "subclass": "Sendero del Árbol del Mundo",
+    "level": 4,
+    "background": "Soldado",
+    "alignment": "Caótico neutral"
+  },
+  "abilities": {
+    "strength": 19,
+    "dexterity": 14,
+    "constitution": 15,
+    "intelligence": 10,
+    "wisdom": 12,
+    "charisma": 8
+  },
+  "combat": {
+    "armorClass": 18,
+    "speed": 30,
+    "maxHitPoints": 41,
+    "hitDice": {
+      "die": "d12",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "strength",
+      "constitution"
+    ]
+  },
+  "skillProficiencies": [
+    "athletics",
+    "perception",
+    "survival"
+  ],
+  "skillExpertise": [],
+  "attacks": [
+    {
+      "id": "hacha-de-mano",
+      "name": "Hacha de mano",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "cortante",
+      "note": "6/18 m · arrojadiza, distancia, ligera, maestría: molestar"
+    },
+    {
+      "id": "lanza",
+      "name": "Lanza",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "perforante",
+      "note": "6/18 m · alcance, arrojadiza, distancia, maestría: debilitar, versátil"
+    },
+    {
+      "id": "ballesta-ligera",
+      "name": "Ballesta ligera",
+      "kind": "ranged",
+      "bonus": 4,
+      "damage": "1d8+2",
+      "damageType": "perforante",
+      "note": "24/96 m · a dos manos, alcance, distancia, maestría: ralentizar, munición, recarga"
+    },
+    {
+      "id": "tumbabosques",
+      "name": "Tumbabosques",
+      "kind": "melee",
+      "bonus": 7,
+      "damage": "1d12+5",
+      "damageType": "cortante",
+      "note": "arma mágica (+1 al bonus y al daño) · maestría: derribar, versátil"
+    },
+    {
+      "id": "hacha-dos-manos",
+      "name": "Hacha a dos manos",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d12+4",
+      "damageType": "cortante",
+      "note": "a dos manos, maestría: hender, pesada"
+    }
+  ],
+  "traits": [
+    {
+      "id": "orco-vision-en-la-oscuridad",
+      "name": "Visión en la oscuridad",
+      "source": "Orco (especie 2024)",
+      "description": "Tienes visión en la oscuridad hasta 36 metros."
+    },
+    {
+      "id": "orco-aguante-incansable",
+      "name": "Aguante incansable",
+      "source": "Orco (especie 2024)",
+      "description": "Cuando tus PG llegan a 0 sin morir, recuperas 1 PG. Una vez por descanso largo.",
+      "uses": 1
+    },
+    {
+      "id": "orco-descarga-adrenalina",
+      "name": "Descarga de adrenalina",
+      "source": "Orco (especie 2024)",
+      "description": "Correr como acción adicional: obtienes PG temporales iguales a tu bono de competencia. Usos: bono de competencia por descanso largo.",
+      "uses": 2
+    },
+    {
+      "id": "barbaro-ataque-temerario",
+      "name": "Ataque temerario",
+      "source": "Bárbaro (nivel 4)",
+      "description": "En tu primera tirada de ataque del turno puedes atacar temerariamente: ventaja con Fuerza hasta tu siguiente turno, y los ataques contra ti también con ventaja."
+    },
+    {
+      "id": "barbaro-conocimiento-primigenio",
+      "name": "Conocimiento primigenio",
+      "source": "Bárbaro (nivel 4)",
+      "description": "Mientras estés enfurecido, canalizas poder primigenio en pruebas de Acrobacias, Intimidación, Percepción, Sigilo o Supervivencia."
+    },
+    {
+      "id": "barbaro-defensa-sin-armadura",
+      "name": "Defensa sin armadura",
+      "source": "Bárbaro (nivel 4)",
+      "description": "Sin armadura, tu CA base es 10 + DES + CON (válido también con escudo)."
+    },
+    {
+      "id": "barbaro-furia",
+      "name": "Furia",
+      "source": "Bárbaro (nivel 4)",
+      "description": "Acción adicional: ventaja en pruebas y TS de Fuerza, daño extra +2 en cuerpo a cuerpo con Fuerza y resistencia a contundente/perforante/cortante. No puedes lanzar conjuros ni concentrarte. 3 usos por descanso largo.",
+      "uses": 3
+    },
+    {
+      "id": "barbaro-maestria-armas",
+      "name": "Maestría con armas",
+      "source": "Bárbaro (nivel 4)",
+      "description": "Puedes usar las propiedades de maestría con 3 tipos de armas cuerpo a cuerpo sencillas o marciales de tu elección."
+    },
+    {
+      "id": "barbaro-sentir-peligro",
+      "name": "Sentir el peligro",
+      "source": "Bárbaro (nivel 4)",
+      "description": "Ventaja en las salvaciones de Destreza salvo que estés incapacitado."
+    },
+    {
+      "id": "arbol-vitalidad-del-arbol",
+      "name": "Vitalidad del árbol",
+      "source": "Sendero del Árbol del Mundo",
+      "description": "Al enfurecerte obtienes PG temporales igual a tu nivel de bárbaro; al inicio de tus turnos en furia, otra criatura a 3 m puede obtener PG temporales iguales a los d6 de daño de furia."
+    },
+    {
+      "id": "dote-maestro-armas-pesadas",
+      "name": "Maestro en armas pesadas",
+      "source": "Dote",
+      "description": "Fuerza +1 (máx. 20). Con armas pesadas: daño adicional igual a tu bono de competencia; tras un crítico o derribo, ataque con acción adicional."
+    },
+    {
+      "id": "dote-atacante-salvaje",
+      "name": "Atacante salvaje",
+      "source": "Dote",
+      "description": "1 vez por turno al acertar con un arma, tiras dos veces los dados de daño y usas el resultado que prefieras."
+    }
+  ],
+  "spells": {
+    "castingAbility": "strength",
+    "slotsMax": {
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    "cantrips": [],
+    "prepared": []
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "guarda del dragón +1 (CA 16)"
+      },
+      {
+        "name": "guanteletes de fuerza de ogro"
+      },
+      {
+        "name": "capa de protección (CA +?)"
+      }
+    ],
+    "inventory": [
+      {
+        "name": "pociones curativas mayores (4d4+4)",
+        "qty": 2
+      },
+      {
+        "name": "poción curativa (2d4+2)"
+      },
+      {
+        "name": "paquete de explorador"
+      },
+      {
+        "name": "aljaba"
+      },
+      {
+        "name": "flechas",
+        "qty": 40
+      },
+      {
+        "name": "juego de naipes"
+      },
+      {
+        "name": "útiles de sanador"
+      },
+      {
+        "name": "ropas de viaje"
+      }
+    ],
+    "coins": {
+      "gp": 0,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [
+      "ligeras",
+      "medias",
+      "escudos"
+    ],
+    "weapons": [
+      "armas sencillas",
+      "armas marciales"
+    ],
+    "tools": [],
+    "languages": [
+      "común",
+      "orco"
+    ]
+  },
+  "role": {
+    "summary": "Pendiente de escribir por el jugador.",
+    "tableNotes": [
+      "EXP: 939 (nivel 4)."
+    ],
+    "questions": [
+      "Idiomas pendientes de confirmar (la hoja no muestra la sección)."
+    ]
+  },
+  "allies": [],
+  "hiddenBlocks": [
+    "spells"
+  ]
+}

@@ -15,7 +15,7 @@ import { computeDerived } from '../derived';
 import type { Character } from '../types';
 import { renderSheet } from './sheet';
 
-const fixturePath = join(import.meta.dirname, '../../public/characters/character-demo.json');
+const fixturePath = join(import.meta.dirname, '../../tests/fixtures/character-demo.json');
 const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 const demoDerived = computeDerived(demoCharacter);
 

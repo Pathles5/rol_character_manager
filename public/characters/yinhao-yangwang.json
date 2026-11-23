@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Yinhao Yangwang",
+    "race": "humano",
+    "class": "monje",
+    "subclass": "Sendero de la Misericordia",
+    "level": 4,
+    "background": "Marinero",
+    "alignment": "Neutral buena"
+  },
+  "abilities": {
+    "strength": 8,
+    "dexterity": 18,
+    "constitution": 14,
+    "intelligence": 10,
+    "wisdom": 16,
+    "charisma": 8
+  },
+  "combat": {
+    "armorClass": 18,
+    "speed": 40,
+    "maxHitPoints": 33,
+    "hitDice": {
+      "die": "d8",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "strength",
+      "dexterity"
+    ]
+  },
+  "skillProficiencies": [
+    "acrobatics",
+    "stealth",
+    "medicine",
+    "perception",
+    "insight"
+  ],
+  "skillExpertise": [],
+  "attacks": [
+    {
+      "id": "baston",
+      "name": "Bastón",
+      "kind": "melee",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "contundente",
+      "note": "arma de monje (usa DES) · maestría: derribar, versátil · tras atacar, ataque desarmado con acción adicional"
+    }
+  ],
+  "traits": [
+    {
+      "id": "monje-artes-marciales",
+      "name": "Artes marciales",
+      "source": "Monje (nivel 4)",
+      "description": "Con arma de monje y sin armadura ni escudo: DES en lugar de FUE para ataque y daño, y el dado desarmado (1d6) en lugar del daño del arma. Tras atacar desarmado o con arma de monje, ataque desarmado con acción adicional."
+    },
+    {
+      "id": "monje-caida-lenta",
+      "name": "Caída lenta",
+      "source": "Monje (nivel 4)",
+      "description": "Reacción al caer: reduces el daño de la caída en 5 × tu nivel de monje."
+    },
+    {
+      "id": "monje-concentracion-de-monje",
+      "name": "Concentración de monje (PC)",
+      "source": "Monje (nivel 4)",
+      "description": "Puntos de Concentración (PC) iguales a tu nivel de monje; alimentan Defensa paciente, Paso del viento, Ráfaga de golpes, Mano de curación y Mano de la aflicción.",
+      "uses": 4
+    },
+    {
+      "id": "monje-defensa-paciente",
+      "name": "Defensa paciente",
+      "source": "Monje (nivel 4)",
+      "description": "Destrabarte como acción adicional; o gastando 1 PC, destrabarte y esquivar a la vez."
+    },
+    {
+      "id": "monje-defensa-sin-armadura",
+      "name": "Defensa sin armadura",
+      "source": "Monje (nivel 4)",
+      "description": "Sin armadura ni escudo: CA base 10 + DES + SAB."
+    },
+    {
+      "id": "monje-desviar-ataques",
+      "name": "Desviar ataques",
+      "source": "Monje (nivel 4)",
+      "description": "Reacción tras ser impactado por un arma a distancia: reduce el daño 1d10 + DES + nivel de monje; si lo reduces a 0, atrapas el proyectil (gasta 1 PC para devolverlo)."
+    },
+    {
+      "id": "monje-instrumentos-de-misericordia",
+      "name": "Instrumentos de misericordia",
+      "source": "Monje (nivel 4)",
+      "description": "Ganas competencia en Medicina y Perspicacia y con los útiles de herborista."
+    },
+    {
+      "id": "misericordia-mano-de-curacion",
+      "name": "Mano de curación",
+      "source": "Sendero de la Misericordia",
+      "description": "Acción de magia: gastas 1 PC y tocas a una criatura, que recupea tu dado de Artes marciales + mod. de SAB en PG. Puedes sustituir un ataque de Ráfaga de golpes por un uso gratis."
+    },
+    {
+      "id": "misericordia-mano-de-la-afliccion",
+      "name": "Mano de la aflicción",
+      "source": "Sendero de la Misericordia",
+      "description": "1 vez por turno al acertar un ataque sin armas: gastas 1 PC e infliges necrótico igual a tu dado de Artes marciales + mod. de SAB."
+    },
+    {
+      "id": "monje-metabolismo-asombroso",
+      "name": "Metabolismo asombroso",
+      "source": "Monje (nivel 4)",
+      "description": "1 vez por descanso largo, al tirar iniciativa: recuperas todos tus PC gastados y PG igual a tu dado de Artes marciales + tu nivel de monje.",
+      "uses": 1
+    },
+    {
+      "id": "monje-movimiento-sin-armadura",
+      "name": "Movimiento sin armadura",
+      "source": "Monje (nivel 4)",
+      "description": "Sin armadura ni escudo, tu velocidad aumenta +3 m (sube con niveles)."
+    },
+    {
+      "id": "monje-paso-del-viento",
+      "name": "Paso del viento",
+      "source": "Monje (nivel 4)",
+      "description": "Correr como acción adicional; o gastando 1 PC, destrabarte y correr a la vez con el salto duplicado ese turno."
+    },
+    {
+      "id": "monje-rafaga-de-golpes",
+      "name": "Ráfaga de golpes",
+      "source": "Monje (nivel 4)",
+      "description": "Gastando 1 PC, dos ataques sin armas como acción adicional."
+    },
+    {
+      "id": "dote-atacante-a-la-carga",
+      "name": "Atacante a la carga",
+      "source": "Dote",
+      "description": "FUE o DES +1 (máx. 20). Corriendo, velocidad +3 m; si corres 3 m en línea recta antes de un golpe cuerpo a cuerpo, añades 1d8 de daño o empujas 3 m (1 vez por turno)."
+    },
+    {
+      "id": "dote-maton-de-taberna",
+      "name": "Matón de taberna",
+      "source": "Dote",
+      "description": "Al acertar sin armas: 1d4 + mod. de FUE extra; un 1 en ataques sin armas se relanza; competencia con armas improvisadas; puedes empujar al objetivo 1 vez por turno."
+    }
+  ],
+  "spells": {
+    "castingAbility": "strength",
+    "slotsMax": {
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    "cantrips": [],
+    "prepared": []
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "herramientas de navegante"
+      },
+      {
+        "name": "útiles de cocinero"
+      },
+      {
+        "name": "capa de protección (CA +?)"
+      },
+      {
+        "name": "vendas de poder sin armas +1"
+      },
+      {
+        "name": "máscara Yin Yang"
+      }
+    ],
+    "inventory": [],
+    "coins": {
+      "gp": 0,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [],
+    "weapons": [
+      "armas sencillas",
+      "ballesta de mano",
+      "cimitarra",
+      "espada corta"
+    ],
+    "tools": [
+      "instrumentos musicales",
+      "útiles de herborista"
+    ],
+    "languages": [
+      "común",
+      "gnómico",
+      "mediano"
+    ]
+  },
+  "role": {
+    "summary": "Pendiente de escribir por el jugador.",
+    "tableNotes": [
+      "EXP: 2700 (nivel 4)."
+    ],
+    "questions": []
+  },
+  "allies": [],
+  "hiddenBlocks": [
+    "spells"
+  ]
+}

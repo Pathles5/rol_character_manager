@@ -2,20 +2,6 @@
   "schemaVersion": 1,
   "characters": [
     {
-      "id": "character-demo",
-      "name": "Seren Aldaard",
-      "class": "clériga",
-      "level": 5,
-      "initials": "SA"
-    },
-    {
-      "id": "dahna-voreio",
-      "name": "Dahna Voreio",
-      "class": "guerrera",
-      "level": 5,
-      "initials": "DV"
-    },
-    {
       "id": "elira",
       "name": "Elira",
       "class": "clériga",
@@ -23,18 +9,18 @@
       "initials": "E"
     },
     {
-      "id": "gorruk-piedraalta",
-      "name": "Gorruk Piedraalta",
-      "class": "bárbaro",
+      "id": "nigra-magec",
+      "name": "Nigra Magec",
+      "class": "bardo",
       "level": 4,
-      "initials": "GP"
+      "initials": "NM"
     },
     {
-      "id": "moss-ferrow",
-      "name": "Moss Ferrow",
-      "class": "pícaro",
+      "id": "nissa-marcaeco",
+      "name": "Nissa Marcaeco",
+      "class": "explorador",
       "level": 4,
-      "initials": "MF"
+      "initials": "NM"
     },
     {
       "id": "patx-vane",
@@ -42,6 +28,20 @@
       "class": "pícaro",
       "level": 4,
       "initials": "PV"
+    },
+    {
+      "id": "uldrak-puno-rojo",
+      "name": "Uldrak Puño Rojo",
+      "class": "bárbaro",
+      "level": 4,
+      "initials": "UPR"
+    },
+    {
+      "id": "yinhao-yangwang",
+      "name": "Yinhao Yangwang",
+      "class": "monje",
+      "level": 4,
+      "initials": "YY"
     }
   ]
 }

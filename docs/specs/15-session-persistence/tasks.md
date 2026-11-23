@@ -17,6 +17,6 @@
 
 ## 15c — Conflicto y pulido
 
-- [ ] T-10 Toast de conflicto 409 (cargar remoto / sobrescribir), patrón a11y del Reset (trapTab, Esc, foco).
-- [ ] T-11 QA manual móvil/escritorio (dos dispositivos + Reset + offline) (C10).
+- [x] T-10 Toast de conflicto 409 (dos botones: cargar remoto / sobrescribir el mío; Esc y backdrop = cargar remoto, patrón a11y del Reset con trapTab) + sync PAUSADO durante el conflicto (los changesets pendientes obsoletos se borran, nunca se ejecutan) — 12 tests del sync, 120/120.
+- [ ] T-11 QA manual móvil/escritorio (dos dispositivos + Reset + offline + conflicto) (C10) — **pendiente del usuario (partida real)**.
 - [ ] T-12 Revisor fresh-eyes de la fase (C11) + docs finales + tag (C12).

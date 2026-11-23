@@ -1,0 +1,1817 @@
+########## nigra (3 paginas) ##########
+===== nigra PAGINA 1 =====
+Nigra Magec
+NOMBRE DEL PERSONAJE
+Ctónico
+ESPECIE
+Bardo 4
+CLASE Y NIVEL
+Charlatán
+TRASFONDO
+4
+NIVEL
+PX
+BONO COMPETENCIA
++2
+INSPIRACIÓN
+
+INICIATIVA
++3
+VELOCIDAD
+9
+ 
+metros
+TAMAÑO
+Mediano
+PERCEPCIÓN PASIVA
+13
+HABILIDADES
+COMPETENCIAS E IDIOMAS
+Competencias:
+Competencias:
+- Armadura ligera, Armas sencillas,
+Instrumentos musicales
+Idiomas:
+Idiomas:
+Común, Infernal y élfico
+FUERZA
+MODIFICADOR
+ 
+PUNT
+ 
+-1
+ 
+Salvación
+DESTREZA
+MODIFICADOR
+ 
+PUNT
+ 
++5
+ 
+Salvación
+CONSTITUCIÓN
+MODIFICADOR
+ 
+PUNT
+ 
++1
+ 
+Salvación
+8
+
+16
+
+x
+x
+13
+
+INTELIGENCIA
+MODIFICADOR
+ 
+PUNT
+ 
+0
+ 
+Salvación
+SABIDURÍA
+MODIFICADOR
+ 
+PUNT
+ 
++1
+ 
+Salvación
+CARISMA
+MODIFICADOR
+ 
+PUNT
+ 
++6
+ 
+Salvación
+10
+
+12
+
+18
+
+x
+x
++5
+Acrobacias
+0
+Atletismo
++1
+Conoc. Arcano
++6
+Engaño
++1
+Historia
++6
+Interpretación
++5
+Intimidación
++2
+Investigación
++5
+Juego de Manos
+
+x
+x
+
+
+
+x
+x
+
+
+x
+x
+
+
+x
+x
+
+x
+x
++2
+Medicina
++1
+Naturaleza
++3
+Percepción
++5
+Perspicacia
++8
+Persuasión
++1
+Religión
++4
+Sigilo
++2
+Supervivencia
++2
+Trato con Animales
+
+
+
+x
+x
+
+x
+x
+
+x
+x
+
+
+
+
+ATAQUES Y LANZAMIENTO DE CONJUROS
+CLASE
+ARMADURA
+15
+ESCUDO
+
+PUNTOS DE GOLPE
+ACTUALES
+36
+MÁX.
+TEMP
+DADOS GOLPE
+GASTADOS
+4d8
+MÁXIMOS
+CANSANCIO
+SALVACIONES DE MUERTE
+
+-2
+
+-4
+
+-6
+
+-8
+
+-10
+
+ 
+ 
+ÉXITOS
+
+
+
+ 
+ 
+FALLOS
+
+
+
+Nombre
+Bonif
+Daño/Tipo
+Notas
+Daga
++1
+1d4 -1 perf.
+6/18 metros, 
+Alcance, Arrojadiza, Distancia,
+Ligera, Maestría: Mellar, Sutil
+Ballesta ligera
++5
+1d8 +3 perf.
+24/96 metros, 
+A dos manos, Alcance,
+Distancia, Maestría: Ralentizar, Munición,
+Recarga
+EQUIPO
+- 
+Cuero tachonado 
+CA 12
+- 
+Útiles para falsificar
+* Disfraz 
+* Ropas de Calidad 
+* Cuaderno de investigación 
+* Tinta y pluma 
+* Bolsa de monedas 
+(15po)
+RASGOS Y ATRIBUTOS
+Ctónico:
+Ctónico:
+- Visión en la oscuridad
+- Presencia sobrenatural
+- Ctónico
+Bardo Nivel 4:
+Bardo Nivel 4:
+- Aprendiz de mucho
+- Inspiración bárdica: Dado de bardo: 1d6
+- Lanzamiento de conjuros
+- Magia Cautivadora
+- Manto de inspiración
+Dotes:
+Dotes:
+- Habilidoso
+-1
++3
++1
+0
++1
++4
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== nigra PAGINA 2 =====
+Nigra Magec
+NOMBRE DEL PERSONAJE
+APARIENCIA
+Nigra Magec es una tiefling de figura esbelta y porte refinado, con piel de tono ciruela oscuro y sutiles
+matices violáceos. Su largo cabello negro, con discretos reflejos granates, cae en suaves ondas hasta media
+espalda, enmarcando unos rasgos finos y una mirada ámbar rojiza, intensa y analítica. Sus cuernos, finos y
+elegantemente curvados hacia atrás, acentúan su presencia serena y magnética. Viste un vestido oscuro de
+APARIENCIA
+NOTAS ADICIONALES
+Discípula de la enigmática Maelis Vaedra, Nigra Magec fue formada en el arte del gesto velado: una disciplina
+donde música, observación y sutileza se convierten en herramientas para revelar verdades ocultas. Tras la
+misteriosa desaparición de su mentora, fue acusada de haber robado Amanecer Velado, el abanico ceremonial
+que Maelis dejó atrás. Convencida de que su desaparición guarda relación con antiguos símbolos vinculados a la
+fortuna, Nigra emprendió un viaje para descubrir la verdad y limpiar su nombre. Curiosa, perspicaz y
+elegantemente irónica, rara vez actúa impulsivamente: observa, analiza y habla con precisión. No busca humillar ni
+dominar, sino comprender. Aunque mantiene una apariencia reservada y enigmática, protege a quienes considera
+valiosos y empieza a descubrir que el grupo puede convertirse en algo más que compañeros de camino: un lugar
+al que regresar.
+HISTORIA DEL PERSONAJE
+Especie: Ctónico
+Especie: Ctónico
+
+ 
+Visión en la oscuridad:
+Visión en la oscuridad:
+ 
+Tienes visión en la oscuridad hasta 18 metros.
+
+ 
+Presencia sobrenatural:
+Presencia sobrenatural:
+ 
+Conoces el truco taumaturgia. Cuando lo lances con este atributo, el conjuro utiliza la
+misma aptitud mágica que la de tu atributo Legado infernal.
+
+ 
+Ctónico:
+Ctónico:
+ 
+Tienes resistencia al daño necrótico. También conoces el truco Toque helado. A nivel 3 aprendes el
+conjuro Falsa vida y a nivel 5 Rayo debilitador.
+Bardo Nivel 4
+Bardo Nivel 4
+
+ 
+Aprendiz de mucho:
+Aprendiz de mucho:
+ 
+Puedes sumar la mitad de tu bonificador por competencia a cualquier prueba de
+característica que hagas que utilice una habilidad en la que no seas competente y que no use de otro modo tu
+bonificador por competencia.
+
+ 
+Inspiración bárdica:
+Inspiración bárdica:
+ 
+Usa una acción adicional otorga un dado de inspiración de bardo a una criatura a menos
+de 18 metros. Cuando falle una prueba de d20, puede sumar el resultado del dado a la prueba. Puedes usarlo
+tantas veces como tu mod. de Carisma (mínimo 1) / descanso largo.
+- Dado de bardo: 1d6
+
+ 
+Lanzamiento de conjuros:
+Lanzamiento de conjuros:
+ 
+Puedes lanzar conjuros utilizando tu Carisma. Al subir de nivel conoces más conjuros
+que puedes lanzar. Para lanzar un conjuro debes conocerlo y gastar un espacio de conjuro igual al nivel de
+conjuro o superior (salvo trucos). Puedes utilizar lanzamiento ritual. Puedes usar un instrumento como foco.
+
+ 
+Magia Cautivadora:
+Magia Cautivadora:
+ 
+Siempre tienes preparados hechizar persona e imagen múltiple. Tras lanzar un conjuro de
+encantamiento o ilusionismo, puedes intentar asustar o hechizar a una criatura a 18 metros por 1 minuto
+(salvación de Sabiduría CD conjuro). Una vez por descanso largo o usando Inspiración bárdica.
+
+ 
+Manto de inspiración:
+Manto de inspiración:
+ 
+Como acción adicional, puedes gastar un uso de tu Inspiración Bárdica para dar puntos
+de golpe temporales (el doble del dado tirado) a un número de criaturas a 18 metros igual a tu modificador de
+Carisma. Luego, esas criaturas pueden usar su reacción para moverse sin provocar ataques de oportunidad.
+Dotes
+Dotes
+
+ 
+Habilidoso:
+Habilidoso:
+ 
+Ganas competencia en cualquier combinación de tres habilidades o herramientas que elijas.
+RASGOS
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== nigra PAGINA 3 =====
+ESPACIOS DE CONJURO
+Nigra Magec
+NOMBRE DEL PERSONAJE
+Bardo
+CLASE SORTÍLEGA
+Carisma
+CARACTERÍSTICA MÁGICA
+14
+CD SALVACIÓN
+CONJUROS
++6
+BONIF. ATAQUE
+CONJUROS
+NIVEL 1
+4
+
+
+
+
+NIVEL 2
+3
+
+
+
+NIVEL 3
+NIVEL 4
+NIVEL 5
+NIVEL 6
+NIVEL 7
+NIVEL 8
+NIVEL 9
+CONJUROS
+7
+PREPARADOS
+TRUCOS
+3
+CONOCIDOS
+PREP NIVEL
+NOMBRE
+ESCUELA
+TIEMPO LANZAMIENTO
+DURACIÓN
+ALCANCE
+COMPS
+Truco
+Burla dañina
+Burla dañina
+Encantamiento
+1 acción
+Instantáneo
+18 metros
+V
+Insultas mágicamente a una criatura, que debe superar una TS de Sabiduría o sufrir 1d6 puntos de daño psíquico y tener desventaja en la siguiente tirada de ataque. El
+daño aumenta a nivel 5 (2d6), a nivel 11 (3d6) y a nivel 17 (4d6).
+Truco
+Mano de mago
+Mano de mago
+Conjuración
+1 acción
+1 minuto
+9 metros
+V, S
+Una mano espectral aparece flotando. Puedes usar una acción de magia para controlarla, manipular un objeto, abrir una puerta. etc. Puedes moverla 9 metros cada vez
+que la usas. No puede atacar, activar objetos mágicos ni transportar más de 5 kg.
+Truco
+Prestidigitación
+Prestidigitación
+Transmutación
+1 acción
+1 hora
+3 metros
+V, S
+Efectos mágicos menores: efecto sensorial (como chispas, viento, música suave, olor), encender/apagar fuego, limpiar/ensuciar objeto, enfriar/calentar o dar sabor a un
+material inerte, añadir color, una marca o símbolo a un objeto o crear baratija o ilusión menor.
+Truco
+Taumaturgia
+Taumaturgia
+Transmutación
+1 acción
+1 minuto
+9 metros
+V
+Realizas una maravilla menor dentro del alcance: tu voz retumba hasta 3 veces más; las llamas titilan, se avivan, debilitan o cambian de color; provocas temblores
+inofensivos; creas un sonido en un punto; una puerta o ventana se abre o cierra de golpe o cambias tus ojos.
+Truco
+Toque helado
+Toque helado
+Nigromancia
+1 acción
+Instantáneo
+Toque
+V, S
+Canalizas un frío sepulcral y haces un ataque de conjuro cuerpo a cuerpo. Si impacta, infliges 1d10 de daño necrótico y el objetivo no puede curarse hasta tu próximo
+turno. El daño aumenta a 2d10 (nivel 5), 3d10 (nivel 11) y 4d10 (nivel 17).
+
+1
+Falsa vida
+Falsa vida
+Nigromancia
+1 acción
+Instantáneo 1 hora
+Personal
+V, S, M
+Obtienes 2d4 + 4 puntos de golpe temporales. Obtienes 5 puntos de golpe temporales adicionales por cada nivel por encima de 1 que tenga el espacio.
+
+1
+Fuego feérico
+Fuego feérico
+Evocación
+1 acción
+Concentración 1 minuto
+18 metros
+V
+Iluminas con luz azul, verde o violeta un cubo de 6 metros dentro del alcance. Las criaturas que fallen una salvación de Destreza y los objetos del área emiten luz tenue
+de 3 metros. Mientras dure el conjuro, no pueden ser invisibles y los ataques contra ellos tienen ventaja si son visibles.
+
+1
+Hechizar persona
+Hechizar persona
+Encantamiento
+1 acción
+1 hora
+9 metros
+V, S
+Un humanoide que puedas ver hace una TS SAB (con ventaja si lucha contra vosotros). Si falla estará hechizado hasta que termine el conjuro o le hagáis daño y sabrá
+que le hechizaste. Una criatura adicional por cada espacio de conjuro por encima de 1.
+
+1
+Palabra de curación
+Palabra de curación
+Abjuración
+1 acción adicional
+Instantáneo
+18 metros
+V
+Una criatura de tu elección que puedas ver dentro del alcance recupera una cantidad de puntos de golpe igual a 2d4 más tu modificador por aptitud mágica. La curación
+aumenta en 2d4 por cada nivel por encima de 1 que tenga el espacio.
+
+1
+Risa horrible
+Risa horrible
+Encantamiento
+1 acción
+Concentración 1 minuto
+9 metros
+V, S, M
+Una criatura visible dentro del alcance debe hacer una tirada de salvación de Sabiduría. Si falla, queda derribada e incapacitada, riendo incontrolablemente si puede hacerlo.
+Al final de sus turnos o al recibir daño, repite la tirada (con ventaja si fue por daño) para terminar el efecto.
+
+1
+Susurros discordantes
+Susurros discordantes
+Encantamiento
+1 acción
+Instantáneo
+18 metros
+V
+Una criatura visible dentro del alcance oye una melodía mental discordante. Debe hacer una tirada de salvación de Sabiduría: si falla, recibe 3d6 de daño psíquico y usa su
+reacción para alejarse de ti por la ruta más segura; si la supera, recibe solo la mitad del daño.
+
+2
+Calmar emociones
+Calmar emociones
+Encantamiento
+1 acción
+Concentración 1 minuto
+18 metros
+V, S
+Cada humanoide en un radio de 6 metros hace salvación de CAR. Al fallar, eliges uno: obtiene inmunidad a asustado y hechizado (suprimiendo efectos existentes) o se
+vuelve indiferente hacia criaturas hostiles elegidas hasta recibir o presenciar daño; al finalizar el conjuro, todo vuelve a la normalidad.
+
+2
+Imagen múltiple
+Imagen múltiple
+Ilusionismo
+1 acción
+1 minuto
+Personal
+V, S
+Creas 3 duplicados de ti que te imitan. Cuanto te acierten una tirada de ataque, lanza 1d6 por cada uno de tus duplicados restantes. Si cualquier resultado es de 3 o más,
+uno de los duplicados recibe el ataque y es destruido. El conjuro acaba si son destruidos los tres.
+
+2
+Sordera / Ceguera
+Sordera / Ceguera
+Transmutación
+1 acción
+1 minuto
+9 metros
+V
+Una criatura que puedas ver dentro del alcance deberá superar una TS CON o tendrá el estado de cegada o ensordecida (a tu elección) hasta que el conjuro termine. Al
+final de cada uno de sus turnos, el objetivo repite la tirada de salvación y, si tiene éxito, se librará del conjuro.
+
+2
+Sugestión
+Sugestión
+Encantamiento
+1 acción
+Concentración 8 horas
+9 metros
+V, M
+Sugieres mágicamente a una criatura un curso de acción que suene razonable . Si falla una TS de Sabiduría, lo seguirá lo mejor que pueda. Puedes establecer una
+condición que activará la tarea. El conjuro termina si tú o tus compañeros dañáis al objetivo. No afecta a criaturas inmunes a hechizar.
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+########## uldrak (2 paginas) ##########
+===== uldrak PAGINA 1 =====
+Uldrak puño rojo
+NOMBRE DEL PERSONAJE
+Orco
+ESPECIE
+Bárbaro 4
+CLASE Y NIVEL
+Soldado
+TRASFONDO
+4
+NIVEL
+939
+PX
+BONO COMPETENCIA
++2
+INSPIRACIÓN
+
+INICIATIVA
++2
+VELOCIDAD
+9
+ 
+metros
+TAMAÑO
+Mediano
+PERCEPCIÓN PASIVA
+13
+HABILIDADES
+COMPETENCIAS E IDIOMAS
+Competencias:
+Competencias:
+- Armadura intermedia, Armadura ligera,
+Armas marciales, Armas sencillas, Escudo
+FUERZA
+MODIFICADOR
+ 
+PUNT
+ 
++6
+ 
+Salvación
+DESTREZA
+MODIFICADOR
+ 
+PUNT
+ 
++2
+ 
+Salvación
+CONSTITUCIÓN
+MODIFICADOR
+ 
+PUNT
+ 
++4
+ 
+Salvación
+19
+
+x
+x
+14
+
+15
+
+x
+x
+INTELIGENCIA
+MODIFICADOR
+ 
+PUNT
+ 
+0
+ 
+Salvación
+SABIDURÍA
+MODIFICADOR
+ 
+PUNT
+ 
++1
+ 
+Salvación
+CARISMA
+MODIFICADOR
+ 
+PUNT
+ 
+-1
+ 
+Salvación
+10
+
+12
+
+8
+
++2
+Acrobacias
++6
+Atletismo
+0
+Conoc. Arcano
+-1
+Engaño
+0
+Historia
+-1
+Interpretación
++1
+Intimidación
+0
+Investigación
++2
+Juego de Manos
+
+
+x
+x
+
+
+
+
+
+x
+x
+
+
++1
+Medicina
+0
+Naturaleza
++3
+Percepción
++1
+Perspicacia
+-1
+Persuasión
+0
+Religión
++2
+Sigilo
++3
+Supervivencia
++1
+Trato con Animales
+
+
+
+x
+x
+
+
+
+
+
+x
+x
+
+ATAQUES Y LANZAMIENTO DE CONJUROS
+CLASE
+ARMADURA
+18
+ESCUDO
+
+PUNTOS DE GOLPE
+ACTUALES
+41
+MÁX.
+TEMP
+DADOS GOLPE
+GASTADOS
+4d12
+MÁXIMOS
+CANSANCIO
+SALVACIONES DE MUERTE
+
+-2
+
+-4
+
+-6
+
+-8
+
+-10
+
+ 
+ 
+ÉXITOS
+
+
+
+ 
+ 
+FALLOS
+
+
+
+Nombre
+Bonif
+Daño/Tipo
+Notas
+Hacha de mano
++6
+1d6 +4 cort.
+6/18 metros, 
+Arrojadiza, Distancia, Ligera,
+Maestría: Molestar
+Lanza
++6
+1d6 +4 perf.
+6/18 metros, 
+Alcance, Arrojadiza, Distancia,
+Maestría: Debilitar, Versátil
+Ballesta ligera
++4
+1d8 +2 perf.
+24/96 metros, 
+A dos manos, Alcance,
+Distancia, Maestría: Ralentizar, Munición,
+Recarga
+Tumbabosques
++7
+1d12 +5 cort.
+Maestría: Derribar, Versátil
+Hacha a dos manos
++6
+1d12 +4 cort.
+A dos manos, Maestría: Hender, Pesada
+EQUIPO
+- 
+guarda del dragon +1 
+CA 16
+- 
+Guanteletes de fuerza de ogro
+- 
+Capa de protección 
+CA
+2 pocion curativa mayor (4d4+4) 
+1 pocion curativa (2d4+2) 
+paquete explorador 
+aljaba 
+40 flechas 
+juego naipes 
+utiles sanador 
+ropas de viaje 
+RASGOS Y ATRIBUTOS
+Orco:
+Orco:
+- Visión en la oscuridad
+- Aguante incansable
+- Descarga de adrenalina
+Bárbaro Nivel 4:
+Bárbaro Nivel 4:
+- Ataque temerario
+- Conocimiento primigenio
+- Defensa sin armadura
+- Furia: 3 veces/día, +2 daño
+- Maestría con armas: 3 maestría con armas
+- Sentir el peligro
+- Vitalidad el árbol
+Dotes:
+Dotes:
+- Maestro en armas pesadas
+- Atacante salvaje
++4
++2
++2
+0
++1
+-1
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== uldrak PAGINA 2 =====
+Uldrak puño rojo
+NOMBRE DEL PERSONAJE
+APARIENCIA
+APARIENCIA
+NOTAS ADICIONALES
+HISTORIA DEL PERSONAJE
+Especie: Orco
+Especie: Orco
+
+ 
+Visión en la oscuridad:
+Visión en la oscuridad:
+ 
+Tienes visión en la oscuridad hasta 36 metros.
+
+ 
+Aguante incansable:
+Aguante incansable:
+ 
+Cuando tus puntos de golpe se reducen a 0 pero no mueres inmediatamente, puedes
+recuperar 1 punto de golpe. Cuando uses este atributo, no podrás volver a hacerlo hasta que finalices un
+descanso largo.
+
+ 
+Descarga de adrenalina:
+Descarga de adrenalina:
+ 
+Puedes llevar a cabo la acción de correr como acción adicional. Cuando lo hagas,
+obtendrás una cantidad de puntos de golpe temporales igual a tu bonificador por competencia. 
+Puedes usar
+este atributo una cantidad de veces igual a tu bonificador por competencia y recuperas todos los usos tras
+fin...
+Bárbaro Nivel 4
+Bárbaro Nivel 4
+
+ 
+Ataque temerario:
+Ataque temerario:
+ 
+Cuando vayas a realizar la primera tirada de ataque de tu turno, puedes decidir atacar
+temerariamente. Tienes ventaja en las tiradas de ataque que utilicen la Fuerza hasta el principio de tu siguiente
+turno, pero las tiradas de ataque contra ti también tendrán ventaja.
+
+ 
+Conocimiento primigenio:
+Conocimiento primigenio:
+ 
+Mientras estés enfurecido, puedes canalizar el poder primigenio cuando intentes
+determinadas tareas. Siempre que hagas una prueba de característica con una de las siguientes habilidades:
+Acrobacias, Intimidación, Percepción, Sigilo o Supervivencia.
+
+ 
+Defensa sin armadura:
+Defensa sin armadura:
+ 
+Mientras no lleves armadura alguna, tu clase de armadura base será igual a 10 más
+tus modificadores por Destreza y Constitución. Obtienes este beneficio aunque lleves un escudo.
+
+ 
+Furia:
+Furia:
+ 
+Puedes entrar en furia como acción adicional. Consigues ventaja en las pruebas y TS de Fuerza. Al
+hacer ataques cuerpo a cuerpo usando Fuerza, consigues un bonificador al daño. Tienes resistencia al daño
+contundente, perforante y cortante. No puedes lanzar conjuros ni concentrarte.
+- 3 veces/día, +2 daño
+
+ 
+Maestría con armas:
+Maestría con armas:
+ 
+Tu entrenamiento con armas te permite utilizar las propiedades de maestría con dos
+tipos de armas cuerpo a cuerpo sencillas o marciales de tu elección.
+- 3 maestría con armas
+
+ 
+Sentir el peligro:
+Sentir el peligro:
+ 
+Eres capaz de percibir de forma casi sobrenatural cuándo las cosas no son como deberían.
+Gracias a ello, se te da bien evitar el peligro. Tienes ventaja en las tiradas de salvación de Destreza salvo que
+tengas el estado de incapacitado.
+
+ 
+Vitalidad el árbol:
+Vitalidad el árbol:
+ 
+Cuando te enfurezcas, obtendrás una cantidad de puntos de golpe temporales igual a tu nivel
+de bárbaro. Al principio de cada uno de tus turnos mientras estés enfurecido, puedes elegir a otra criatura a 3
+metros o menos de ti para que obtenga PG temporales iguales a tantos d6 de daño de furia.
+Dotes
+Dotes
+
+ 
+Maestro en armas pesadas:
+Maestro en armas pesadas:
+ 
+Aumenta Fuerza en 1 (máx. 20). Con armas pesadas, causas daño adicional igual
+a tu bonificador por competencia. Tras un crítico o derribar a una criatura, puedes atacar de nuevo con acción
+adicional.
+
+ 
+Atacante salvaje:
+Atacante salvaje:
+ 
+Te has preparado para asestar golpes especialmente dañinos. Uno vez por turno, cuando
+aciertes a un objetivo con un arma, podrás tirar dos veces los dados de daño del arma y usar el resultado que
+prefieras contra el objetivo.
+RASGOS
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+########## nissa (3 paginas) ##########
+===== nissa PAGINA 1 =====
+Nissa Marcaeco
+NOMBRE DEL PERSONAJE
+Gnomo de los bosque
+ESPECIE
+Explorador 4
+CLASE Y NIVEL
+Explorador de ruinas
+TRASFONDO
+4
+NIVEL
+1751
+PX
+BONO COMPETENCIA
++2
+INSPIRACIÓN
+
+INICIATIVA
++5
+VELOCIDAD
+9
+ 
+metros
+TAMAÑO
+Pequeño
+PERCEPCIÓN PASIVA
+13
+HABILIDADES
+COMPETENCIAS E IDIOMAS
+Competencias:
+Competencias:
+- Armadura intermedia, Armadura ligera,
+Armas marciales, Armas sencillas, Escudo
+FUERZA
+MODIFICADOR
+ 
+PUNT
+ 
++3
+ 
+Salvación
+DESTREZA
+MODIFICADOR
+ 
+PUNT
+ 
++5
+ 
+Salvación
+CONSTITUCIÓN
+MODIFICADOR
+ 
+PUNT
+ 
++1
+ 
+Salvación
+12
+
+x
+x
+16
+
+x
+x
+13
+
+INTELIGENCIA
+MODIFICADOR
+ 
+PUNT
+ 
+0
+ 
+Salvación
+SABIDURÍA
+MODIFICADOR
+ 
+PUNT
+ 
++3
+ 
+Salvación
+CARISMA
+MODIFICADOR
+ 
+PUNT
+ 
+0
+ 
+Salvación
+10
+
+16
+
+10
+
++3
+Acrobacias
++5
+Atletismo
+0
+Conoc. Arcano
+0
+Engaño
+0
+Historia
+0
+Interpretación
+0
+Intimidación
++2
+Investigación
++5
+Juego de Manos
+
+
+x
+x
+
+
+
+
+
+
+x
+x
+
+x
+x
++5
+Medicina
+0
+Naturaleza
++3
+Percepción
++5
+Perspicacia
+0
+Persuasión
+0
+Religión
++5
+Sigilo
++3
+Supervivencia
++3
+Trato con Animales
+
+x
+x
+
+
+
+x
+x
+
+
+
+x
+x
+
+
+ATAQUES Y LANZAMIENTO DE CONJUROS
+CLASE
+ARMADURA
+15
+ESCUDO
+
+PUNTOS DE GOLPE
+ACTUALES
+34
+MÁX.
+TEMP
+DADOS GOLPE
+GASTADOS
+4d10
+MÁXIMOS
+CANSANCIO
+SALVACIONES DE MUERTE
+
+-2
+
+-4
+
+-6
+
+-8
+
+-10
+
+ 
+ 
+ÉXITOS
+
+
+
+ 
+ 
+FALLOS
+
+
+
+Nombre
+Bonif
+Daño/Tipo
+Notas
+Cimitarra
++5
+1d6 +3 cort.
+Ligera, Maestría: Mellar, Sutil
+Espada corta
++3
+1d6 +1 perf.
+Ligera, Maestría: Molestar, Sutil
+Arco corto +1
++6
+1d6 +4 perf.
+24/96 metros, 
+A dos manos, Alcance,
+Distancia, Maestría: Molestar, Munición
+Arco largo
++5
+1d8 +3 perf.
+45/180 metros, 
+A dos manos, Alcance,
+Distancia, Maestría: Ralentizar, Munición,
+Pesada
+Ballesta ligera
++5
+1d8 +3 perf.
+24/96 metros, 
+A dos manos, Alcance,
+Distancia, Maestría: Ralentizar, Munición,
+Recarga
+EQUIPO
+- 
+Cuero tachonado 
+CA 12
+- 
+Cuerda de escalada
+- 
+Pigmentos maravillosos de Nolzur
+- 
+Linterna de revelación
+MAPA de la región
+(https://cdn.discordapp.com/attachments/1482409879422636175/1482469079565733959/LMoP_0-
+01_Region_Map_Player_Version.jpg?
+ex=69ef182b&is=69edc6ab&hm=8dcddbc8d73a603b7303804541e6400dfc530f39e1b6b9f00b8dbef63b809ecc&)
+RASGOS Y ATRIBUTOS
+Gnomo de los bosque:
+Gnomo de los bosque:
+- Visión en la oscuridad
+- Astucia de gnoma
+- Gnomo de los bosques
+Explorador Nivel 4:
+Explorador Nivel 4:
+- Compañero primigenio
+- Enemigo predilecto: 2/descanso largo
+- Explorador hábil
+- Lanzamiento de conjuros
+- Maestría con armas
+Dotes:
+Dotes:
+- Habilidoso
++1
++3
++1
+0
++3
+0
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== nissa PAGINA 2 =====
+Nissa Marcaeco
+NOMBRE DEL PERSONAJE
+APARIENCIA
+APARIENCIA
+NOTAS ADICIONALES
+HISTORIA DEL PERSONAJE
+Especie: Gnomo de los bosque
+Especie: Gnomo de los bosque
+
+ 
+Visión en la oscuridad:
+Visión en la oscuridad:
+ 
+Tienes visión en la oscuridad hasta 18 metros.
+
+ 
+Astucia de gnoma:
+Astucia de gnoma:
+ 
+Tienes ventaja en las tiradas de salvación de Inteligencia, Sabiduría y Carisma.
+
+ 
+Gnomo de los bosques:
+Gnomo de los bosques:
+ 
+Conoces el truco ilusión menor. Además, siempre tienes el conjuro hablar con los
+animales preparado. Puedes lanzarlo sin gastar un espacio de conjuro una cantidad de veces igual a tu
+bonificador por competencia y recuperas todos los usos tras finalizar un descanso largo. También puedes usar
+cualq...
+Explorador Nivel 4
+Explorador Nivel 4
+
+ 
+Compañero primigenio:
+Compañero primigenio:
+ 
+Invocas una bestia primigenia (mar, tierra o cielo) con aspecto acorde y marcas
+místicas. Es amistosa, actúa en tu turno y esquiva salvo que uses acción adicional o sacrifiques un ataque para
+ordenarla. Si muere, puedes revivirla en 1 min gastando un conjuro.
+
+ 
+Enemigo predilecto:
+Enemigo predilecto:
+ 
+Siempre tienes el conjuro marca del cazador preparado. Puedes lanzarlo dos veces sin
+gastar un espacio de conjuro y recuperas todos los usos de esta capacidad tras finalizar un descanso largo.
+- 2/descanso largo
+
+ 
+Explorador hábil:
+Explorador hábil:
+ 
+Conoces dos idiomas y ganas una pericia.
+
+ 
+Lanzamiento de conjuros:
+Lanzamiento de conjuros:
+ 
+Has aprendido cómo usar la esencia mágica de la naturaleza para lanzar conjuros.
+Preparas conjuros de nivel 1 y superior. Eliges dos a nivel 1.
+
+ 
+Maestría con armas:
+Maestría con armas:
+ 
+Tu entrenamiento con armas te permite utilizar las propiedades de maestría con dos
+tipos de armas de tu elección con las que tengas competencia. Puedes cambiarlas tras un descanso largo.
+Dotes
+Dotes
+
+ 
+Habilidoso:
+Habilidoso:
+ 
+Ganas competencia en cualquier combinación de tres habilidades o herramientas que elijas.
+RASGOS
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== nissa PAGINA 3 =====
+ESPACIOS DE CONJURO
+Nissa Marcaeco
+NOMBRE DEL PERSONAJE
+Explorador
+CLASE SORTÍLEGA
+Sabiduría
+CARACTERÍSTICA MÁGICA
+13
+CD SALVACIÓN
+CONJUROS
++5
+BONIF. ATAQUE
+CONJUROS
+NIVEL 1
+3
+
+
+
+NIVEL 2
+NIVEL 3
+NIVEL 4
+NIVEL 5
+CONJUROS
+5
+PREPARADOS
+PREP NIVEL
+NOMBRE
+ESCUELA
+TIEMPO LANZAMIENTO
+DURACIÓN
+ALCANCE
+COMPS
+Truco
+Ilusión menor
+Ilusión menor
+Ilusionismo
+1 acción
+1 minuto
+9 metros
+S, M
+Creas un sonido o la imagen de un objeto dentro del alcance. Una criatura puede descubrir la ilusión con una prueba de Inteligencia (Investigación) contra tu CD de
+conjuros. El sonido puede variar en volumen o forma; la imagen ocupa hasta un cubo de 1.5 metros y no produce otros efectos sensoriales.
+
+1
+Curar heridas
+Curar heridas
+Abjuración
+1 acción
+Instantáneo
+Toque
+V, S
+Una criatura a la que toques recupera una cantidad de puntos de golpe igual a 2d8 más tu modificador por aptitud mágica. La curación aumenta en 2d8 por cada nivel por
+encima de 1 que tenga el espacio.
+
+1
+Detectar magia
+Detectar magia
+Adivinación
+1 acción 
+(ritual)
+Concentración 10 minutos
+Personal
+V, S
+Sientes la presencia de la magia hasta a 9 metros de ti. Si sientes alguna magia, puedes usar tu acción para ver una débil aura alrededor de cualquier criatura u objeto
+visible dentro del área que la tenga, y puedes averiguar de qué escuela es, si la tiene.
+
+1
+Golpe apresador
+Golpe apresador
+Conjuración
+1 acción adicional
+Concentración 1 minuto
+Personal
+V
+En tu siguiente impacto con arma surge una masa de enredaderas con espinas. La criatura objetivo debe superar una TS de Fuerza o quedará apresado y sufrirá 1d6
+puntos de daño perforante por nivel de conjuro cada turno. Una criatura grande o mayor tiene ventaja en la TS.
+
+1
+Hablar con los animales
+Hablar con los animales
+Adivinación
+1 acción 
+(ritual)
+10 minutos
+Personal
+V, S
+Permite comprender y comunicarte con bestias mientras dure el conjuro. Puedes influir en ellas y obtener información sobre su entorno, monstruos o sucesos recientes,
+aunque suelen hablar solo de temas relacionados con supervivencia o compañía.
+
+1
+Marca del cazador
+Marca del cazador
+Adivinación
+1 acción adicional
+Concentración 1 hora
+27 metros
+V
+Marca místicamente como tu presa a una criatura. Tus ataques con arma al objetivo infligen 1d6 daño de fuerza adicional y tienes ventaja en las pruebas de Sabiduría
+(Percepción y Supervivencia) para encontrarlo. Si sus PG se reducen a 0, puedes marcar otra criatura con una acción adicional.
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+########## yinhao (2 paginas) ##########
+===== yinhao PAGINA 1 =====
+Yinhao Yangwang
+NOMBRE DEL PERSONAJE
+Humano
+ESPECIE
+Monje 4
+CLASE Y NIVEL
+Marinero
+TRASFONDO
+4
+NIVEL
+2700
+PX
+BONO COMPETENCIA
++2
+INSPIRACIÓN
+
+INICIATIVA
++4
+VELOCIDAD
+12
+ 
+metros
+TAMAÑO
+Mediano
+PERCEPCIÓN PASIVA
+15
+HABILIDADES
+COMPETENCIAS E IDIOMAS
+Competencias:
+Competencias:
+- Armas sencillas, Instrumentos musicales
+- Ballesta de mano, Cimitarra, Espada corta,
+Útiles de herborista
+Idiomas:
+Idiomas:
+Común, Gnomo 
+y Mediano
+FUERZA
+MODIFICADOR
+ 
+PUNT
+ 
++1
+ 
+Salvación
+DESTREZA
+MODIFICADOR
+ 
+PUNT
+ 
++6
+ 
+Salvación
+CONSTITUCIÓN
+MODIFICADOR
+ 
+PUNT
+ 
++2
+ 
+Salvación
+8
+
+x
+x
+18
+
+x
+x
+14
+
+INTELIGENCIA
+MODIFICADOR
+ 
+PUNT
+ 
+0
+ 
+Salvación
+SABIDURÍA
+MODIFICADOR
+ 
+PUNT
+ 
++3
+ 
+Salvación
+CARISMA
+MODIFICADOR
+ 
+PUNT
+ 
+-1
+ 
+Salvación
+10
+
+16
+
+8
+
++6
+Acrobacias
++1
+Atletismo
+0
+Conoc. Arcano
+-1
+Engaño
+0
+Historia
+-1
+Interpretación
+-1
+Intimidación
+0
+Investigación
++4
+Juego de Manos
+
+x
+x
+
+x
+x
+
+
+
+
+
+
+
++5
+Medicina
+0
+Naturaleza
++5
+Percepción
++5
+Perspicacia
+-1
+Persuasión
+0
+Religión
++6
+Sigilo
++3
+Supervivencia
++3
+Trato con Animales
+
+x
+x
+
+
+x
+x
+
+x
+x
+
+
+
+x
+x
+
+
+ATAQUES Y LANZAMIENTO DE CONJUROS
+CLASE
+ARMADURA
+18
+ESCUDO
+
+PUNTOS DE GOLPE
+ACTUALES
+33
+MÁX.
+TEMP
+DADOS GOLPE
+GASTADOS
+4d8
+MÁXIMOS
+CANSANCIO
+SALVACIONES DE MUERTE
+
+-2
+
+-4
+
+-6
+
+-8
+
+-10
+
+ 
+ 
+ÉXITOS
+
+
+
+ 
+ 
+FALLOS
+
+
+
+Nombre
+Bonif
+Daño/Tipo
+Notas
+Bastón
++6
+1d6 +4 cont.
+Maestría: Derribar, Versátil
+EQUIPO
+- 
+Herramientas de Navegante
+- 
+Útiles de cocinero
+- 
+Capa de protección 
+CA
+- 
+Vendas de poder sin armas +1
+Máscara Yin Yang
+RASGOS Y ATRIBUTOS
+Monje Nivel 4:
+Monje Nivel 4:
+- Artes marciales: Daño desarmado: 1d6
+- Caída lenta
+- Concentración de monje
+- Defensa paciente
+- Defensa sin armadura
+- Desviar ataques
+- Instrumentos de misericordia
+- Mano de curación
+- Mano de la aflicción
+- Metabolismo asombroso
+- Movimiento sin armadura: Movimiento sin
+armadura: +3 m
+- Paso del viento
+- Ráfaga de golpes
+Dotes:
+Dotes:
+- Atacante a la carga
+- Matón de taberna
+-1
++4
++2
+0
++3
+-1
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español
+===== yinhao PAGINA 2 =====
+Yinhao Yangwang
+NOMBRE DEL PERSONAJE
+APARIENCIA
+APARIENCIA
+NOTAS ADICIONALES
+HISTORIA DEL PERSONAJE
+Monje Nivel 4
+Monje Nivel 4
+
+ 
+Artes marciales:
+Artes marciales:
+ 
+Cuando usas arma de monje y no llevas armadura ni escudo: Puedes usar Des en lugar de
+Fue para ataque y daño. Puedes usar el dado de daño desarmado en lugar del daño del arma. Tras atacar
+desarmado o con arma de monje, puedes usar una acción adicional para realizar un ataque desarmado.
+- Daño desarmado: 1d6
+
+ 
+Caída lenta:
+Caída lenta:
+ 
+Puedes llevar a cabo una reacción cuando caigas para reducir cualquier daño que sufras de la
+caída en una cantidad igual a cinco veces tu nivel de monje.
+
+ 
+Concentración de monje:
+Concentración de monje:
+ 
+Tienes puntos de Concetración igual a tu nivel de monje. Ganas Defensa paciente
+(destrabarse como Acción Adicional, gasta 1 PC y también esquivas), Paso del viento (correr como Acción
+Adicional, 
+gasta 1 PC y también te destrabas) y Ráfaga de golpes (1, dos atacas sin arma como Acción
+adicional)
+
+ 
+Defensa paciente:
+Defensa paciente:
+ 
+Puedes llevar a cabo la acción de destrabarse como acción adicional. De manera
+alternativa, puedes gastar 1 punto de concentración para llevar a cabo tanto la acción de destrabarse como la
+de esquivar como acción adicional.
+
+ 
+Defensa sin armadura:
+Defensa sin armadura:
+ 
+Mientras no lleves armadura ni portes un escudo, tu clase de armadura base será
+igual a 10 más tus modificadores por Destreza y Sabiduría.
+
+ 
+Desviar ataques:
+Desviar ataques:
+ 
+Usa tu reacción para desviar o atrapar un proyectil tras ser impactado con un arma a
+distancia. El daño recibido se reduce en 1d10 + tu modificador por Destreza + tu nivel de monje. Si reduces al
+daño a 0, puedes atrapar el proyectil y gastar 1 punto de ki para atacar a distancia con él.
+
+ 
+Instrumentos de misericordia:
+Instrumentos de misericordia:
+ 
+Ganas competencia en las habilidades Medicina y Perspicacia y con los útiles de
+herborista.
+
+ 
+Mano de curación:
+Mano de curación:
+ 
+Como acción de magia, puedes gastar 1 punto de concentración para tocar a una criatura y
+hacer que recupere una cantidad de PG igual a la tirada de tu dado de Artes marciales + mod de SAB.
+Puedes sustituir un ataque de Ráfaga de Golpes por un uso gratis de este rasgo sin gastar puntos.
+
+ 
+Mano de la aflicción:
+Mano de la aflicción:
+ 
+Una vez por turno, cuando aciertes a una criatura con un ataque sin armas y le causes
+daño, puedes gastar 1 punto de concentración para infligir una cantidad adicional de daño necrótico igual al
+resultado de una tirada de tu dado de Artes marciales más tu modificador por Sabiduría.
+
+ 
+Metabolismo asombroso:
+Metabolismo asombroso:
+ 
+Una vez por descanso largo, cuando tires iniciativa, recupera todos tus puntos de
+concentración gastados y lanza tu dado de Artes marciales. Recuperas PG igual al resultado más tu nivel de
+monje.
+
+ 
+Movimiento sin armadura:
+Movimiento sin armadura:
+ 
+Tu velocidad aumenta en 3 metros si no llevas armadura ni portas un escudo. Esta
+bonificación aumenta cuando alcanzas ciertos niveles de monje.
+- Movimiento sin armadura: +3 m
+
+ 
+Paso del viento:
+Paso del viento:
+ 
+Puedes llevar a cabo la acción de correr como acción adicional. De manera alternativa, puedes
+gastar 1 punto de concentración para llevar a cabo tanto la acción de destrabarse como la de correr como
+acción adicional, y tu distancia de salto se duplicará durante el turno.
+
+ 
+Ráfaga de golpes:
+Ráfaga de golpes:
+ 
+Puedes gastar 1 punto de concentración para hacer dos ataques sin armas como acción
+adicional.
+Dotes
+Dotes
+
+ 
+Atacante a la carga:
+Atacante a la carga:
+ 
+Aumenta tu Fuerza o Destreza en 1 (máx. 20). Al correr, tu velocidad aumenta 3 metros.
+Si corres al menos 3 metros en línea recta antes de un ataque cuerpo a cuerpo, puedes añadir 1d8 de daño o
+empujar al objetivo 3 metros (una vez por turno).
+
+ 
+Matón de taberna:
+Matón de taberna:
+ 
+Cuando aciertes con tu ataque sin armas y causes daño, infliges 1d4 + mod de Fuerza. Si
+obtienes un 1 en ataques sin arma, puedes volver a lanzar el dado. Ganas competencia en armas improvisadas.
+Cuando aciertes un ataque sin armas, puedes empujar al objetivo una vez por turno.
+RASGOS
+© 2026 - Nivel20 
+v2.20.18
+ 
+Tu plataforma online de rol en español

@@ -48,7 +48,7 @@ import { computeDerived } from './derived';
     guard the shape, so the typed cast only aids field access. */
 import { join } from 'node:path';
 
-const fixturePath = join(import.meta.dirname, '../public/characters/character-demo.json');
+const fixturePath = join(import.meta.dirname, '../tests/fixtures/character-demo.json');
 const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 
 const derived = computeDerived(demoCharacter);

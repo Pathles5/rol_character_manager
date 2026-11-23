@@ -23,7 +23,7 @@ import { validateCharacter } from './validate';
     field access. */
 import { join } from 'node:path';
 
-const fixturePath = join(import.meta.dirname, '../public/characters/character-demo.json');
+const fixturePath = join(import.meta.dirname, '../tests/fixtures/character-demo.json');
 const demoCharacter = JSON.parse(readFileSync(fixturePath, 'utf8')) as Character;
 
 /** Narrows a ValidationResult to the error map, failing the test

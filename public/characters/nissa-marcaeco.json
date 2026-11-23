@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "Nissa Marcaeco",
+    "race": "gnomo de los bosques",
+    "class": "explorador",
+    "subclass": "Maestro de bestias",
+    "level": 4,
+    "background": "Explorador de ruinas",
+    "alignment": "Legal buena"
+  },
+  "abilities": {
+    "strength": 12,
+    "dexterity": 16,
+    "constitution": 13,
+    "intelligence": 10,
+    "wisdom": 16,
+    "charisma": 10
+  },
+  "combat": {
+    "armorClass": 15,
+    "speed": 30,
+    "maxHitPoints": 34,
+    "hitDice": {
+      "die": "d10",
+      "total": 4
+    }
+  },
+  "defense": {
+    "saveProficiencies": [
+      "strength",
+      "dexterity"
+    ]
+  },
+  "skillProficiencies": [
+    "athletics",
+    "sleight-of-hand",
+    "medicine",
+    "insight",
+    "stealth"
+  ],
+  "skillExpertise": [
+    "athletics"
+  ],
+  "attacks": [
+    {
+      "id": "cimitarra",
+      "name": "Cimitarra",
+      "kind": "melee",
+      "bonus": 5,
+      "damage": "1d6+3",
+      "damageType": "cortante",
+      "note": "ligera, maestría: mellar, sutil"
+    },
+    {
+      "id": "espada-corta",
+      "name": "Espada corta",
+      "kind": "melee",
+      "bonus": 3,
+      "damage": "1d6+1",
+      "damageType": "perforante",
+      "note": "usada con Fuerza en la hoja · ligera, maestría: molestar, sutil"
+    },
+    {
+      "id": "arco-corto-mas-1",
+      "name": "Arco corto +1",
+      "kind": "ranged",
+      "bonus": 6,
+      "damage": "1d6+4",
+      "damageType": "perforante",
+      "note": "arma mágica (+1 al bonus y al daño) · 24/96 m · a dos manos, alcance, distancia, maestría: molestar, munición"
+    },
+    {
+      "id": "arco-largo",
+      "name": "Arco largo",
+      "kind": "ranged",
+      "bonus": 5,
+      "damage": "1d8+3",
+      "damageType": "perforante",
+      "note": "45/180 m · a dos manos, alcance, distancia, maestría: ralentizar, munición, pesada"
+    },
+    {
+      "id": "ballesta-ligera",
+      "name": "Ballesta ligera",
+      "kind": "ranged",
+      "bonus": 5,
+      "damage": "1d8+3",
+      "damageType": "perforante",
+      "note": "24/96 m · a dos manos, alcance, distancia, maestría: ralentizar, munición, recarga"
+    }
+  ],
+  "traits": [
+    {
+      "id": "gnomo-vision-en-la-oscuridad",
+      "name": "Visión en la oscuridad",
+      "source": "Gnomo de los bosques (especie 2024)",
+      "description": "Tienes visión en la oscuridad hasta 18 metros."
+    },
+    {
+      "id": "gnomo-astucia-de-gnoma",
+      "name": "Astucia de gnoma",
+      "source": "Gnomo de los bosques (especie 2024)",
+      "description": "Tienes ventaja en las tiradas de salvación de Inteligencia, Sabiduría y Carisma."
+    },
+    {
+      "id": "gnomo-de-los-bosques",
+      "name": "Gnomo de los bosques",
+      "source": "Gnomo de los bosques (especie 2024)",
+      "description": "Conoces el truco ilusión menor. Siempre tienes hablar con los animales preparado: puedes lanzarlo sin gastar espacio un número de veces igual a tu bono de competencia por descanso largo.",
+      "uses": 2
+    },
+    {
+      "id": "explorador-companero-primigenio",
+      "name": "Compañero primigenio",
+      "source": "Maestro de bestias",
+      "description": "Invocas una bestia primigenia (mar, tierra o cielo) con aspecto acorde y marcas místicas. Es amistosa, actúa en tu turno y esquiva salvo que uses acción adicional o sacrifiques un ataque para ordenarla. Si muere, la revives en 1 minuto gastando un conjuro."
+    },
+    {
+      "id": "explorador-enemigo-predilecto",
+      "name": "Enemigo predilecto",
+      "source": "Explorador (nivel 4)",
+      "description": "Siempre tienes marca del cazador preparada: puedes lanzarla dos veces sin gastar espacio por descanso largo.",
+      "uses": 2
+    },
+    {
+      "id": "explorador-habil",
+      "name": "Explorador hábil",
+      "source": "Explorador (nivel 4)",
+      "description": "Conoces dos idiomas y ganas una pericia (Atletismo)."
+    },
+    {
+      "id": "explorador-lanzamiento-de-conjuros",
+      "name": "Lanzamiento de conjuros",
+      "source": "Explorador (nivel 4)",
+      "description": "Conjuros con Sabiduría; preparas conjuros de nivel 1 y superior."
+    },
+    {
+      "id": "explorador-maestria-armas",
+      "name": "Maestría con armas",
+      "source": "Explorador (nivel 4)",
+      "description": "Puedes usar las propiedades de maestría con dos tipos de armas con las que tengas competencia; cambiables tras un descanso largo."
+    },
+    {
+      "id": "dote-habilidoso",
+      "name": "Habilidoso",
+      "source": "Dote",
+      "description": "Ganas competencia en cualquier combinación de tres habilidades o herramientas que elijas."
+    }
+  ],
+  "spells": {
+    "castingAbility": "wisdom",
+    "slotsMax": {
+      "1": 3,
+      "2": 0,
+      "3": 0
+    },
+    "cantrips": [
+      {
+        "id": "ilusion-menor",
+        "name": "Ilusión menor",
+        "description": "Sonido o imagen de un objeto (cubo de 1,5 m); Investigación contra tu CD la descubre"
+      }
+    ],
+    "prepared": [
+      {
+        "id": "curar-heridas",
+        "name": "Curar heridas",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción",
+        "description": "2d8+3 PG a una criatura que toques; +2d8 por nivel superior",
+        "damage": "2d8+3"
+      },
+      {
+        "id": "detectar-magia",
+        "name": "Detectar magia",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción (ritual)",
+        "description": "Sientes la magia a 9 m; con tu acción ves auras y sus escuelas (concentración, 10 min; ritual)"
+      },
+      {
+        "id": "golpe-apresador",
+        "name": "Golpe apresador",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "Tu siguiente impacto con arma crea enredaderas: TS FUE o apresado, 1d6 perforante por nivel de conjuro cada turno (concentración, 1 min)"
+      },
+      {
+        "id": "hablar-con-los-animales",
+        "name": "Hablar con los animales",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción (ritual)",
+        "description": "Comprendes y comunicas con bestias 10 minutos (ritual) — siempre preparada por Gnomo de los bosques"
+      },
+      {
+        "id": "marca-del-cazador",
+        "name": "Marca del cazador",
+        "level": 1,
+        "source": "free",
+        "castTime": "acción adicional",
+        "description": "Marcaste a tu presa: +1d6 de fuerza en tus ataques con arma contra ella y ventaja para encontrarla (concentración, 1 h) — siempre preparada por Enemigo predilecto",
+        "damage": "1d6"
+      }
+    ]
+  },
+  "equipment": {
+    "equipped": [
+      {
+        "name": "cuero tachonado (CA 12)"
+      },
+      {
+        "name": "cuerda de escalada"
+      },
+      {
+        "name": "pigmentos maravillosos de Nolzur"
+      },
+      {
+        "name": "linterna de revelación"
+      }
+    ],
+    "inventory": [],
+    "coins": {
+      "gp": 0,
+      "sp": 0
+    }
+  },
+  "proficiencies": {
+    "armor": [
+      "ligeras",
+      "medias",
+      "escudos"
+    ],
+    "weapons": [
+      "armas sencillas",
+      "armas marciales"
+    ],
+    "tools": [],
+    "languages": [
+      "común",
+      "gnómico"
+    ]
+  },
+  "role": {
+    "summary": "Pendiente de escribir por el jugador.",
+    "tableNotes": [
+      "EXP: 1751 (nivel 4).",
+      "MAPA de la región (enlace de Discord en la hoja original)."
+    ],
+    "questions": [
+      "Idiomas pendientes de confirmar (Explorador hábil añade 2)."
+    ]
+  },
+  "allies": []
+}
