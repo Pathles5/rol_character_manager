@@ -314,8 +314,10 @@ jobs:
                   esac
                   sleep 10
                 done
-                # Changeset vacío = el template no cambió → no-op válido.
-                if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -q "didn't contain changes"; then
+                # Changeset vacío = el template/código no cambió → no-op
+                # válido (CFN usa DOS mensajes distintos según el tipo:
+                # "didn't contain changes" / "No updates are to be performed").
+                if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
                   echo "Sin cambios que aplicar (no-op) — ok"
                 elif [ "$CS" != "CREATE_COMPLETE" ]; then
                   echo "Changeset $CS: $CSREASON"; exit 1

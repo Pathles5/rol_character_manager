@@ -32,8 +32,14 @@ const TABLE_NAME = process.env.SESSIONS_TABLE ?? '';
 const MANIFEST_URL = process.env.MANIFEST_URL ?? '';
 const SITE_URL = process.env.SITE_URL ?? '';
 const MAX_BODY_BYTES = 16384;
+// Build tag (Fase 15a, r21c): forces a real code change per revision —
+// if a deploy produces "No updates" while this tag is stale, the
+// pipeline didn't ship what we think it did.
+const BUILD_TAG = 'fase15a-r21c';
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+// Cold-start marker: proves which build is actually running.
+console.log(`fichass-session init [${BUILD_TAG}]`);
 
 interface SessionItem {
   characterId: string;
