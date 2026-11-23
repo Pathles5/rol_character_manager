@@ -22,6 +22,9 @@ function shell(mainHtml: string): string {
   return `
   <header class="appbar">
     <div class="appbar-home"><strong>FichaSS</strong><span> · Personajes</span></div>
+    <div class="appbar-main">
+      <a class="chip" href="#/master">Vista del Master</a>
+    </div>
   </header>
   <main class="sheet-grid" id="overview">
 ${mainHtml}
