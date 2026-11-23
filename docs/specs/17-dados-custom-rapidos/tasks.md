@@ -55,4 +55,4 @@ Solución validada por el usuario (D-61/D-62/D-63, 2026-11-23). Estados: `pendie
   - Tests del parser/roller en verde; suite completa sin regresiones (≥144).
   - `npm run lint`, `npm run build`, `npm run check` en verde.
   - Revisor fresh-eyes contra C1–C6 de la spec; QA visual del usuario (móvil 390×844).
-- Evidencia: 166/166 tests en verde (144 base + 21 Fase 17 + 1 de presets del picker); `npm run lint` ✓, `npm run build` ✓, `powershell -File scripts/check.ps1` → PASS (orquestador; revisor ejecutó lint/build/check también); revisor fresh-eyes PASS with remarks (majors D-61–D-64 y estado resueltos; minors test de presets y suite resueltos); QA visual del usuario pendiente.
+- Evidencia: 166/166 tests en verde (144 base + 21 Fase 17 + 1 de presets del picker); `npm run lint` ✓, `npm run build` ✓, `powershell -File scripts/check.ps1` → PASS (orquestador; revisor ejecutó lint/build/check también); revisor fresh-eyes PASS with remarks (majors D-61–D-64 y estado resueltos; minors test de presets y suite resueltos); QA del usuario APROBADO (2026-11-23).

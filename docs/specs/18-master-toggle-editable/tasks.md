@@ -35,4 +35,4 @@ Solución validada por el usuario (D-65/D-66/D-67, 2026-11-23). Estados: `pendie
   - Suite completa sin regresiones (≥166).
   - `npm run lint`, `npm run build`, `powershell -File scripts/check.ps1` en verde.
   - Revisor fresh-eyes contra C1–C5; QA visual del usuario (toggle ON/OFF, persistencia, dots/inspiración siguen editables en OFF).
-- Evidencia: 170/170 tests en verde (166 previos + 4 nuevos); `npm run lint`/`npm run build`/`check.ps1` PASS; revisor fresh-eyes PASS with remarks (majors D-65–D-67 registrados y estado sincronizado); QA visual del usuario pendiente.
+- Evidencia: 170/170 tests en verde (166 previos + 4 nuevos); `npm run lint`/`npm run build`/`check.ps1` PASS; revisor fresh-eyes PASS with remarks (majors D-65–D-67 registrados y estado sincronizado); QA del usuario APROBADO (2026-11-23).

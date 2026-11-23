@@ -1,6 +1,6 @@
 # Spec — Fase 17: Dados custom rápidos
 
-Fase: 17 · Estado: verified (QA visual del usuario pendiente) · Compuerta: compuertas base (lint/test/build/check) + criterios de la spec
+Fase: 17 · Estado: approved (QA visual del usuario aprobado 2026-11-23) · Compuerta: compuertas base (lint/test/build/check) + criterios de la spec
 
 ## Objetivo
 
