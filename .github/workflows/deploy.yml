@@ -194,18 +194,27 @@ jobs:
                 --region $REGION
               echo "Esperando al changeset (sondeo manual)..."
               CS=""
+              CSREASON=""
               for i in $(seq 1 60); do
                 CS=$(aws cloudformation describe-change-set --stack-name $STACK \
                   --change-set-name "$CHGSET" --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
                 echo "[$i] changeset: $CS"
                 case "$CS" in
                   CREATE_COMPLETE) break ;;
-                  FAILED) echo "Changeset FAILED"; exit 1 ;;
+                  FAILED) break ;;
                 esac
                 sleep 10
               done
-              [ "$CS" = "CREATE_COMPLETE" ] || { echo "Timeout en el changeset"; exit 1; }
-              aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              # Changeset vacío = el template no cambió → no-op válido.
+              if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -q "didn't contain changes"; then
+                echo "Sin cambios que aplicar (no-op) — ok"
+              elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                echo "Changeset $CS: $CSREASON"; exit 1
+              else
+                aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              fi
               ;;
             *) echo "Estado inesperado: $STATUS"; exit 1 ;;
           esac
@@ -290,24 +299,35 @@ jobs:
                   --region $REGION
                 echo "Esperando al changeset $CHGSET (sondeo manual)..."
                 CS=""
+                CSREASON=""
                 for i in $(seq 1 60); do
                   CS=$(aws cloudformation describe-change-set --stack-name $STACK \
                     --change-set-name "$CHGSET" \
                     --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                  CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                    --change-set-name "$CHGSET" \
+                    --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
                   echo "[$i] changeset: $CS"
                   case "$CS" in
                     CREATE_COMPLETE) break ;;
-                    FAILED) echo "Changeset FAILED"; exit 1 ;;
+                    FAILED) break ;;
                   esac
                   sleep 10
                 done
-                if [ "$CS" != "CREATE_COMPLETE" ]; then echo "Timeout en el changeset"; exit 1; fi
+                # Changeset vacío = el template no cambió → no-op válido.
+                if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -q "didn't contain changes"; then
+                  echo "Sin cambios que aplicar (no-op) — ok"
+                elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                  echo "Changeset $CS: $CSREASON"; exit 1
+                fi
               fi
-              echo "Ejecutando el changeset..."
-              aws cloudformation execute-change-set \
-                --stack-name $STACK \
-                --change-set-name "$CHGSET" \
-                --region $REGION
+              if [ "$CS" = "CREATE_COMPLETE" ] || [ -n "$PENDING" ]; then
+                echo "Ejecutando el changeset..."
+                aws cloudformation execute-change-set \
+                  --stack-name $STACK \
+                  --change-set-name "$CHGSET" \
+                  --region $REGION
+              fi
               ;;
             *)
               echo "Estado inesperado: $STATUS"; exit 1 ;;
