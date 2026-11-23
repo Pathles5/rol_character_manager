@@ -54,7 +54,9 @@ export function normalizeLayout(raw: unknown): MasterLayout {
       const name = typeof group.name === 'string' ? group.name.trim() : '';
       const id = typeof group.id === 'string' ? group.id : '';
       if (!name || !id) continue;
-      const members = isStringArray(group.members) ? keep(group.members) : [];
+      const members = Array.isArray(group.members)
+        ? keep(group.members.filter((m): m is string => typeof m === 'string'))
+        : [];
       groups.push({ id, name, members });
     }
   }
