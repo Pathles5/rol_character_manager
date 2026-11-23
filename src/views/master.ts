@@ -244,8 +244,9 @@ export async function masterView(root: HTMLElement): Promise<void> {
   try {
     await initMasterStore({ onRows: rows => onRowsCb?.(rows) });
     if (stale()) return;
-    layout = await loadLayoutHybrid();
+    const loaded = await loadLayoutHybrid();
     if (stale()) return;
+    layout = loaded; // assigned only when this mount is still current (review minor)
     await refreshAll();
     if (stale()) return;
     startPolling();

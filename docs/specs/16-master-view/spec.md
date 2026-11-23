@@ -104,3 +104,10 @@ ficha del jugador.
 - **Alcance real entregado** (frente a las Decisiones 1 y "Fuera de alcance" originales, que limitaban a PG/temp/inspiración/slots): ADEMÁS, editables por el master con el MISMO mecanismo de deltas (C9): dados de golpe (±1), Channel Divinity (±1, casters), **salvaciones de muerte** (dots 3+3 clicables, como la ficha del jugador) y **condiciones** (chips del catálogo 2024), más **recursos de rasgos** (±1 por rasgo con `uses`). Muerte saves y condiciones se muestran replicando la UI de la ficha.
 - **Riesgo aceptado**: la inspiración es un toggle absoluto — su re-aplicación tras un 409 puede pisar un toggle concurrente del jugador en ESE campo (semántica inherente al toggle; el resto de contadores son deltas y no pueden pisar).
 - El backend no cambia: sigue validando y clampeando con `sanitizeSessionState` + `clampSessionToRules` (misma fuente de límites).
+
+### Límites conocidos en v0.3.0 (aceptados, del informe del revisor)
+
+- **Doble aplicación ante corte de red a mitad de PATCH**: si `fetch` falla DESPUÉS de que el servidor confirmó (corte de conexión), `markError` conserva los deltas y el reintento manual puede re-aplicar el propio delta (409 → re-GET del estado fresco que ya lo contiene). Inherente a deltas sin idempotency-key con cero cambios de backend (D-58). El 409 normal SÍ es seguro (el servidor no aplicó nada).
+- **Cupo de reintentos acumulado por fila**: `attempts` no se reinicia tras un 200 dentro del bucle de flush; tres 409 repartidos entre escrituras correctas de una ráfaga larga marcan error (conservador, recuperable con el reintento manual).
+- **Inspiración**: toggle absoluto; su re-aplicación tras 409 puede pisar un toggle concurrente del jugador en ese campo (ver Amendment 2).
+- **Sin realtime**: el master ve el estado del jugador con hasta 15 s de retraso; el layout entre masters concurrentes es última-escritura-gana (D-59).
