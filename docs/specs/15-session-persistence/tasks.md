@@ -2,11 +2,11 @@
 
 ## 15a — Infra y contrato de backend
 
-- [ ] T-01 Enmienda D-17 en `model.md` (contrato de sesión: GET/PATCH, version, 409).
-- [ ] T-02 `infra/template.yaml`: tabla `fichass-sessions` (PAY_PER_REQUEST, Retain) + Lambda Node 22 + Function URL con CORS al origin + permisos mínimos.
-- [ ] T-03 Handler de la Lambda: GET (404 si no existe) / PATCH (validación de contrato + concurrencia optimista + 409 con estado remoto) + endurecimiento (ids del manifest, tamaño de body).
-- [ ] T-04 Job `infra` en `.github/workflows/deploy.yml`: `sam build` + `sam deploy` del stack con la OIDC (environment dev) + ampliación least-privilege de la policy del rol (`infra/role-policy.json`) para CloudFormation/Lambda/DynamoDB/SSM acotada a `fichass-*`; actualización de `infra/README.md`; **en local no se despliega**.
-- [ ] T-05 Verificación de los criterios C1–C5 (round-trip real contra la Function URL) tras el despliegue por pipeline + compuertas (lint/build/check) + docs (INDEX, D-56 si hay desvíos).
+- [x] T-01 Enmienda D-17 en `model.md` (contrato de sesión: GET/PATCH, version, 409).
+- [x] T-02 `infra/template.yaml` + **separación de stacks (decisión del usuario 2026-11-23)**: tabla en `infra/data.yaml` (stack `fichass-data`, Retain, sobrevive a recreaciones) y cómputo en `infra/session.yaml` (stack `fichass-session`, Lambda Node 22 ARM + Function URL con CORS al origin + policy de invocación doble `InvokeFunctionUrl`/`InvokeFunction` con `InvokedViaFunctionUrl`).
+- [x] T-03 Handler `backend/session.ts`: GET (404 si no existe) / PATCH (validación con la MISMA lógica pura del cliente `src/session-schema.ts` + concurrencia optimista + 409 con estado remoto) + endurecimiento (ids del manifest, cuerpo ≤ 16 KB, schemaVersion, characterId mismatch). SDK **externo** con node_modules propio (los exports perezosos del SDK rompen bajo esbuild; 3.1175 usa GetCommand/PutCommand).
+- [x] T-04 Job `infra` en `.github/workflows/deploy.yml`: build CJS→ESM del bundle + `sam build`/`sam package` + deploy explícito por CloudFormation con **self-healing** (create-stack directo; shells ROLLBACK/REVIEW se borran y recrean; changesets pendientes obsoletos se BORRAN — nunca se ejecutan; changesets vacíos = no-op) + policy del rol OIDC ampliada acotada a `fichass-*`. **En local no se despliega.**
+- [x] T-05 Verificación C1–C5 contra producción: tabla+Lambda+URL en el stack ✓ · round-trip real (GET 404/200, PATCH 200 v1, 409 conflicto con versión obsoleta, 400 validación) ✓ · CORS: origin del site permitido, origin extraño SIN cabecera ✓ · compuertas lint/109 tests/build/check ✓ · Amendment 4 en `model.md` ✓.
 
 ## 15b — Capa de sincronización en el cliente
 

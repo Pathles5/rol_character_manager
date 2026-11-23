@@ -109,3 +109,27 @@ hoy no cambia.
 - Edición de fichas en la nube (los personajes siguen siendo JSON autoriado
   + push, D-52); autenticación de usuarios (Cognito) para v1; historial de
   tiradas; CRDTs/merge por campo; dominio personalizado.
+
+## Deviations (Fase 15a — 2026-11-23, D-56)
+
+- **Deploy explícito por CloudFormation** en vez de `sam deploy`: los waiters
+  de sam se rinden antes de que esta cuenta lenta cree los changesets. Flujo
+  en el job `infra`: create-stack directo para creación (los changesets
+  CREATE fallan la validación temprana de forma flaky aquí), changeset
+  UPDATE para updates, self-heal de shells rotos (borrar + recrear),
+  changesets pendientes obsoletos SE BORRAN (nunca se ejecutan — desplegaban
+  código antiguo) y changesets vacíos tratados como no-op.
+- **Stacks separados** (decisión del usuario): `fichass-data` (tabla, Retain)
+  y `fichass-session` (cómputo desechable) en vez de un único stack — la
+  recreación del cómputo ya no toca la tabla.
+- **Lambda packaging**: SDK v3 EXTERNO con node_modules propio; bundle esbuild
+  ESM sin inlinar (los exports perezosos del SDK se rompen bajo esbuild
+  interop); comandos `GetCommand`/`PutCommand` (reestructuración 3.1175);
+  aserción anti-regresión de nombres en el build.
+- **Function URL**: resource policy con DOS statements (InvokeFunctionUrl +
+  InvokeFunction con `InvokedViaFunctionUrl: true`) — doc Lambda oct-2025.
+- **Sin Tags** en los recursos de sesión (evitan `TagResource` en la policy;
+  el prefijo `fichass-*` identifica el proyecto).
+- **Fix local de vitest** (solo entorno, no producto): jsdom 26 delega el
+  storage en internos de Node que no son resolubles en el worker → fallback
+  en memoria en `src/test-setup.ts` (CI Node 20 no afectado).
