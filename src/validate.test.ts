@@ -1,6 +1,6 @@
 /* ============================================================
    Phase 07 — validator tests (contract of model §5, D-17).
-   Control input: public/characters/character-demo.json (the
+   Control input: tests/fixtures/character-demo.json (the
    LIVING fixture since Phase 10, D-33; docs/data keeps a
    historical copy) must be ACCEPTED; every contract
    rejection (derived values, session state, unknown/x-* fields,

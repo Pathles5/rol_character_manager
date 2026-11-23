@@ -1,5 +1,6 @@
 ---
 description: FichaSS lead orchestrator (SDD + AI swarm): writes specs, proposes and validates solutions with the user, integrates and executes gates; consults AGENTS.md every session
+model: opencode-go/qwen4-max-free
 mode: primary
 permissions:
   - action: subagent

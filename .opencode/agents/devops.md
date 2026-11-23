@@ -1,5 +1,6 @@
 ---
 description: DevOps subagent for FichaSS future infra phase (S3 static hosting, GitHub Actions, CloudFormation); cost-zero hard rule; read-mostly until phase 09 activates it
+model: opencode-go/mimo-v2.6-flash-free
 mode: subagent
 permissions:
   - action: subagent

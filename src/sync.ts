@@ -66,7 +66,9 @@ function setStatus(next: SyncStatus): void {
 }
 
 /** Discovers the session API URL from session-url.json (site root,
-    published by the pipeline). Cached for the whole page life. */
+    published by the pipeline). Cached for the whole page life —
+    a failure at load keeps the layer DISABLED until reload (by
+    design, grácil; known behavior for long sessions). */
 function discoverUrl(): Promise<string | null> {
   if (!urlCache) {
     urlCache = fetchImpl('session-url.json', { cache: 'no-store' })
@@ -82,6 +84,20 @@ function discoverUrl(): Promise<string | null> {
     D-55). 404 = no remote session yet (fresh). Any failure →
     local fallback (error status). */
 export async function initSync(id: string, callbacksIn: SyncCallbacks): Promise<void> {
+  // (review major, Fase 15c): navigating away with an open conflict
+  // toast must NOT leave the sync dead for the next character —
+  // clear the paused conflict, pending snapshot and timers.
+  openConflict = null;
+  pendingState = null;
+  inFlight = false;
+  if (debounceTimer !== null) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (retryTimer !== null) {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  }
   characterId = id;
   callbacks = callbacksIn;
   setStatus('pending');
@@ -144,7 +160,10 @@ export function notifyLocalChange(state: SessionState): void {
 async function flush(): Promise<void> {
   if (inFlight || !pendingState || !characterId) return;
   inFlight = true;
-  const id = characterId;
+  // (review minor, Fase 15c): the PATCH travels with the SNAPSHOT's
+  // own characterId — a fast navigation A→B must not send A's
+  // snapshot against B's character (backend would 400).
+  const id = (pendingState as SessionState).characterId ?? characterId;
   const snapshot = pendingState;
   const url = await discoverUrl();
   if (!url) {
@@ -176,6 +195,10 @@ async function flush(): Promise<void> {
           localState: pendingState ?? snapshot,
         });
       } else {
+        // 409 WITHOUT remote state (item vanished): re-base from zero
+        // so the retry creates the item instead of looping blind
+        // (review minor, Fase 15c).
+        versions[id] = 0;
         setStatus('error');
         scheduleRetry();
       }

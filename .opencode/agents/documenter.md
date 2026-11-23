@@ -1,5 +1,6 @@
 ---
 description: Documenter: keeps FichaSS docs in sync (INDEX.md, tasks.md, DECISIONS.md, README.md) on orchestrator order; cannot touch code
+model: opencode-go/mimo-v2.6-flash-free
 mode: subagent
 permissions:
   - action: subagent

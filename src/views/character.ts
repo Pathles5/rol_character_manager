@@ -287,7 +287,7 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
       <nav class="mode-tabs" aria-label="Modos de vista">
         ${modeButtonsHtml}
       </nav>
-      <span id="sync-status" class="sync-dot" data-sync-status="disabled" role="status" aria-label="Estado de sincronización de la sesión" title="Sincronización"></span>
+      <span id="sync-status" class="sync-dot" data-sync-status="disabled" role="status" tabindex="-1" aria-label="Estado de sincronización de la sesión" title="Sincronización"></span>
     </div>
   </header>
 
@@ -365,8 +365,19 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     syncWired = true;
   }
   const syncDot = root.querySelector<HTMLElement>('#sync-status');
+  const SYNC_LABELS: Record<SyncStatus, string> = {
+    disabled: 'desactivada',
+    synced: 'sincronizada',
+    pending: 'pendiente',
+    error: 'con error',
+  };
   const setStatus = (s: SyncStatus): void => {
-    if (syncDot) syncDot.dataset.syncStatus = s;
+    if (syncDot) {
+      syncDot.dataset.syncStatus = s;
+      // The label CHANGES per status so role="status" announces the
+      // transitions to screen readers (review minor, Fase 15c).
+      syncDot.setAttribute('aria-label', `Estado de sincronización: ${SYNC_LABELS[s]}`);
+    }
   };
   // Conflict toast (Fase 15c): same a11y pattern as the Reset
   // confirmation (trapTab, Esc, backdrop) — Esc/backdrop default to
@@ -379,6 +390,9 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     document.removeEventListener('keydown', onConflictKey);
     resolveLoadRemote(); // the safe default
     setStatus('synced');
+    // I5: return focus to a stable element (the dot, focusable via
+    // tabindex="-1" — review minor, Fase 15c).
+    syncDot?.focus();
   };
   const openConflictToast = (): void => {
     if (!conflictToast || !conflictBackdrop) return;
@@ -401,6 +415,7 @@ export async function characterView(root: HTMLElement, id: string): Promise<void
     if (conflictToast) conflictToast.hidden = true;
     if (conflictBackdrop) conflictBackdrop.hidden = true;
     document.removeEventListener('keydown', onConflictKey);
+    syncDot?.focus(); // I5: focus return
     void resolveOverwriteLocal();
   });
   initSync(id, {

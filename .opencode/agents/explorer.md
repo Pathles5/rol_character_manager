@@ -1,5 +1,6 @@
 ---
 description: Explains FichaSS specs and data model by reading code and docs; research for phase design decisions (D&D 5e 2024 lookups, section syntax help)
+model: opencode-go/mimo-v2.6-flash-free
 mode: subagent
 permissions:
   - action: edit

@@ -1,5 +1,6 @@
 ---
 description: Implements FichaSS phase tasks whose solution was validated by the user; scoped writing, closed file list
+model: opencode-go/qwen4-max-free
 mode: subagent
 permissions:
   - action: "subagent"

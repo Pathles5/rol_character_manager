@@ -110,8 +110,9 @@ jobs:
         run: npm ci
 
       # El bundle de la Lambda es determinista y va ANTES de sam build:
-      # esbuild single-file ESM con el SDK inlinado (sin SAM esbuild
-      # metadata; el CodeUri apunta a backend/dist ya construido).
+      # esbuild single-file ESM con el SDK EXTERNO (resuelto por el
+      # runtime — los exports perezosos del SDK rompen bajo interop,
+      # D-56) — sin SAM esbuild metadata.
       - name: Bundle the session Lambda (esbuild)
         run: npm run build:backend
 

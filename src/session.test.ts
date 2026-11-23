@@ -24,17 +24,19 @@
 
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Character } from './types';
+import type { Character, SessionState } from './types';
 import {
   CHANNEL_DIVINITY_MAX,
   DEATH_SAVE_MAX,
   TEMP_HP_MAX,
+  applyRemoteState,
   applyStepper,
   defaultSessionState,
   getSession,
   initSession,
   isStepperAction,
   isStepperTarget,
+  onSessionChange,
   patchSession,
   resetSession,
   sessionKey,
@@ -367,5 +369,61 @@ describe('temp HP quick strip — Phase 12 (D-50)', () => {
   it('Reset leaves temp HP at 0, same as the clear button (C3)', () => {
     patchSession({ hp: { temp: 9 } });
     expect(resetSession().hp.temp).toBe(0);
+  });
+});
+
+describe('sync hooks (Fase 15b/c, D-55) — guardas sin eco', () => {
+  const localCalls: SessionState[] = [];
+  /** The listeners are module-global and accumulate across tests:
+      assertions use DELTAS (calls since the marked point). */
+  const mark = (): number => localCalls.length;
+
+  beforeEach(() => {
+    initSession(demoCharacter, derived);
+  });
+
+  it('onSessionChange fires after patchSession with the CLAMPED state', () => {
+    const before = mark();
+    patchSession({ hp: { current: 999 } });
+    const fired = localCalls.slice(before);
+    expect(fired.length).toBe(1);
+    expect(fired[0].hp.current).toBe(MAX_HP); // clamped, not the raw 999
+  });
+
+  it('applyRemoteState applies a VALID remote state and does NOT echo listeners', () => {
+    const remote = { ...defaultSessionState(demoCharacter), hp: { current: 20, temp: 4 } };
+    const before = mark();
+    const applied = applyRemoteState(remote);
+    expect(applied).not.toBeNull();
+    expect(applied?.hp.current).toBe(20);
+    expect(applied?.hp.temp).toBe(4);
+    // NO echo: the remote application must not schedule a PATCH.
+    expect(localCalls.length).toBe(before);
+    // Persisted locally too (local-first mirror).
+    expect(JSON.parse(window.localStorage.getItem(sessionKey('seren-aldaard')) ?? '{}').hp.current).toBe(20);
+  });
+
+  it('applyRemoteState REJECTS schemaVersion mismatch (keeps local)', () => {
+    const before = getSession();
+    const rejected = applyRemoteState({ ...before, schemaVersion: 9 });
+    expect(rejected).toBeNull();
+    expect(getSession()).toEqual(before);
+  });
+
+  it('applyRemoteState REJECTS characterId mismatch (keeps local)', () => {
+    const before = getSession();
+    const rejected = applyRemoteState({ ...before, characterId: 'otro-personaje' });
+    expect(rejected).toBeNull();
+    expect(getSession()).toEqual(before);
+  });
+
+  it('resetSession fires the listener with the defaults', () => {
+    patchSession({ hp: { current: 10 } });
+    const before = mark();
+    const state = resetSession();
+    const fired = localCalls.slice(before);
+    expect(fired.length).toBe(1);
+    expect(fired[0]).toEqual(state);
+    expect(state.hp.current).toBe(MAX_HP);
   });
 });
