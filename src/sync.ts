@@ -104,6 +104,15 @@ export async function initSync(id: string, callbacksIn: SyncCallbacks): Promise<
   }
 }
 
+/** Schedules the debounced flush (1.5 s after the LAST notify). */
+function schedule(): void {
+  if (debounceTimer !== null) return;
+  debounceTimer = setTimeout(() => {
+    debounceTimer = null;
+    void flush();
+  }, DEBOUNCE_MS);
+}
+
 /** Called by the view for EVERY local mutation (onSessionChange).
     Debounces and schedules the batched PATCH. */
 export function notifyLocalChange(state: SessionState): void {
@@ -117,11 +126,7 @@ export function notifyLocalChange(state: SessionState): void {
     clearTimeout(retryTimer);
     retryTimer = null;
   }
-  if (debounceTimer !== null) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    debounceTimer = null;
-    void flush();
-  }, DEBOUNCE_MS);
+  schedule();
 }
 
 async function flush(): Promise<void> {
