@@ -124,13 +124,14 @@ Resources:
         MaxAge: 86400
 
   # AuthType NONE does NOT auto-grant invocation: the resource-based
-  # policy must be declared explicitly (FunctionUrlAuthType NONE
-  # scopes it to Function URL requests only, not the Invoke API).
+  # policy must be declared explicitly. For Function URLs the action
+  # is InvokeFunctionUrl (NOT InvokeFunction — FunctionUrlAuthType is
+  # only supported for it), scoped to Function URL requests only.
   SessionFunctionUrlPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt SessionFunction.Arn
-      Action: lambda:InvokeFunction
+      Action: lambda:InvokeFunctionUrl
       Principal: '*'
       FunctionUrlAuthType: NONE
 
