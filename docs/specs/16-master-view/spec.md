@@ -28,42 +28,64 @@ escena.
 - **Accesibilidad (I5)**: el arrastre tendrá alternativa de teclado/botones
   ("mover a grupo…") — el drag no puede ser el único camino.
 
-## Decisiones previstas (a validar con el usuario)
+## Decisiones (validadas con el usuario, 2026-11-23)
 
-1. **Solo lectura** (recomendado): el master OBSERVA pero no edita
-   contadores — los jugadores gestionan los suyos y así se evitan
-   conflictos 409 en cascada. La edición del master sería una enmienda
-   futura (necesitaría su propia resolución de conflicto).
-2. **Polling 15 s + refresco manual** (recomendado): simple y estático;
-   realtime queda fuera de alcance (backend/infra nueva).
-3. **Grupos y minimización en localStorage del master** (recomendado): si
-   el master cambia de dispositivo re-configura en 10 segundos; cero
-   cambios de contrato/infra.
-4. **Todos los personajes del manifest, no solo los "con sesión"** (la
-   fila informa del estado).
+1. **EDITABLE** (decisión del usuario): el master puede modificar contadores
+   de los jugadores — PG (±1/±10), PG temporales (±1), inspiración
+   (toggle) y espacios de conjuro (±1). Muerte saves y condiciones: solo
+   lectura en v1 (las gestiona el jugador; las condiciones se muestran).
+2. **Sin sobrescribir a ciegas**: como el master y el jugador pueden
+   escribir a la vez, las ediciones del master son **deltas** (±N) que se
+   aplican sobre el estado remoto FRESCO con reintento: si el PATCH llega
+   con versión obsoleta (409), la vista re-lee el estado remoto, aplica el
+   MISMO delta encima y re-PATCHea (hasta 3 intentos; si agota, la fila
+   marca error y el master reintenta a mano). Así el master nunca pisa un
+   cambio concurrente del jugador. Cero cambios de backend (sin modo
+   delta en la API — si en el futuro hiciera falta, sería enmienda).
+3. **Polling 15 s + refresco manual** (validado): la web es estática;
+   realtime fuera de alcance. El polling NO pisa ediciones del master con
+   envío pendiente (local-first por personaje).
+4. **Grupos y minimización en localStorage del master** (validado): es
+   estado de UI del master; cambiar de dispositivo → re-configurar en 10 s.
+5. **Todos los personajes del manifest** (validado): sin sesión remota →
+   fila "sin sesión iniciada".
+
+## Muerte saves y resto de datos (solo lectura, decisión del usuario)
+
+Cada fila muestra además las **salvaciones de muerte** del jugador
+(éxitos/fracasos, p. ej. "✔ 1 · ✖ 2") y las **condiciones activas** —
+información clave para el master en el combate; editables solo desde la
+ficha del jugador.
 
 ## Criterios de aceptación
 
 - **C1**: botón "Vista del Master" en la lista (`#/`) → `#/master`; y
   navegación de vuelta.
 - **C2**: una fila por personaje con: nombre/clase/nivel, PG actual/máx,
-  PG temp, inspiración, espacios usados/máx (niveles con slotsMax > 0),
-  condiciones activas y dot de sincronización (estado del sync del
-  jugador: desconocido para el master → se muestra "visto hace Xs").
+  PG temp, inspiración (dot), espacios usados/máx (niveles con slotsMax > 0),
+  condiciones activas, **salvaciones de muerte (éxitos/fracasos)** y dot de
+  sincronización ("visto hace Xs").
 - **C3**: los datos provienen de la API remota; personaje sin sesión →
   fila "sin sesión iniciada".
 - **C4**: arrastrar filas para formar/renombrar grupos; la composición
   persiste tras recargar (localStorage del master).
 - **C5**: minimizar/maximizar cada fila; persiste tras recargar.
 - **C6**: refresco manual instantáneo + polling automático cada 15 s
-  (sin bloquear la UI; indicación visual de "actualizado hace Xs").
+  (sin bloquear la UI; indicación visual de "actualizado hace Xs"). El
+  polling no pisa ediciones del master pendientes de envío.
 - **C7**: accesibilidad: alternativa de teclado/botones al drag, focus
   visible, roles/labels en las zonas interactivas.
 - **C8**: sin cambios de backend/infra/contrato (reutiliza la API de la
   Fase 15); I2 intacto; compuertas lint/test/build/check en verde.
+- **C9 (edición)**: los contadores editables (PG ±1/±10, temp ±1,
+  inspiración, slots ±1) aplican DELTAS sobre el estado remoto fresco con
+  reintento ante 409 (hasta 3) — el master nunca sobrescribe un cambio
+  concurrente del jugador; una fila con conflicto agotado queda marcada
+  error con reintento manual.
 
 ## Fuera de alcance
 
-- Edición de contadores por el master (enmienda futura si se pide).
+- Muerte saves y condiciones EDITABLES por el master (solo lectura en v1;
+  las gestiona el jugador).
 - Realtime push (SSE/WebSocket), iniciativo/orden de turno, fotos de
   retrato, multi-mesa.

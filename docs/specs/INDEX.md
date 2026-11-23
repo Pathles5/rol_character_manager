@@ -28,7 +28,7 @@ Convenciones:
 - **`README.md` en la raíz**: guía para levantar la app (requisitos, comandos, despliegue, estructura y punteros a la documentación). Referenciado desde aquí y desde las specs de entrega (Fase 08); mantenerlo al día con los scripts del `package.json`.
 - El orden de filas refleja el orden de ejecución acordado con el usuario: la Fase 10 va ANTES que la 09 (número ≠ orden).
 
-| 16 | Vista del Master (panel de grupo) | spec | Especificada a petición del usuario (2026-11-23, anotada antes que el resto del backlog): ruta `#/master` con fila por personaje (PG, temp, inspiración, espacios, condiciones, sync) desde la API remota; grupos por drag & drop (alternativa de teclado), minimización de filas; persistencia en localStorage del master; polling 15 s + refresco manual; **SOLO LECTURA** — sin cambios de backend. Decisiones pendientes de validar: solo lectura ✓?, polling ✓?, grupos en localStorage ✓? |
+| 16 | Vista del Master (panel de grupo) | spec | Especificada y VALIDADA por el usuario (2026-11-23): ruta `#/master` con fila por personaje (PG, temp, inspiración, espacios, condiciones, **muerte saves éxitos/fracasos**, sync) desde la API remota; **EDITABLE** (PG ±1/±10, temp ±1, inspiración, slots ±1) con deltas aplicados sobre estado remoto fresco + reintento 409 (hasta 3) — el master nunca pisa al jugador; grupos por drag & drop (alternativa teclado), minimización; persistencia en localStorage del master; polling 15 s + refresco manual (no pisa ediciones pendientes). **Pendiente: tareas numeradas + implementación** |
 
 Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para que la compuerta no las trate como activas):
 
