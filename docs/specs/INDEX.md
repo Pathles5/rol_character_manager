@@ -37,11 +37,21 @@ Fases futuras (fuera de la v1 del brief, para memoria - sin filas de tabla para 
 
 - **Upgrade del runtime Lambda a Node.js 26**: cuando AWS publique `nodejs26.x`, subir `Runtime` en `infra/session.yaml` y el `--target` de `npm run build:backend` (package.json) en el mismo cambio - petición del usuario (2026-11-23, Fase 15a). El bundle CJS de esbuild se ajusta a `--target=node26` sin más cambios.
 
-## Handoff de sesión (2026-11-24, Fase 19 en curso)
+## Handoff de sesión (2026-11-24, clausura temporal — previsión varias semanas)
 
-**Fases 00–18 approved; Fase 19 verified (dev desplegado y verificado, QA pendiente); rama de trabajo dev; último tag v0.4.0**
+**Estado:** Fases 00–18 `approved` (tag v0.4.0), Fase 19 `verified` (dev desplegado y verificado en runtime: run 45500494138 SUCCESS, round-trip de sesión dev, producción intacta). Últimos commits: `master` = `e9f8417` (prod, pushed), `dev` = `78a4e29` (pushed, detrás de master 2 commits: las de Fase 19).
 
-Fases 17–18 cerradas y aprobadas (tag v0.4.0). Fase 19: QA visual del usuario del sitio dev → approved. Después pre/pro como fases futuras (esquema ya parametrizado). Backlog: upgrade runtime Lambda nodejs26.x; actualizar actions deprecadas (Node 20).
+**Plan del usuario (contexto para la retomada):** está probando la app en `master` (producción) y llevará los nuevos evolutivos a `dev` durante varias semanas. **Regla de flujo futura:** todo el trabajo nuevo va en rama `dev`; `master` es producción y no recibe cambios de desarrollo hasta que se cierren releases (pre/pro como fases futuras). No fusionar dev en master por ahora.
+
+**Pendientes:**
+- **QA visual Fase 19:** abrir `http://fichass-site-dev.s3-website-eu-west-1.amazonaws.com` (sitio dev, C2: index 200, 6 personajes) y comprobar que la app funciona igual que en producción pero contra la API dev. When ok → Fase 19 `approved`.
+- pre/pro futuras (esquema ya parametrizado; D-68…D-71 + D-70a registradas).
+- Backlog: upgrade del runtime Lambda a `nodejs26.x` (cuando AWS lo publique), actualizar actions deprecadas (Node 20 → GitHub APM 24).
+
+**Datos dev rápidos (para pruebas entre semanas):**
+- Sitio dev: `http://fichass-site-dev.s3-website-eu-west-1.amazonaws.com`
+- API dev: `https://4vbl5ob36x3zqda7wycjp4fhwy0hmwfj.lambda-url.eu-west-1.on.aws` (referencia: `session-url.json` del bucket dev)
+- Dev tiene datos de prueba (no son productivos): `master-layout` v1 (editable true) y sesión `elira` v1.
 
 Deuda menor pendiente: idiomas de Uldrak/Nissa por confirmar con el usuario (viven en `questions` de sus JSON en `public/characters/`).
 
