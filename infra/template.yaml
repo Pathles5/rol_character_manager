@@ -1,87 +1,73 @@
 # ============================================================================
-# FichaSS — infra SAM template (Fase 09, D-34: SAM a petición del usuario)
+# FichaSS — HOSTING stack (bucket website + policy pública + SSM) — Fase 19
 # ============================================================================
 #
-# ⚠️ ESTADO DE ESTE STACK (diagnóstico 2026-11-22): los recursos de hosting
-# de este template (bucket, bucket policy, rol OIDC, parámetro SSM) están
-# VIVOS PERO HUÉRFANOS — ningún stack los gestiona. Durante la saga de la
-# Fase 09 (changesets CREATE rotos en esta cuenta) el stack que los creó fue
-# borrado con UpdateReplacePolicy/DeletionPolicy: Retain, y el nombre
-# `fichass-infra` quedó ocupado por un zombie ROLLBACK_COMPLETE sin
-# recursos (borrado en la Fase 15). ESTE template es el IaC-de-referencia
-# del hosting: no se despliega ni desde CI ni en local. Cualquier cambio
-# futuro en el hosting exige intervención manual del usuario (documentada
-# en infra/README.md). La infra GESTIONADA POR CI (crea/actualiza el job
-# `infra` del workflow en cada push) vive en `infra/session.yaml` (stack
-# `fichass-session`, Fase 15, D-54/D-55).
+# HISTORIA: en Fase 09 este template era solo el IaC-de-referencia del
+# hosting (bucket, policy y SSM VIVOS PERO HUÉRFANOS — ningún stack los
+# gestionaba). DESDE FASE 19 (D-70) es el stack de hosting DESPLEGABLE POR
+# CI: la ruta `dev` del workflow despliega `fichass-hosting-dev` desde aquí;
+# la ruta `master` NO lo despliega (los recursos legacy siguen intactos).
 #
-# SIMPLIFICACIÓN FINAL (2026-11-20, tras el diagnóstico de Fase 09):
-# 1. El OIDC provider de GitHub DEBE existir en la cuenta (el usuario ya lo
-#    tiene por su otro proyecto). Si no existiera, crearlo UNA vez:
-#      aws iam create-open-id-connect-provider \
-#        --url https://token.actions.githubusercontent.com \
-#        --client-id-list sts.amazonaws.com \
-#        --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
-# 2. UN solo rol incondicional, SIN ManagedPolicy (inline policies) y SIN
-#    recursos condicionales: la validación temprana de CloudFormation
-#    (AWS::EarlyValidation::ResourceExistenceCheck) rechaza Refs a recursos
-#    con Condition=false aunque el recurso no se cree, y resultó flaky en
-#    las variantes condicionales. Sin condiciones = determinista.
-# 3. El trust acepta DOS subs (StringEquals con lista = OR): la rama
-#    protegida (jobs sin environment) y el environment "dev" del job deploy.
+# PARÁMETRO Environment (D-69): default '' = LEGACY → reproduce EXACTAMENTE
+# los nombres actuales de producción (bucket `fichass-site`, SSM
+# `/fichass/bucket-name`), byte-idénticos a los huérfanos vivos. Con
+# `Environment=dev` (y futuros pre/pro) → bucket `fichass-site-<env>` y SSM
+# `/fichass/<env>/bucket-name`, SIN sufijo de repo.
 #
-# DECISIÓN D-39 (Fase 09, SUPERADA en Fase 15 por D-54/D-55): el workflow
-# NO despliega stacks. DESDE FASE 15 el criterio del usuario es que TODA la
-# infra se gestiona desde la pipeline: el job `infra` del workflow hace
-# `sam build` + `sam deploy` de ESTE template (changeset-update sobre el
-# stack ya creado; el quirk del changeset-CREATE roto de la cuenta quedó
-# remediado por el bootstrap one-time de Fase 09). El rol OIDC tiene los
-# permisos S3+SSM de sync (D-40) MÁS lo mínimo para desplegar
-# CloudFormation/Lambda/DynamoDB/SSM acotado al prefijo `fichass-*`.
-# En local NUNCA se despliega infra (solo lectura/verificación).
+# SIN ROL OIDC AQUÍ (D-70a): este stack es SOLO bucket+policy+SSM. El rol
+# OIDC de producción (`fichass-github-actions-rol_character_manager`) ya
+# existe en la cuenta y su IaC de referencia es `infra/trust.json` +
+# `infra/role-policy.json` — este stack NO lo crea ni lo modifica. El rol
+# dedicado de dev (`fichass-github-actions-dev`) lo crea el bootstrap
+# idempotente `scripts/bootstrap-dev-role.sh`.
 #
-# COSTE €0 (I2/D-11): S3 Free Tier, IAM gratis, CFN gratis, sin CloudFront.
-# Tags: project: FichaSS · cost-policy: free-tier-only (S3/SSM; IAM no soporta).
+# SIN Transform (AWS::Serverless): no hay recursos SAM en este template →
+# create-stack/changeset SIN capabilities, el patrón ya probado en esta
+# cuenta con `infra/data.yaml`. (El hosting solo usa recursos CFN puros.)
+#
+# QUIRKS DE LA CUENTA (spec 09/15, respetados en el workflow): primera
+# creación con `aws cloudformation create-stack` DIRECTO (changesets CREATE
+# flaky), self-heal de shells rotos, changesets PENDIENTES borrados nunca
+# ejecutados, esperas por sondeo manual (CLI v2 sin --waiter-attempts).
+#
+# COSTE €0 (I2/D-11): S3 Free Tier, SSM gratis, CloudFormation gratis.
+# SIN CloudFront, sin API Gateway, sin dominios. Tags en todos los recursos:
+#   project: FichaSS · cost-policy: free-tier-only.
 # ============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: FichaSS - static S3 hosting (Free Tier) + OIDC role for GitHub Actions (sync deploy, no long-lived keys).
+Description: FichaSS - static S3 hosting (Free Tier) + SSM deployment settings, parameterized by Environment (D-69). Default '' reproduces the production names exactly (D-71).
 
 Parameters:
-  BucketName:
+  Environment:
     Type: String
-    Default: fichass-site
-    Description: Hosting bucket name (globally unique; if taken, pick another).
-    AllowedPattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
-  GitHubOrg:
-    Type: String
-    Default: Pathles5
-    Description: GitHub repository owner (org or user).
-  GitHubRepo:
-    Type: String
-    Default: rol_character_manager
-    Description: GitHub repository name.
-  GitHubBranch:
-    Type: String
-    Default: master
-    Description: Branch allowed to deploy (only this branch triggers the sync).
-  ExistingOidcProviderArn:
-    Type: String
-    Default: arn:aws:iam::159177056493:oidc-provider/token.actions.githubusercontent.com
-    Description: ARN of the GitHub OIDC provider that must ALREADY exist (defaults to this account's provider; committed here because the account id is already public in infra/role-policy.json).
+    Default: ''
+    Description: >-
+      Environment suffix. '' (default) = LEGACY: bucket fichass-site and SSM
+      /fichass/bucket-name (production names, unchanged). 'dev' (and future
+      pre/pro) = suffix -<env> without the repo suffix: fichass-site-dev and
+      /fichass/<env>/bucket-name.
+    AllowedPattern: '^$|^[a-z][a-z0-9]{0,14}$'
+    ConstraintDescription: Empty string (legacy) or a short lowercase-alnum environment name such as dev.
+
+Conditions:
+  IsLegacy: !Equals [!Ref Environment, '']
 
 Resources:
 
   # --------------------------------------------------------------------------
-  # Static hosting bucket (website endpoint S3; NO CloudFront per I2)
+  # Static hosting bucket (website endpoint S3; NO CloudFront per I2).
+  # Name derived from Environment (D-69): legacy fichass-site / dev fichass-site-<env>.
   # --------------------------------------------------------------------------
   SiteBucket:
     Type: AWS::S3::Bucket
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Ref BucketName
+      BucketName: !If
+        - IsLegacy
+        - fichass-site
+        - !Sub fichass-site-${Environment}
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -113,7 +99,10 @@ Resources:
 
   # --------------------------------------------------------------------------
   # Deployment settings in SSM (D-40): the workflow reads the bucket name
-  # from here — the only secret left is AWS_OIDC_ROLE_ARN.
+  # from here — the only secret left is AWS_OIDC_ROLE_ARN (master) / the
+  # deterministic dev role ARN (dev, D-70a).
+  # Name derived from Environment (D-69): legacy /fichass/bucket-name,
+  # dev /fichass/<env>/bucket-name.
   # NOTE: SSM Parameter Tags must be a KEY-VALUE MAP (not a list like S3
   # Bucket Tags) — the list form trips early validation with an opaque
   # "AWS::EarlyValidation::PropertyValidation" error (cfn-lint E3012).
@@ -121,193 +110,20 @@ Resources:
   SsmBucketName:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /fichass/bucket-name
+      Name: !If
+        - IsLegacy
+        - /fichass/bucket-name
+        - !Sub /fichass/${Environment}/bucket-name
       Type: String
       Value: !Ref SiteBucket
       Tags:
         project: FichaSS
         cost-policy: free-tier-only
 
-  # --------------------------------------------------------------------------
-  # Role assumed by GitHub Actions via web identity (no long-lived keys).
-  # Trust pinned to: aud=sts.amazonaws.com and TWO allowed subs (branch ref
-  # for jobs without an environment; environment sub because the deploy job
-  # declares environment: dev — the OIDC token sub changes accordingly).
-  # --------------------------------------------------------------------------
-  GitHubActionsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub fichass-github-actions-${GitHubRepo}
-      MaxSessionDuration: 3600
-      Tags:
-        - Key: project
-          Value: FichaSS
-        - Key: cost-policy
-          Value: free-tier-only
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Ref ExistingOidcProviderArn
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              StringLike:
-                # GitHub cambió el formato del sub en 2025: ahora incluye los
-                # IDs numéricos (@<org-id>/<repo-id>). StringLike con comodines
-                # cubre ambos formatos (viejo con nombres + nuevo con IDs):
-                token.actions.githubusercontent.com:sub:
-                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}
-                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:ref:refs/heads/${GitHubBranch}
-                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:environment:dev
-                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:environment:dev
-          - Effect: Allow
-            Principal:
-              Federated: !Ref ExistingOidcProviderArn
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              StringLike:
-                token.actions.githubusercontent.com:sub:
-                  - !Sub repo:${GitHubOrg}/${GitHubRepo}:environment:dev
-                  - !Sub repo:${GitHubOrg}@*/${GitHubRepo}@*:environment:dev
-      # Inline policies (NOT ManagedPolicy: early validation rejects it in
-      # this template — see header). Least privilege:
-      #   - S3 sync + SSM read (D-40) — Fase 09.
-      #   - FROM Fase 15 (D-54/D-55): deploy-the-stack-from-the-pipeline
-      #     permissions (CloudFormation changesets on this stack, Lambda
-      #     CRUD on fichass-* functions incl. URL config, DynamoDB CRUD on
-      #     fichass-* tables, IAM role management + PassRole on fichass-*
-      #     roles, SSM put on /fichass/*) — all scoped by the `fichass`
-      #     prefix; NOT a single paid resource (I2).
-      #   - CreateStack is deliberately NOT granted: the stack exists
-      #     (bootstrap Fase 09) and the account's changeset-CREATE is
-      #     broken anyway; re-creating from CI would need a manual case.
-      Policies:
-        - PolicyName: fichass-deploy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Sid: ListBucketForSync
-                Effect: Allow
-                Action:
-                  - s3:ListBucket
-                  - s3:GetBucketLocation
-                Resource: !Sub arn:${AWS::Partition}:s3:::${SiteBucket}
-              - Sid: ReadWriteObjectsForSync
-                Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource: !Sub arn:${AWS::Partition}:s3:::${SiteBucket}/*
-              - Sid: ReadDeploymentSettingsFromSsm
-                Effect: Allow
-                Action: ssm:GetParameter
-                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
-              - Sid: PublishDeploymentSettingsToSsm
-                Effect: Allow
-                Action:
-                  - ssm:PutParameter
-                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fichass/*
-              - Sid: DeployChangesetsOnThisStack
-                Effect: Allow
-                Action:
-                  - cloudformation:CreateChangeSet
-                  - cloudformation:ExecuteChangeSet
-                  - cloudformation:DeleteChangeSet
-                  - cloudformation:DescribeChangeSet
-                  - cloudformation:DescribeStackEvents
-                  - cloudformation:DescribeStacks
-                  - cloudformation:GetTemplate
-                  - cloudformation:ListChangeSets
-                  - cloudformation:ListStackResources
-                Resource:
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-*
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/fichass-*/*
-                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:changeset/samdeploy-*
-                  - arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31
-              - Sid: CreateAndHealFichassStacks
-                # CreateStack DIRECTO para la primera creación (los changesets
-                # CREATE de esta cuenta fallan la validación temprana de
-                # forma flaky — saga Fase 09/15) + DeleteStack para el
-                # auto-sanado de shells en ROLLBACK/REVIEW.
-                Effect: Allow
-                Action:
-                  - cloudformation:CreateStack
-                  - cloudformation:DeleteStack
-                  - cloudformation:UpdateStack
-                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/fichass-*
-              - Sid: TemplateInspection
-                Effect: Allow
-                Action:
-                  - cloudformation:GetTemplateSummary
-                  - cloudformation:ValidateTemplate
-                Resource: '*'
-              - Sid: ManageLambdaFunctions
-                Effect: Allow
-                Action:
-                  - lambda:CreateFunction
-                  - lambda:DeleteFunction
-                  - lambda:GetFunction
-                  - lambda:GetFunctionConfiguration
-                  - lambda:UpdateFunctionCode
-                  - lambda:UpdateFunctionConfiguration
-                  - lambda:TagResource
-                  - lambda:UntagResource
-                  - lambda:ListTags
-                  - lambda:AddPermission
-                  - lambda:RemovePermission
-                  - lambda:GetPolicy
-                  - lambda:CreateFunctionUrlConfig
-                  - lambda:DeleteFunctionUrlConfig
-                  - lambda:GetFunctionUrlConfig
-                  - lambda:UpdateFunctionUrlConfig
-                  - lambda:CreateEventInvokeConfig
-                Resource: !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:fichass-*
-              - Sid: ManageDynamoTables
-                Effect: Allow
-                Action:
-                  - dynamodb:CreateTable
-                  - dynamodb:DeleteTable
-                  - dynamodb:DescribeTable
-                  - dynamodb:UpdateTable
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/fichass-*
-              - Sid: ManageFichassRoles
-                Effect: Allow
-                Action:
-                  - iam:CreateRole
-                  - iam:DeleteRole
-                  - iam:GetRole
-                  - iam:UpdateRole
-                  - iam:TagRole
-                  - iam:UntagRole
-                  - iam:PutRolePolicy
-                  - iam:GetRolePolicy
-                  - iam:DeleteRolePolicy
-                  - iam:ListRolePolicies
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/fichass-*
-              - Sid: PassFichassRolesOnly
-                Effect: Allow
-                Action: iam:PassRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/fichass-*
-
 Outputs:
   WebsiteURL:
     Description: Public URL of the static hosting (S3 website endpoint).
     Value: !GetAtt SiteBucket.WebsiteURL
   BucketName:
-    Description: Hosting bucket name (for the AWS_S3_BUCKET secret).
+    Description: Hosting bucket name (for the AWS_S3_BUCKET secret / SSM).
     Value: !Ref SiteBucket
-  OidcRoleArn:
-    Description: Role ARN (for the AWS_OIDC_ROLE_ARN secret).
-    Value: !GetAtt GitHubActionsRole.Arn

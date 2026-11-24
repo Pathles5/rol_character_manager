@@ -510,3 +510,38 @@ Formato: ID · fecha · contexto · opciones · elección · motivo · riesgo.
 - **Elección:** el usuario remitió a su respuesta de D-65 ("ya respondí en la 1ª pregunta"): esos controles permanecen con su visual e interactividad actuales en ambos modos.
 - **Motivo:** consecuencia directa de D-65; menos código y menos divergencia entre modos.
 - **Riesgo:** ninguno.
+
+## D-68 · 2026-11-24 · Mapa rama→entorno: dev/pre/pro, solo dev implementado en Fase 19
+
+- **Contexto:** el usuario pide una estructura de proyecto madura multi-entorno: `dev` (desarrollo), `pre` (preproducción estable para cerrar releases), `pro` (versiones major estables y depuradas). "Para el upgrade solo tendremos en cuenta la rama dev, según vaya madurando iremos implementando las demás."
+- **Elección (usuario):** `dev`→entorno dev, `pre`→pre (futura), `master`→pro (legacy hasta su fase). La Fase 19 implementa y despliega SOLO dev; el esquema queda parametrizado para añadir pre/pro como configuración. Rama `dev` creada desde `master`.
+- **Motivo:** madurez incremental sin big-bang; producción no se toca hasta que pre/pro estén listas.
+- **Riesgo:** master sigue con nombres legacy sin sufijo hasta la fase de pro (migración de datos/URL pendiente entonces).
+
+## D-69 · 2026-11-24 · Recursos con sufijo de entorno, templates con default legacy-compatible
+
+- **Contexto:** Fase 19; naming de los recursos nuevos y cómo no romper master al compartir templates.
+- **Elección (usuario):** sufijo `-dev` SIN sufijo de repo (`fichass-site-dev`, `fichass-sessions-dev`, `fichass-session-dev`, `fichass-session-role-dev`, SSM `/fichass/dev/bucket-name`, rol `fichass-github-actions-dev`). Los tres templates (hosting/data/session) llevan parámetro `Environment` con **default `''` = legacy-compatible** (reproduce los nombres actuales de master byte-idénticos: sufijo de repo, stacks sin sufijo, `fichass-site`, `/fichass/bucket-name`); `dev` se pasa EXPLÍCITAMENTE desde la ruta dev del workflow.
+- **Motivo:** nombres limpios y cortos para entornos nuevos; master intacto aunque comparta templates (D-71).
+- **Riesgo:** el legado pro conserva el sufijo de repo hasta su migración; `GitHubRepo` sigue siendo necesario para legacy.
+
+## D-70 · 2026-11-24 · Hosting dev gestionado por CI (no bootstrap manual)
+
+- **Contexto:** Fase 19; el hosting (bucket+policy+SSM) estaba huérfano (ningún stack lo gestionaba). El usuario eligió "Todo por CI" frente a bootstrap one-time manual.
+- **Elección (usuario):** `infra/template.yaml` pasa a stack de hosting desplegable por CI (`fichass-hosting-dev`: bucket website `fichass-site-dev` + policy pública read-only + SSM `/fichass/dev/bucket-name`, Retain en bucket). La ruta dev del workflow lo crea/actualiza con el mismo patrón que data/session (create-stack directo, self-heal, changeset-update). El rol OIDC NO vive en este stack.
+- **Motivo:** todo el ciclo de vida de dev por CI, sin intervención manual recurrente.
+- **Riesgo:** el hosting legacy sigue huérfano (master no despliega este template); si alguien lo desplegara con defaults chocaría con los huérfanos vivos (anotado).
+
+## D-70a · 2026-11-24 · Rol OIDC dev dedicado creado por CI (bootstrap idempotente)
+
+- **Contexto:** Fase 19; el rol actual tiene iam:CreateRole/PutRolePolicy/PassRole sobre `fichass-*` pero S3 solo de sync sobre `fichass-site` (no puede crear buckets). Para "todo por CI" hay que resolver ese permiso sin credenciales del usuario.
+- **Elección (usuario):** rol dedicado `fichass-github-actions-dev` creado por un paso de bootstrap idempotente en CI (`scripts/bootstrap-dev-role.sh`: get-role→create-role si falta→put-role-policy converge), asumiendo el rol ACTUAL. Policy `infra/role-policy-dev.json` (mínimo privilegio sobre `fichass-*-dev`: gestión S3+sync, SSM `/fichass/dev/*`, CFN/Lambda/Dynamo/IAM+PassRole) y trust `infra/trust-dev.json` (rama dev + environment:dev). Los jobs de dev asumen el rol dev por **ARN determinista** (sin secrets nuevos). **El rol de producción NO se modifica.**
+- **Motivo:** aislamiento por entorno; el rol de producción queda intacto; 100% CI.
+- **Riesgo:** el trust dev no converge tras la primera creación (el rol actual no tiene iam:UpdateAssumeRolePolicy) → cambios futuros al trust = manual one-time. Trust comparte environment:dev con master (acotado por permisos). Corrección 1 de revisión: ARN de stack `stack/fichass-*-dev/*` (con comodín final, los ARN reales llevan UUID) + ssm:DeleteParameter para el self-heal.
+
+## D-71 · 2026-11-24 · Ruta de producción (master) intacta en Fase 19
+
+- **Contexto:** Fase 19; qué hacer con el workflow/producción existente mientras se añade dev.
+- **Elección (usuario):** master intacto — los jobs `infra`/`deploy` de master conservan stacks `fichass-data`/`fichass-session`, bucket `fichass-site`, SSM `/fichass/bucket-name` y rol vía secret, sin una línea cambiada en sus cuerpos. dev es una ruta nueva paralela (jobs gated `refs/heads/dev`). Trigger `[master, dev]`, concurrencia por rama.
+- **Motivo:** cero riesgo sobre producción y sus datos reales de la partida mientras madura dev.
+- **Riesgo:** ninguno; la migración de pro a nombres con sufijo (y posible cambio de URL) queda para su fase.

@@ -36,6 +36,8 @@ El build produce `dist/` con rutas **relativas** (`vite.config.ts` → `base: ".
 
 **Despliegue continuo (AWS + GitHub Actions):** la infra como código vive en [`infra/`](infra/) — plantilla SAM + workflow de Actions con OIDC. La guía de puesta en marcha one-time (crear el stack, configurar los secrets de GitHub y la alerta de facturación $0) está en [`infra/README.md`](infra/README.md).
 
+**Estructura multi-entorno (Fase 19):** ramas por entorno — `dev` → entorno de desarrollo (recursos con sufijo `-dev`, ruta de CI paralela), `pre` → preproducción (futura), `master` → producción (hoy legacy sin sufijo). El mapa rama→entorno, los recursos de cada entorno y el runbook de despliegue están en [`docs/PROCESS.md`](docs/PROCESS.md).
+
 ## Añadir un personaje
 
 1. Crea un JSON que cumpla el modelo de datos (ver [`docs/specs/01-data-model/model.md`](docs/specs/01-data-model/model.md)) con `schemaVersion: 1` y un objeto `identity` completo.

@@ -8,21 +8,35 @@
 # recreación dejaba huérfana la tabla por Retain y bloqueaba la recreación
 # con el nombre ocupado (la saga de huérfanos de Fase 09/15).
 #
-# SIN cross-stack references: el nombre de la tabla es determinista
-# (fichass-sessions-<repo>) y el stack de cómputo construye el ARN con !Sub.
+# SIN cross-stack references: el nombre de la tabla es determinista y se
+# deriva del parámetro Environment (D-69) y el stack de cómputo construye el
+# ARN con !Sub.
 #
-# Gestionado por CI (job `infra` del workflow, scripts/deploy-stack.sh).
+# Gestionado por CI: job `infra` de master (patrón inline, intacto) y job
+# `infra-dev` de la ruta dev (mismo patrón inline replicado, Fase 19).
 # COSTE €0 (I2/D-11): DynamoDB on-demand dentro de Free Tier (I1 enmendada).
 # ============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: FichaSS - session data (DynamoDB table, Retain) — own stack so it survives compute-stack recreation.
+Description: FichaSS - session data (DynamoDB table, Retain) — own stack so it survives compute-stack recreation. Parameterized by Environment (D-69).
 
 Parameters:
   GitHubRepo:
     Type: String
     Default: rol_character_manager
-    Description: GitHub repository name (resource-name suffix).
+    Description: GitHub repository name (legacy resource-name suffix; ignored when Environment is set).
+  Environment:
+    Type: String
+    Default: ''
+    Description: >-
+      Environment suffix. '' (default) = LEGACY: table fichass-sessions-<repo>
+      (production name, unchanged). 'dev' (and future pre/pro) = table
+      fichass-sessions-<env>, WITHOUT the repo suffix (D-69).
+    AllowedPattern: '^$|^[a-z][a-z0-9]{0,14}$'
+    ConstraintDescription: Empty string (legacy) or a short lowercase-alnum environment name such as dev.
+
+Conditions:
+  IsLegacy: !Equals [!Ref Environment, '']
 
 Resources:
 
@@ -33,7 +47,10 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub fichass-sessions-${GitHubRepo}
+      TableName: !If
+        - IsLegacy
+        - !Sub fichass-sessions-${GitHubRepo}
+        - !Sub fichass-sessions-${Environment}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: characterId

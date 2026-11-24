@@ -8,12 +8,21 @@
 # recreación de este stack (el self-heal de borrado/recreación dejaba la
 # tabla huérfana por Retain y bloqueaba la recreación con el nombre
 # ocupado — saga de huérfanos Fase 09/15). El nombre de la tabla es
-# determinista (fichass-sessions-<repo>) y el rol construye su ARN con
-# !Sub — SIN cross-stack references.
+# determinista y se deriva del parámetro Environment (D-69): legacy
+# `fichass-sessions-<repo>`, con Environment `fichass-sessions-<env>`; el
+# rol construye su ARN con !Sub — SIN cross-stack references.
 #
-# Gestionado por CI (job `infra` del workflow, scripts/deploy-stack.sh):
-# crea/actualiza/sanagua el stack en cada push. El hosting (bucket, rol
-# OIDC, SSM) sigue siendo huérfano estable documentado en infra/template.yaml.
+# Gestionado por CI: job `infra` de master (patrón inline, intacto) y job
+# `infra-dev` de la ruta dev (mismo patrón inline replicado, Fase 19): crea/
+# actualiza/sanagua el stack en cada push. El hosting (bucket + SSM) vive en
+# su propio stack (infra/template.yaml, D-70).
+#
+# PARÁMETRO Environment (D-69): default '' = LEGACY → nombres byte-idénticos
+# a los de master hoy (Lambda/rol `fichass-session-<repo>`, tabla
+# `fichass-sessions-<repo>`, CORS/env-vars sobre `fichass-site`). Con
+# `Environment=dev` → Lambda `fichass-session-<env>`, rol
+# `fichass-session-role-<env>`, tabla `fichass-sessions-<env>`, CORS y
+# env-vars sobre `fichass-site-<env>` (orígenes website http + REST https).
 #
 # COSTE €0 (I2/D-11): Lambda 1M req/mes always-free, Function URL gratis,
 # CloudWatch Logs free tier. SIN API Gateway (su free tier es de 12 meses →
@@ -25,28 +34,42 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: FichaSS - session compute (Lambda Function URL, Free Tier only, CORS pinned to the site origin). The session TABLE lives in the DATA stack (infra/data.yaml).
+Description: FichaSS - session compute (Lambda Function URL, Free Tier only, CORS pinned to the site origin). The session TABLE lives in the DATA stack (infra/data.yaml). Parameterized by Environment (D-69).
 
 Parameters:
   GitHubRepo:
     Type: String
     Default: rol_character_manager
-    Description: GitHub repository name (resource-name suffix).
-  SiteBucketName:
+    Description: GitHub repository name (legacy resource-name suffix; ignored when Environment is set).
+  Environment:
     Type: String
-    Default: fichass-site
-    Description: Hosting bucket name (read-only source of the authored JSONs).
+    Default: ''
+    Description: >-
+      Environment suffix. '' (default) = LEGACY: fichass-session-<repo> /
+      fichass-sessions-<repo> / site fichass-site (production names,
+      unchanged). 'dev' (and future pre/pro) = fichass-session-<env> /
+      fichass-session-role-<env> / fichass-sessions-<env> / site
+      fichass-site-<env>, WITHOUT the repo suffix (D-69).
+    AllowedPattern: '^$|^[a-z][a-z0-9]{0,14}$'
+    ConstraintDescription: Empty string (legacy) or a short lowercase-alnum environment name such as dev.
+
+Conditions:
+  IsLegacy: !Equals [!Ref Environment, '']
 
 Resources:
 
   # --------------------------------------------------------------------------
   # Session table ARN is CONSTRUCTED (no GetAtt): the table lives in the
-  # DATA stack (fichass-data) with the deterministic name below.
+  # DATA stack (fichass-data / fichass-data-<env>) with the deterministic
+  # name below — legacy fichass-sessions-<repo>, dev fichass-sessions-<env>.
   # --------------------------------------------------------------------------
   SessionFunctionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub fichass-session-${GitHubRepo}
+      RoleName: !If
+        - IsLegacy
+        - !Sub fichass-session-${GitHubRepo}
+        - !Sub fichass-session-role-${Environment}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -64,7 +87,10 @@ Resources:
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:PutItem
-                Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/fichass-sessions-${GitHubRepo}
+                Resource: !If
+                  - IsLegacy
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/fichass-sessions-${GitHubRepo}
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/fichass-sessions-${Environment}
               # Basic execution logging (CloudWatch Logs free tier).
               - Sid: LambdaLogs
                 Effect: Allow
@@ -77,7 +103,10 @@ Resources:
   SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub fichass-session-${GitHubRepo}
+      FunctionName: !If
+        - IsLegacy
+        - !Sub fichass-session-${GitHubRepo}
+        - !Sub fichass-session-${Environment}
       Runtime: nodejs22.x
       Architectures:
         - arm64
@@ -93,9 +122,20 @@ Resources:
       Role: !GetAtt SessionFunctionRole.Arn
       Environment:
         Variables:
-          SESSIONS_TABLE: !Sub fichass-sessions-${GitHubRepo}
-          MANIFEST_URL: !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com/characters-manifest.json
-          SITE_URL: !Sub http://${SiteBucketName}.s3-website-eu-west-1.amazonaws.com
+          # Derived from the environment (D-69): legacy = fichass-sessions-<repo>
+          # + site fichass-site; dev = fichass-sessions-<env> + site fichass-site-<env>.
+          SESSIONS_TABLE: !If
+            - IsLegacy
+            - !Sub fichass-sessions-${GitHubRepo}
+            - !Sub fichass-sessions-${Environment}
+          MANIFEST_URL: !If
+            - IsLegacy
+            - !Sub http://fichass-site.s3-website-${AWS::Region}.amazonaws.com/characters-manifest.json
+            - !Sub http://fichass-site-${Environment}.s3-website-${AWS::Region}.amazonaws.com/characters-manifest.json
+          SITE_URL: !If
+            - IsLegacy
+            - !Sub http://fichass-site.s3-website-${AWS::Region}.amazonaws.com
+            - !Sub http://fichass-site-${Environment}.s3-website-${AWS::Region}.amazonaws.com
 
   SessionFunctionUrl:
     Type: AWS::Lambda::Url
@@ -103,14 +143,21 @@ Resources:
       TargetFunctionArn: !GetAtt SessionFunction.Arn
       AuthType: NONE
       Cors:
-        # Pinned to BOTH site origins (hardened-open endpoint, D-55):
-        # the website endpoint (http, dash) and the REST endpoint
-        # (https, dot) — a player may reach the site through either.
+        # Pinned to BOTH site origins of the ENVIRONMENT bucket (hardened-open
+        # endpoint, D-55): the website endpoint (http, dash) and the REST
+        # endpoint (https, dot) — a player may reach the site through either.
+        # Legacy = fichass-site, dev = fichass-site-<env> (D-69).
         # OPTIONS is NOT allowed here (spec): the Function URL answers
         # the CORS preflight itself.
         AllowOrigins:
-          - !Sub http://${SiteBucketName}.s3-website-${AWS::Region}.amazonaws.com
-          - !Sub https://${SiteBucketName}.s3.${AWS::Region}.amazonaws.com
+          - !If
+            - IsLegacy
+            - !Sub http://fichass-site.s3-website-${AWS::Region}.amazonaws.com
+            - !Sub http://fichass-site-${Environment}.s3-website-${AWS::Region}.amazonaws.com
+          - !If
+            - IsLegacy
+            - !Sub https://fichass-site.s3.${AWS::Region}.amazonaws.com
+            - !Sub https://fichass-site-${Environment}.s3.${AWS::Region}.amazonaws.com
         AllowMethods:
           - GET
           - PATCH

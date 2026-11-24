@@ -29,20 +29,31 @@
 #   (Se podría ejecutar con pwsh en ubuntu, pero es una compuerta de proceso,
 #   no de producto; deliberadamente fuera del workflow.)
 #
-# Estrategia de Cache-Control (ver decisión en el job deploy).
+#   Estrategia de Cache-Control (ver decisión en el job deploy).
+#
+# FASE 19 (D-68…D-71): el workflow dispara en DOS ramas. `master` conserva
+#   los jobs `infra`/`deploy` TAL CUAL (producción legacy intacta, D-71).
+#   `dev` ejecuta una ruta paralela y encapsulada: `bootstrap-dev-role`
+#   (crea/converge el rol dedicado `fichass-github-actions-dev`, D-70a) →
+#   `infra-dev` (stacks `fichass-*-dev` con `Environment=dev`, D-69/D-70) →
+#   `deploy-dev` (sync al bucket dev con la misma política de cache).
+#   Los jobs de dev asumen ese rol por ARN determinista (sin secrets nuevos)
+#   y todos declaran `environment: dev`.
 # ============================================================================
 name: deploy
 
 on:
   push:
-    branches: [master]        # rama parametrizada en el stack (GitHubBranch)
+    branches: [master, dev]   # master = pro legacy (intacto), dev = entorno dev (Fase 19)
   workflow_dispatch:          # arranque manual desde la pestaña Actions
 
-# Un solo despliegue a la vez: si llegan pushes rápidos en ráfaga, se encolan
-# en orden (cancel-in-progress: false) para que nunca corran dos sync
-# simultáneos contra el mismo bucket.
+# Un solo despliegue a la vez POR RAMA: si llegan pushes rápidos en ráfaga,
+# se encolan en orden (cancel-in-progress: false) para que nunca corran dos
+# sync simultáneos contra el mismo bucket. El grupo lleva ref_name: para
+# master el grupo sigue siendo `fichass-deploy-master` (idéntico al de
+# siempre, D-71) y la ruta dev cola aparte en `fichass-deploy-dev`.
 concurrency:
-  group: fichass-deploy-master
+  group: fichass-deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -447,6 +458,490 @@ jobs:
         # AWS_S3_BUCKET llega via GITHUB_ENV desde el paso "Read deployment
         # settings from SSM" (D-40) — NO usar secrets.AWS_S3_BUCKET (ya no
         # existe como secret y pisa el valor con vacío).
+
+      - name: Sync site (HTML/manifest/characters, siempre revalidar)
+        run: >
+          aws s3 sync dist/ s3://$AWS_S3_BUCKET/
+          --cache-control "max-age=0,must-revalidate"
+          --delete
+
+  # ============================================================ FASE 19 — dev
+  # Ruta DEV paralela (D-68…D-71). Los jobs de ARRIBA (master) están
+  # EXACTAMENTE COMO ANTES: mismos stacks/bucket/SSM/rol legacy (D-71).
+  #
+  # bootstrap-dev-role → asume el rol ACTUAL (secret AWS_OIDC_ROLE_ARN) y
+  #   ejecuta scripts/bootstrap-dev-role.sh (idempotente, D-70a): crea el
+  #   rol dedicado fichass-github-actions-dev si falta y converge su
+  #   policy inline. ÚNICO job de dev que usa ese secret; NO modifica el
+  #   rol de producción.
+  # infra-dev → asume el rol dev por ARN DETERMINISTA (sin secrets nuevos)
+  #   y despliega los TRES stacks dev con Environment=dev, en orden:
+  #   fichass-hosting-dev (bucket + SSM) → fichass-data-dev (tabla) →
+  #   fichass-session-dev (Lambda + Function URL). Misma saga de quirks que
+  #   master: create-stack DIRECTO en la primera creación (los changesets
+  #   CREATE son flaky en esta cuenta), self-heal de shells rotos,
+  #   changesets PENDIENTES borrados (nunca ejecutados), changeset vacío =
+  #   no-op válido, esperas por sondeo manual (CLI v2 sin
+  #   --waiter-attempts). Aquí se REPLICA el patrón inline de master (la
+  #   factorización a scripts/deploy-stack.sh queda para una fase futura).
+  # deploy-dev → sync al bucket dev con la MISMA política de cache que
+  #   master y publica session-url.json desde el output SessionUrl de
+  #   fichass-session-dev.
+  #
+  # Los tres declaran `environment: dev` (el trust del rol dev acepta rama
+  # dev O environment dev, en ambos formatos de sub — D-70a).
+
+  bootstrap-dev-role:
+    if: github.ref == 'refs/heads/dev'
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # imprescindible para OIDC (aws-actions + STS)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Guarda clara (T-02): si el script de bootstrap aún no está en el
+      # repo, falla ruidoso y NO se despliega nada (cero coste, cero
+      # recursos a medias).
+      - name: Check bootstrap script present (T-02)
+        run: |
+          if [ ! -f scripts/bootstrap-dev-role.sh ]; then
+            echo "::error::Falta scripts/bootstrap-dev-role.sh (T-02, D-70a). El rol dev no se puede crear; ver informe de la Fase 19."
+            exit 1
+          fi
+
+      # ÚNICO job de dev que asume el rol ACTUAL: su policy
+      # (infra/role-policy.json) incluye iam:CreateRole / GetRole /
+      # PutRolePolicy / TagRole sobre `fichass-*` (D-70a).
+      - name: Configure AWS credentials (OIDC — rol ACTUAL, solo bootstrap)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Bootstrap del rol dev (idempotente, D-70a)
+        run: bash scripts/bootstrap-dev-role.sh
+
+  # ------------------------------------------------------------- infra-dev
+  infra-dev:
+    if: github.ref == 'refs/heads/dev'
+    needs: bootstrap-dev-role
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # imprescindible para OIDC (aws-actions + STS)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # El bundle de la Lambda es determinista y va ANTES de sam build
+      # (esbuild single-file ESM con SDK EXTERNO, D-56) — igual que master.
+      - name: Bundle the session Lambda (esbuild)
+        run: npm run build:backend
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      # Rol DEDICADO por ARN determinista (D-70a): sin secret nuevo. Su
+      # trust solo admite la rama dev / environment dev de este repo.
+      - name: Configure AWS credentials (OIDC — rol DEV)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::159177056493:role/fichass-github-actions-dev
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ---------------------------------------------------------------
+      # ORDEN (D-70): hosting PRIMERO — crea el bucket dev
+      # (fichass-site-dev), su policy pública read-only y el SSM
+      # /fichass/dev/bucket-name; sam package y deploy-dev usan ese
+      # bucket. Mismo patrón de quirks que el job `infra` de master.
+      # ---------------------------------------------------------------
+      - name: Deploy hosting stack (fichass-hosting-dev)
+        run: |
+          REGION=${{ secrets.AWS_REGION }}
+          STACK=fichass-hosting-dev
+          TEMPLATE=infra/template.yaml
+          STATUS=$(aws cloudformation describe-stacks --stack-name $STACK \
+            --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+          echo "[$STACK] estado: $STATUS"
+
+          case "$STATUS" in
+            MISSING|ROLLBACK_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
+              if [ "$STATUS" != "MISSING" ]; then
+                echo "Shell roto: self-heal"
+                aws cloudformation delete-stack --stack-name $STACK --region $REGION
+                GONE=""
+                for i in $(seq 1 60); do
+                  S=$(aws cloudformation describe-stacks --stack-name $STACK \
+                    --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo GONE)
+                  echo "[$i] borrando: $S"
+                  if [ "$S" = "GONE" ]; then GONE=yes; break; fi
+                  sleep 10
+                done
+                [ -n "$GONE" ] || { echo "El shell no se borró a tiempo"; exit 1; }
+              fi
+              echo "Creación DIRECTA (create-stack, sin changeset)"
+              aws cloudformation create-stack \
+                --stack-name $STACK \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --region $REGION
+              ;;
+            CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+              # Borrar changesets pendientes obsoletos (nunca ejecutarlos).
+              STALE=$(aws cloudformation list-change-sets --stack-name $STACK \
+                --query "Summaries[?ExecutionStatus!='EXECUTED'].ChangeSetId" \
+                --output text --region $REGION)
+              for cs in $STALE; do
+                echo "Borrando changeset obsoleto: $cs"
+                aws cloudformation delete-change-set --stack-name $STACK \
+                  --change-set-name "$cs" --region $REGION || true
+              done
+              CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+              aws cloudformation create-change-set \
+                --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --change-set-type UPDATE \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --region $REGION
+              echo "Esperando al changeset (sondeo manual)..."
+              CS=""
+              CSREASON=""
+              for i in $(seq 1 60); do
+                CS=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
+                echo "[$i] changeset: $CS"
+                case "$CS" in
+                  CREATE_COMPLETE) break ;;
+                  FAILED) break ;;
+                esac
+                sleep 10
+              done
+              # Changeset vacío = el template no cambió → no-op válido
+              # (CFN usa DOS mensajes según el tipo de cambio).
+              if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
+                echo "Sin cambios que aplicar (no-op) — ok"
+              elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                echo "Changeset $CS: $CSREASON"; exit 1
+              else
+                aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              fi
+              ;;
+            *) echo "Estado inesperado: $STATUS"; exit 1 ;;
+          esac
+
+          # Asentar el stack (sondeo manual, timeout generoso)
+          for i in $(seq 1 90); do
+            S=$(aws cloudformation describe-stacks --stack-name $STACK \
+              --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+            echo "[$i] [$STACK]: $S"
+            case "$S" in
+              CREATE_COMPLETE|UPDATE_COMPLETE) echo "asentado"; break ;;
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED)
+                echo "terminal: $S"; exit 1 ;;
+            esac
+            [ "$i" = "90" ] && { echo "timeout"; exit 1; }
+            sleep 10
+          done
+
+      # ---------------------------------------------------------------
+      # Config de despliegue desde la IaC del ENTORNO dev (D-40/D-69):
+      # el stack hosting dev publica el nombre del bucket en
+      # /fichass/dev/bucket-name (fichass-site-dev).
+      # ---------------------------------------------------------------
+      - name: Read dev bucket from SSM (/fichass/dev/bucket-name)
+        run: |
+          BUCKET=$(aws ssm get-parameter --name /fichass/dev/bucket-name \
+            --query Parameter.Value --output text)
+          echo "AWS_S3_BUCKET=$BUCKET" >> "$GITHUB_ENV"
+          echo "Deploy target bucket: $BUCKET"
+
+      # ---------------------------------------------------------------
+      # TABLA en su PROPIO stack (Fase 15a): fichass-data-dev → tabla
+      # fichass-sessions-dev (Retain). Sobrevive a la recreación del
+      # stack de cómputo.
+      # ---------------------------------------------------------------
+      - name: Deploy data stack (fichass-data-dev)
+        run: |
+          REGION=${{ secrets.AWS_REGION }}
+          STACK=fichass-data-dev
+          TEMPLATE=infra/data.yaml
+          STATUS=$(aws cloudformation describe-stacks --stack-name $STACK \
+            --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+          echo "[$STACK] estado: $STATUS"
+
+          case "$STATUS" in
+            MISSING|ROLLBACK_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
+              if [ "$STATUS" != "MISSING" ]; then
+                echo "Shell roto: self-heal"
+                aws cloudformation delete-stack --stack-name $STACK --region $REGION
+                GONE=""
+                for i in $(seq 1 60); do
+                  S=$(aws cloudformation describe-stacks --stack-name $STACK \
+                    --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo GONE)
+                  echo "[$i] borrando: $S"
+                  if [ "$S" = "GONE" ]; then GONE=yes; break; fi
+                  sleep 10
+                done
+                [ -n "$GONE" ] || { echo "El shell no se borró a tiempo"; exit 1; }
+              fi
+              echo "Creación DIRECTA (create-stack, sin changeset)"
+              aws cloudformation create-stack \
+                --stack-name $STACK \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --region $REGION
+              ;;
+            CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+              STALE=$(aws cloudformation list-change-sets --stack-name $STACK \
+                --query "Summaries[?ExecutionStatus!='EXECUTED'].ChangeSetId" \
+                --output text --region $REGION)
+              for cs in $STALE; do
+                echo "Borrando changeset obsoleto: $cs"
+                aws cloudformation delete-change-set --stack-name $STACK \
+                  --change-set-name "$cs" --region $REGION || true
+              done
+              CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+              aws cloudformation create-change-set \
+                --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --change-set-type UPDATE \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --region $REGION
+              echo "Esperando al changeset (sondeo manual)..."
+              CS=""
+              CSREASON=""
+              for i in $(seq 1 60); do
+                CS=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
+                echo "[$i] changeset: $CS"
+                case "$CS" in
+                  CREATE_COMPLETE) break ;;
+                  FAILED) break ;;
+                esac
+                sleep 10
+              done
+              if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
+                echo "Sin cambios que aplicar (no-op) — ok"
+              elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                echo "Changeset $CS: $CSREASON"; exit 1
+              else
+                aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              fi
+              ;;
+            *) echo "Estado inesperado: $STATUS"; exit 1 ;;
+          esac
+
+          for i in $(seq 1 90); do
+            S=$(aws cloudformation describe-stacks --stack-name $STACK \
+              --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+            echo "[$i] [$STACK]: $S"
+            case "$S" in
+              CREATE_COMPLETE|UPDATE_COMPLETE) echo "asentado"; break ;;
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED)
+                echo "terminal: $S"; exit 1 ;;
+            esac
+            [ "$i" = "90" ] && { echo "timeout"; exit 1; }
+            sleep 10
+          done
+
+      - name: Sam build
+        run: >
+          sam build
+          --template infra/session.yaml
+          --base-dir .
+          --build-dir .aws-sam/build
+
+      # Empaqueta el código de la Lambda (zip a fichass-site-dev,
+      # prefijo sam-artifacts/) y reescribe el CodeUri a S3 — sin esto,
+      # un create-stack con --template-body no puede resolver rutas
+      # locales. Usa el bucket del ENTORNO (D-69).
+      - name: Sam package (bucket dev)
+        run: >
+          sam package
+          --template .aws-sam/build/template.yaml
+          --s3-bucket $AWS_S3_BUCKET
+          --s3-prefix sam-artifacts
+          --output-template-file .aws-sam/packaged.yaml
+
+      # ---------------------------------------------------------------
+      # Stack de CÓMPUTO de sesión (desechable): Lambda + Function URL.
+      # La tabla vive en fichass-data-dev (paso anterior). Con
+      # Environment=dev: Lambda fichass-session-dev, rol
+      # fichass-session-role-dev, CORS/env-vars sobre fichass-site-dev.
+      # Único stack con capabilities (rol IAM + Transform SAM).
+      # ---------------------------------------------------------------
+      - name: Deploy session stack (fichass-session-dev)
+        run: |
+          REGION=${{ secrets.AWS_REGION }}
+          STACK=fichass-session-dev
+          TEMPLATE=.aws-sam/packaged.yaml
+          STATUS=$(aws cloudformation describe-stacks --stack-name $STACK \
+            --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+          echo "[$STACK] estado: $STATUS"
+
+          case "$STATUS" in
+            MISSING|ROLLBACK_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_FAILED|REVIEW_IN_PROGRESS)
+              if [ "$STATUS" != "MISSING" ]; then
+                echo "Shell roto ($STATUS): self-heal, se borra para recrear"
+                aws cloudformation delete-stack --stack-name $STACK --region $REGION
+                GONE=""
+                for i in $(seq 1 60); do
+                  S=$(aws cloudformation describe-stacks --stack-name $STACK \
+                    --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo GONE)
+                  echo "[$i] borrando: $S"
+                  if [ "$S" = "GONE" ]; then GONE=yes; break; fi
+                  sleep 10
+                done
+                if [ -z "$GONE" ]; then echo "El shell no se borró a tiempo"; exit 1; fi
+              fi
+              echo "Creación DIRECTA (create-stack, sin changeset)"
+              aws cloudformation create-stack \
+                --stack-name $STACK \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+                --region $REGION
+              ;;
+            CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE)
+              STALE=$(aws cloudformation list-change-sets --stack-name $STACK \
+                --query "Summaries[?ExecutionStatus!='EXECUTED'].ChangeSetId" \
+                --output text --region $REGION)
+              for cs in $STALE; do
+                echo "Borrando changeset obsoleto: $cs"
+                aws cloudformation delete-change-set --stack-name $STACK \
+                  --change-set-name "$cs" --region $REGION || true
+              done
+              CHGSET="samdeploy-${{ github.run_id }}-${{ github.run_attempt }}"
+              aws cloudformation create-change-set \
+                --stack-name $STACK \
+                --change-set-name "$CHGSET" \
+                --change-set-type UPDATE \
+                --template-body file://$TEMPLATE \
+                --parameters ParameterKey=Environment,ParameterValue=dev \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --region $REGION
+              echo "Esperando al changeset $CHGSET (sondeo manual)..."
+              CS=""
+              CSREASON=""
+              for i in $(seq 1 60); do
+                CS=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "Status" --output text --region $REGION 2>/dev/null || echo PENDING)
+                CSREASON=$(aws cloudformation describe-change-set --stack-name $STACK \
+                  --change-set-name "$CHGSET" --query "StatusReason" --output text --region $REGION 2>/dev/null || echo "")
+                echo "[$i] changeset: $CS"
+                case "$CS" in
+                  CREATE_COMPLETE) break ;;
+                  FAILED) break ;;
+                esac
+                sleep 10
+              done
+              if [ "$CS" = "FAILED" ] && echo "$CSREASON" | grep -qE "didn't contain changes|No updates are to be performed"; then
+                echo "Sin cambios que aplicar (no-op) — ok"
+              elif [ "$CS" != "CREATE_COMPLETE" ]; then
+                echo "Changeset $CS: $CSREASON"; exit 1
+              else
+                aws cloudformation execute-change-set --stack-name $STACK --change-set-name "$CHGSET" --region $REGION
+              fi
+              ;;
+            *) echo "Estado inesperado: $STATUS"; exit 1 ;;
+          esac
+
+          # Asentar el stack (sondeo manual, timeout generoso) — equivale al
+          # paso "Wait for the stack to settle" del job infra de master.
+          for i in $(seq 1 90); do
+            S=$(aws cloudformation describe-stacks --stack-name $STACK \
+              --query "Stacks[0].StackStatus" --output text --region $REGION 2>/dev/null || echo MISSING)
+            echo "[$i] [$STACK]: $S"
+            case "$S" in
+              CREATE_COMPLETE|UPDATE_COMPLETE) echo "asentado"; break ;;
+              CREATE_FAILED|UPDATE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE|UPDATE_ROLLBACK_FAILED)
+                echo "terminal: $S"; exit 1 ;;
+            esac
+            [ "$i" = "90" ] && { echo "timeout"; exit 1; }
+            sleep 10
+          done
+
+  # ------------------------------------------------------------- deploy-dev
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    needs: [quality-gate, infra-dev]
+    # Los jobs de dev declaran `environment: dev` (formato de sub del
+    # trust del rol dev). Los secrets (AWS_OIDC_ROLE_ARN / AWS_REGION)
+    # viven en ese mismo environment de GitHub — ver infra/README.md.
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # imprescindible para OIDC (aws-actions + STS)
+
+    steps:
+      - name: Download dist (del quality-gate)
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Rol DEDICADO por ARN determinista (D-70a): sin secret nuevo.
+      - name: Configure AWS credentials (OIDC — rol DEV)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::159177056493:role/fichass-github-actions-dev
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Config de despliegue desde la IaC del entorno dev (D-40/D-69):
+      # /fichass/dev/bucket-name → fichass-site-dev.
+      - name: Read deployment settings from SSM (IaC, entorno dev)
+        run: |
+          BUCKET=$(aws ssm get-parameter --name /fichass/dev/bucket-name \
+            --query Parameter.Value --output text)
+          echo "AWS_S3_BUCKET=$BUCKET" >> "$GITHUB_ENV"
+          echo "Deploy target bucket: $BUCKET"
+
+      # Publica la URL de la API de sesión del ENTORNO dev como
+      # session-url.json (cache-control revalidate, igual que el index):
+      # el cliente de sync la lee al arrancar; si falta o falla, la capa
+      # de sync queda deshabilitada grácilmente.
+      - name: Publish session API URL (stack fichass-session-dev) into dist
+        run: |
+          URL=$(aws cloudformation describe-stacks --stack-name fichass-session-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='SessionUrl'].OutputValue" --output text)
+          if [ -n "$URL" ] && [ "$URL" != "None" ]; then
+            URL="${URL%/}"
+            printf '{"url":"%s"}\n' "$URL" > dist/session-url.json
+            echo "Session API URL published: $URL"
+          else
+            echo "No SessionUrl output yet — sync layer stays disabled"
+          fi
+
+      # Misma estrategia de cache que master (ver job deploy):
+      # assets con hash → immutable 1 año; HTML/manifest/characters →
+      # must-revalidate siempre.
+      - name: Sync immutable assets (hashed, 1 año)
+        run: >
+          aws s3 sync dist/assets s3://$AWS_S3_BUCKET/assets
+          --cache-control "max-age=31536000,immutable"
+          --delete
 
       - name: Sync site (HTML/manifest/characters, siempre revalidar)
         run: >
