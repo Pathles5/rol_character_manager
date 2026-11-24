@@ -50,7 +50,7 @@ Solución validada por el usuario (D-68/D-69/D-70/D-70a/D-71, 2026-11-24). Estad
 
 ## T-05 · Compuertas, revisión y despliegue dev verificado
 
-- Estado: en-flight
+- Estado: done
 - Responsable: orquestador (compuertas + despliegue con visto) → revisor fresh-eyes → usuario (QA)
 - Archivos: los de T-01…T-04
 - Detalle:
@@ -58,4 +58,4 @@ Solución validada por el usuario (D-68/D-69/D-70/D-70a/D-71, 2026-11-24). Estad
   - Revisor fresh-eyes contra C1–C5 (énfasis: master intacto, mínimo privilegio del rol dev, I2).
   - Primer despliegue dev ejecutado por el orquestador con el visto del usuario; verificar URL dev + round-trip de sesión dev sin tocar producción.
   - D-68…D-71 + D-70a registradas en DECISIONS.md; INDEX/tasks sincronizados.
-- Evidencia: compuertas verdes (sam validate ×3, lint, build, test 170/170, check.ps1, sintaxis bash) + revisor PASS tras corrección 1 (D1 ARN stack `fichass-*-dev/*`, D3 `ssm:DeleteParameter`); pendiente despliegue dev con visto + QA round-trip C3/C4
+- Evidencia: despliegue dev run 45500494138 SUCCESS (bootstrap rol + hosting/data/session + sync); sitio dev HTTP 200; round-trip master-layout dev v1 + personaje elira dev v1 (hp clamp 33); producción intacta (API distinta, master-layout prod v27); C1–C5 cumplidos; QA visual del usuario pendiente para approved

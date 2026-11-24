@@ -49,6 +49,8 @@ Un push a `dev` dispara el workflow `deploy` (`.github/workflows/deploy.yml`):
 - Round-trip de sesión en dev (C3/C4): la capa de sync apunta a la API dev; los datos viven en `fichass-sessions-dev` — **sin tocar producción**.
 - La ruta de `master` sigue desplegando producción legacy sin cambios.
 
+**Verificado (2026-11-24):** run 45500494138 SUCCESS, URL dev operativa, round-trip de sesión dev OK, producción intacta.
+
 El **primer despliegue** lo ejecuta el orquestador con el visto del usuario.
 
 ## Notas
@@ -57,6 +59,7 @@ El **primer despliegue** lo ejecuta el orquestador con el visto del usuario.
 - **Branch protection** en `master`/`pre` recomendada (configuración del usuario; fuera del alcance del repo).
 - **Coste €0 (I2):** dev añade bucket + tabla on-demand + Lambda, todo dentro de Free Tier/always-free; alertas de facturación existentes (3€/10€) intactas. Sin servicios pagados.
 - **Quirks de la cuenta (no re-abrir):** changeset CREATE roto → creación por `create-stack` directo (el workflow ya lo hace); changesets pendientes se BORRAN, nunca se ejecutan; changeset vacío = no-op; esperas por sondeo manual (AWS CLI v2 sin `--waiter-attempts`).
+- **Mejora futura (no bloqueante):** GitHub avisa de que Node.js 20 está deprecado en `actions/checkout@v4` y `configure-aws-credentials@v4` (forzado a Node 24); candidato a actualizar las actions en el futuro.
 
 ## Referencias
 

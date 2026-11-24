@@ -1,6 +1,6 @@
 # Spec — Fase 19: Entornos parametrizados (implementación dev)
 
-Fase: 19 · Estado: implement (compuertas verdes; revisor PASS tras corrección 1; pendiente despliegue dev + QA) · Compuerta: compuertas base (lint/test/build/check) + criterios de la spec + despliegue dev verificado con visto del usuario
+Fase: 19 · Estado: verified (despliegue dev verificado en runtime; QA visual del usuario pendiente) · Compuerta: compuertas base (lint/test/build/check) + criterios de la spec + despliegue dev verificado con visto del usuario
 
 ## Objetivo
 
@@ -60,6 +60,7 @@ Petición del usuario (2026-11-24): rama `dev` para desarrollo; `pre` = preprodu
 - **Corrección 1 (revisión fresh-eyes, 2026-11-24):** D1 major — los ARN de stack de `infra/role-policy-dev.json` usaban `stack/fichass-*-dev` (sin comodín final), que NO casa con los ARN reales de CloudFormation (`stack/fichass-<name>/<uuid>`); corregido a `stack/fichass-*-dev/*` en los dos statements (patrón análogo al `stack/fichass-*` de producción). D3 minor — añadido `ssm:DeleteParameter` sobre `/fichass/dev/*` para que el self-heal del hosting dev pueda borrar el parámetro SSM (sin Retain) sin atascar el stack. D4 minor (deuda heredada del trust de producción): el segundo formato de sub con `@*` no es el formato real de IDs numéricos de GitHub; funcional hoy por el formato clásico, se anota como deuda.
 - Riesgo conocido: el bootstrap del rol dev lo hace CI (paso idempotente con el rol actual); el orquestador ejecuta el primer despliegue dev con el visto del usuario. Los quirks de changeset-CREATE de la cuenta siguen aplicando (create-stack directo para la primera creación de cada stack). El rol de producción no se modifica (D-70a).
 - Riesgo residual: el trust del rol dev comparte `environment:dev` con los jobs de master (acotado por permisos: el rol dev solo toca `fichass-*-dev`); el trust dev no converge tras la primera creación (el rol actual no tiene `iam:UpdateAssumeRolePolicy`) → cambios futuros al trust = intervención manual one-time. `aws s3 sync --delete` borra `sam-artifacts/` del bucket dev (mismo patrón que master).
+- Verificación runtime (2026-11-24): run 45500494138 SUCCESS; sitio dev HTTP 200; round-trip de sesión dev (master-layout v1 + elira v1 con clamp); producción intacta y aislada. Menor heredado: aviso de Node.js 20 deprecado en actions/checkout@v4 y configure-aws-credentials@v4 (forzado a Node 24), no bloqueante.
 
 ## Amendments
 
